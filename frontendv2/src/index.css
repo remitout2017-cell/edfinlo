@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Row */
+.stepperRow {
+  display: flex;
+  align-items: center;
+  gap: 0; /* no negative margins, no seam hacks */
+  padding: 8px 4px;
+}
+
+/* Wrapper reserves space for the arrow triangle so layout stays stable */
+.stepWrap {
+  --h: 46px;
+  --arrow: 18px;
+  position: relative;
+  flex: 0 0 auto;
+  padding-right: var(--arrow);
+}
+
+/* Base chip (glass) */
+.stepChip {
+  height: var(--h);
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+
+  /* Glassmorphism basics: translucent bg + blur */
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+
+  padding: 0 18px;
+  padding-right: calc(18px + var(--arrow));
+  color: #fff;
+
+  position: relative;
+}
+
+/* Arrow border triangle (outer) */
+.stepWrap::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+
+  width: 0;
+  height: 0;
+  border-top: calc(var(--h) / 2) solid transparent;
+  border-bottom: calc(var(--h) / 2) solid transparent;
+  border-left: var(--arrow) solid rgba(255, 255, 255, 0.22);
+}
+
+/* Arrow fill triangle (inner) */
+.stepChip::after {
+  content: "";
+  position: absolute;
+  right: -1px; /* covers the border seam cleanly */
+  top: 0;
+
+  width: 0;
+  height: 0;
+  border-top: calc(var(--h) / 2) solid transparent;
+  border-bottom: calc(var(--h) / 2) solid transparent;
+  border-left: var(--arrow) solid rgba(255, 255, 255, 0.12);
+}
+
+/* Remove arrow on last item */
+.stepWrap:last-child {
+  padding-right: 0;
+}
+.stepWrap:last-child::after,
+.stepWrap:last-child .stepChip::after {
+  display: none;
+}
+
+/* Optional rounded ends */
+.stepChip.first {
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+}
+.stepChip.last {
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+/* States */
+.stepChip.todo {
+  background: rgba(124, 58, 237, 0.28);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.stepChip.todo::after {
+  border-left-color: rgba(124, 58, 237, 0.28);
+}
+
+.stepChip.done {
+  background: rgba(167, 139, 250, 0.32);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.stepChip.done::after {
+  border-left-color: rgba(167, 139, 250, 0.32);
+}
+
+.stepChip.active {
+  background: rgba(249, 115, 22, 0.55);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 12px 35px rgba(249, 115, 22, 0.18);
+}
+.stepChip.active::after {
+  border-left-color: rgba(249, 115, 22, 0.55);
+}
+
+/* Text */
+.stepText {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.stepTextMobile {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
