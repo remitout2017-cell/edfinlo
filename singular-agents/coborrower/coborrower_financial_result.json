@@ -1,0 +1,452 @@
+{
+  "status": "completed",
+  "financialInfo": {
+    "personalInfo": {
+      "employeeId": null,
+      "companyName": "GTS",
+      "designation": null,
+      "name": null
+    },
+    "salarySlips": [
+      {
+        "month": "February",
+        "year": 2025,
+        "grossSalary": 36566.0,
+        "netSalary": 34466.0,
+        "basicSalary": 13218.0,
+        "hra": 6609.0,
+        "allowances": 16739.0,
+        "deductions": {
+          "pf": 1800.0,
+          "tax": 300.0,
+          "insurance": null,
+          "other": 0.0
+        },
+        "employerName": "GTS",
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\salaryslip1.pdf"
+        ]
+      },
+      {
+        "month": "January",
+        "year": 2025,
+        "grossSalary": 36566.0,
+        "netSalary": 34566.0,
+        "basicSalary": 13218.0,
+        "hra": 6609.0,
+        "allowances": 16739.0,
+        "deductions": {
+          "pf": 1800.0,
+          "tax": null,
+          "insurance": null,
+          "other": 200.0
+        },
+        "employerName": "GTS",
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\salaryslip2.pdf"
+        ]
+      },
+      {
+        "month": "December",
+        "year": 2024,
+        "grossSalary": 36566.0,
+        "netSalary": 34566.0,
+        "basicSalary": 13218.0,
+        "hra": 6609.0,
+        "allowances": 16739.0,
+        "deductions": {
+          "pf": 1800.0,
+          "tax": null,
+          "insurance": null,
+          "other": 200.0
+        },
+        "employerName": "GTS",
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\salaryslip3.pdf"
+        ]
+      }
+    ],
+    "bankStatement": {
+      "accountNumber": null,
+      "bankName": null,
+      "ifscCode": null,
+      "accountType": null,
+      "statementPeriod": {
+        "from": null,
+        "to": null
+      },
+      "monthlyData": [],
+      "averageMonthlyBalance": null,
+      "totalEmiObserved": null,
+      "salaryConsistency": null,
+      "documentUrls": [
+        "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\bankstatement.pdf"
+      ],
+      "pageCount": 5
+    },
+    "itrData": [
+      {
+        "assessmentYear": "2023-24",
+        "financialYear": "2022-23",
+        "totalIncome": 850000.0,
+        "taxPaid": 45000.0,
+        "filingDate": "2023-07-31",
+        "incomeFromSalary": 850000.0,
+        "incomeFromBusiness": 0.0,
+        "incomeFromOtherSources": 0.0,
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\itr1.pdf"
+        ],
+        "acknowledged": true,
+        "acknowledgmentNumber": "1023210720230000160"
+      },
+      {
+        "assessmentYear": "2023-24",
+        "financialYear": "2022-23",
+        "totalIncome": 850000.0,
+        "taxPaid": 45000.0,
+        "filingDate": "2023-07-31",
+        "incomeFromSalary": 850000.0,
+        "incomeFromBusiness": 0.0,
+        "incomeFromOtherSources": 0.0,
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\itr2.pdf"
+        ],
+        "acknowledged": true,
+        "acknowledgmentNumber": "123456789012345"
+      },
+      {
+        "assessmentYear": "2022-23",
+        "financialYear": "2021-22",
+        "totalIncome": 950000.0,
+        "taxPaid": 54600.0,
+        "filingDate": "2022-07-29",
+        "incomeFromSalary": 950000.0,
+        "incomeFromBusiness": 0.0,
+        "incomeFromOtherSources": 0.0,
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\itr3.pdf"
+        ],
+        "acknowledged": true,
+        "acknowledgmentNumber": "229000000000000"
+      }
+    ],
+    "form16Data": [],
+    "businessProof": {
+      "businessName": null,
+      "gstNumber": null,
+      "registrationNumber": null,
+      "annualRevenue": null,
+      "annualProfit": null,
+      "businessType": null,
+      "documentUrls": []
+    },
+    "financialSummary": {
+      "avgMonthlySalary": 34532.67,
+      "avgMonthlyIncome": 34532.67,
+      "totalExistingEmi": 0.0,
+      "estimatedAnnualIncome": 883333.33,
+      "foir": 0.0,
+      "incomeSource": "salary",
+      "incomeStability": "unknown",
+      "documentCompleteness": {
+        "salarySlipCount": 3,
+        "bankStatementPageCount": 5,
+        "itrYearsCovered": 3,
+        "form16YearsCovered": 1,
+        "hasBusinessProof": false
+      },
+      "lastUpdated": null
+    },
+    "allDocuments": [
+      {
+        "documentType": "salary_slip",
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\salaryslip1.pdf"
+        ],
+        "documentMetadata": {
+          "uploadedAt": null,
+          "pageCount": 1,
+          "fileSize": null,
+          "originalFilename": "salaryslip1.pdf"
+        }
+      },
+      {
+        "documentType": "salary_slip",
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\salaryslip2.pdf"
+        ],
+        "documentMetadata": {
+          "uploadedAt": null,
+          "pageCount": 1,
+          "fileSize": null,
+          "originalFilename": "salaryslip2.pdf"
+        }
+      },
+      {
+        "documentType": "salary_slip",
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\salaryslip3.pdf"
+        ],
+        "documentMetadata": {
+          "uploadedAt": null,
+          "pageCount": 1,
+          "fileSize": null,
+          "originalFilename": "salaryslip3.pdf"
+        }
+      },
+      {
+        "documentType": "itr",
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\itr1.pdf"
+        ],
+        "documentMetadata": {
+          "uploadedAt": null,
+          "pageCount": 5,
+          "fileSize": null,
+          "originalFilename": "itr1.pdf"
+        }
+      },
+      {
+        "documentType": "itr",
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\itr2.pdf"
+        ],
+        "documentMetadata": {
+          "uploadedAt": null,
+          "pageCount": 8,
+          "fileSize": null,
+          "originalFilename": "itr2.pdf"
+        }
+      },
+      {
+        "documentType": "itr",
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\itr3.pdf"
+        ],
+        "documentMetadata": {
+          "uploadedAt": null,
+          "pageCount": 6,
+          "fileSize": null,
+          "originalFilename": "itr3.pdf"
+        }
+      },
+      {
+        "documentType": "bank_statement",
+        "documentUrls": [
+          "C:\\Users\\sansk\\OneDrive\\Desktop\\loan\\loanbackend-2\\backendv2\\Anil Shah- Father\\bankstatement.pdf"
+        ],
+        "documentMetadata": {
+          "uploadedAt": null,
+          "pageCount": 5,
+          "fileSize": null,
+          "originalFilename": "bankstatement.pdf"
+        }
+      }
+    ]
+  },
+  "verification": {
+    "verification_status": "approved",
+    "confidence_score": 0.9,
+    "issues": [],
+    "warnings": [
+      "Bank statement has only 5 pages."
+    ],
+    "financial_summary": {
+      "avgMonthlySalary": 34532.67,
+      "avgMonthlyIncome": 34532.67,
+      "totalExistingEmi": 0.0,
+      "estimatedAnnualIncome": 883333.33,
+      "foir": 0.0,
+      "incomeSource": "salary",
+      "incomeStability": "unknown",
+      "documentCompleteness": {
+        "salarySlipCount": 3,
+        "bankStatementPageCount": 5,
+        "itrYearsCovered": 3,
+        "form16YearsCovered": 1,
+        "hasBusinessProof": false
+      },
+      "lastUpdated": null
+    }
+  },
+  "extracted_data": {
+    "salary_slip_1": {
+      "month": "February",
+      "year": 2025,
+      "grossSalary": 36566.0,
+      "netSalary": 34466.0,
+      "basicSalary": 13218.0,
+      "hra": 6609.0,
+      "allowances": 16739.0,
+      "deductions": {
+        "pf": 1800.0,
+        "tax": 300.0,
+        "insurance": null,
+        "other": 0.0
+      },
+      "employerName": "GTS",
+      "extraction_confidence": 0.98
+    },
+    "itr_1": {
+      "assessmentYear": "2023-24",
+      "financialYear": "2022-23",
+      "totalIncome": 850000.0,
+      "taxPaid": 45000.0,
+      "filingDate": "2023-07-31",
+      "incomeFromSalary": 850000.0,
+      "incomeFromBusiness": 0.0,
+      "incomeFromOtherSources": 0.0,
+      "acknowledged": true,
+      "acknowledgmentNumber": "1023210720230000160",
+      "extraction_confidence": 1.0
+    },
+    "salary_slip_3": {
+      "month": "December",
+      "year": 2024,
+      "grossSalary": 36566.0,
+      "netSalary": 34566.0,
+      "basicSalary": 13218.0,
+      "hra": 6609.0,
+      "allowances": 16739.0,
+      "deductions": {
+        "pf": 1800.0,
+        "tax": null,
+        "insurance": null,
+        "other": 200.0
+      },
+      "employerName": "GTS",
+      "extraction_confidence": 0.98
+    },
+    "salary_slip_2": {
+      "month": "January",
+      "year": 2025,
+      "grossSalary": 36566.0,
+      "netSalary": 34566.0,
+      "basicSalary": 13218.0,
+      "hra": 6609.0,
+      "allowances": 16739.0,
+      "deductions": {
+        "pf": 1800.0,
+        "tax": null,
+        "insurance": null,
+        "other": 200.0
+      },
+      "employerName": "GTS",
+      "extraction_confidence": 0.98
+    },
+    "form_16": {
+      "note": "Form 16 not provided (optional)"
+    },
+    "itr_2": {
+      "assessmentYear": "2023-24",
+      "financialYear": "2022-23",
+      "totalIncome": 850000.0,
+      "taxPaid": 45000.0,
+      "filingDate": "2023-07-31",
+      "incomeFromSalary": 850000.0,
+      "incomeFromBusiness": 0.0,
+      "incomeFromOtherSources": 0.0,
+      "acknowledged": true,
+      "acknowledgmentNumber": "123456789012345",
+      "extraction_confidence": 1.0
+    },
+    "itr_3": {
+      "assessmentYear": "2022-23",
+      "financialYear": "2021-22",
+      "totalIncome": 950000.0,
+      "taxPaid": 54600.0,
+      "filingDate": "2022-07-29",
+      "incomeFromSalary": 950000.0,
+      "incomeFromBusiness": 0.0,
+      "incomeFromOtherSources": 0.0,
+      "acknowledged": true,
+      "acknowledgmentNumber": "229000000000000",
+      "extraction_confidence": 0.98
+    }
+  },
+  "extraction_status": {
+    "salary_slip_1": "success",
+    "salary_slip_2": "success",
+    "salary_slip_3": "success",
+    "itr_1": "success",
+    "itr_2": "success",
+    "itr_3": "success",
+    "bank_statement_6m": "pending",
+    "form_16": "success"
+  },
+  "retry_counts": {
+    "salary_slip_1": 0,
+    "salary_slip_2": 0,
+    "salary_slip_3": 0,
+    "itr_1": 0,
+    "itr_2": 0,
+    "itr_3": 0,
+    "bank_statement_6m": 3
+  },
+  "pdf_images_available": [],
+  "errors": [
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response",
+    "bank_statement_6m: Parse error - No valid JSON found in response"
+  ],
+  "summary": {
+    "total_documents": 7,
+    "successful_extractions": 7,
+    "failed_extractions": 0,
+    "total_retries": 3
+  }
+}

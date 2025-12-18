@@ -1,0 +1,175 @@
+2025-12-05 01:58:08,648 - __main__ - INFO - Redis connected successfully
+2025-12-05 01:58:08,690 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5000
+2025-12-05 01:58:08,690 - __main__ - INFO - Process workers: 8
+2025-12-05 01:58:08,690 - __main__ - INFO - Upload folder: ./uploads
+2025-12-05 01:58:08,715 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.245:5000
+2025-12-05 01:58:08,716 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-05 02:00:54,718 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-05 02:00:54,722 - __main__ - INFO - Server shutdown complete
+2025-12-05 02:02:23,770 - __main__ - INFO - Redis connected successfully
+2025-12-05 02:02:23,780 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5000
+2025-12-05 02:02:23,780 - __main__ - INFO - Process workers: 8
+2025-12-05 02:02:23,780 - __main__ - INFO - Upload folder: ./uploads
+2025-12-05 02:02:23,804 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.245:5000
+2025-12-05 02:02:23,804 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-05 02:03:03,070 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-05 02:03:03,070 - __main__ - INFO - Server shutdown complete
+2025-12-05 02:08:12,480 - __main__ - INFO - Redis connected successfully
+2025-12-05 02:08:12,485 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5000
+2025-12-05 02:08:12,487 - __main__ - INFO - Process workers: 4
+2025-12-05 02:08:12,487 - __main__ - INFO - Upload folder: ./academic_uploads
+2025-12-05 02:08:12,501 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.29.245:5000
+2025-12-05 02:08:12,502 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-05 09:54:21,738 - __main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-05 09:54:21,750 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5000
+2025-12-05 09:54:21,751 - __main__ - INFO - Process workers: 4
+2025-12-05 09:54:21,751 - __main__ - INFO - Upload folder: ./academic_uploads
+2025-12-05 09:54:21,766 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.6:5000
+2025-12-05 09:54:21,766 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-05 10:32:53,450 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-05 10:32:53,468 - __main__ - INFO - Server shutdown complete
+2025-12-05 10:35:10,397 - __main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-05 10:35:10,409 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5000
+2025-12-05 10:35:10,410 - __main__ - INFO - Process workers: 4
+2025-12-05 10:35:10,410 - __main__ - INFO - Upload folder: ./academic_uploads
+2025-12-05 10:35:10,426 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.1.6:5002
+2025-12-05 10:35:10,427 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-05 10:53:00,789 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-05 10:53:00,791 - __main__ - INFO - Server shutdown complete
+2025-12-05 11:37:56,925 - __main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-05 11:37:56,933 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5000
+2025-12-05 11:37:56,933 - __main__ - INFO - Process workers: 4
+2025-12-05 11:37:56,933 - __main__ - INFO - Upload folder: ./academic_uploads
+2025-12-05 11:37:56,958 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.1.6:5002
+2025-12-05 11:37:56,958 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-05 11:38:02,545 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-05 11:38:02,545 - __main__ - INFO - Server shutdown complete
+2025-12-05 11:47:33,359 - __main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-05 11:47:33,366 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5000
+2025-12-05 11:47:33,367 - __main__ - INFO - Process workers: 4
+2025-12-05 11:47:33,367 - __main__ - INFO - Upload folder: ./academic_uploads
+2025-12-05 11:47:33,391 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.1.6:5002
+2025-12-05 11:47:33,391 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-05 13:16:33,740 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-05 13:16:33,758 - __main__ - INFO - Server shutdown complete
+2025-12-05 14:42:37,449 - __main__ - INFO - Redis connected successfully
+2025-12-05 14:42:37,456 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5000
+2025-12-05 14:42:37,456 - __main__ - INFO - Process workers: 4
+2025-12-05 14:42:37,457 - __main__ - INFO - Upload folder: ./academic_uploads
+2025-12-05 14:42:37,480 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.1.6:5002
+2025-12-05 14:42:37,480 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-09 23:11:38,574 - __main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-09 23:11:38,582 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5000
+2025-12-09 23:11:38,582 - __main__ - INFO - Process workers: 4
+2025-12-09 23:11:38,583 - __main__ - INFO - Upload folder: ./academic_uploads
+2025-12-09 23:11:38,603 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.29.245:5002
+2025-12-09 23:11:38,603 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-09 23:12:14,687 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:12:14] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-09 23:13:05,718 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:13:05] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-09 23:23:38,289 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:23:38] "GET /api/health HTTP/1.1" 200 -
+2025-12-09 23:24:03,027 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:24:03] "POST /api/upload HTTP/1.1" 200 -
+2025-12-09 23:24:12,374 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:24:12] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-09 23:28:44,777 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:28:44] "POST /api/upload HTTP/1.1" 200 -
+2025-12-09 23:28:51,658 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:28:51] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-09 23:30:30,751 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:30:30] "POST /api/upload HTTP/1.1" 200 -
+2025-12-09 23:30:39,336 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:30:39] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-09 23:34:51,080 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:34:51] "GET /api/health HTTP/1.1" 200 -
+2025-12-09 23:34:51,184 - werkzeug - INFO - 127.0.0.1 - - [09/Dec/2025 23:34:51] "GET /api/health HTTP/1.1" 200 -
+2025-12-09 23:45:05,101 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-09 23:45:05,123 - __main__ - INFO - Server shutdown complete
+2025-12-17 22:39:14,283 - __main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-17 22:39:14,291 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5002
+2025-12-17 22:39:14,291 - __main__ - INFO - Process workers: 6
+2025-12-17 22:39:14,292 - __main__ - INFO - Upload folder: ./academic_uploads
+2025-12-17 22:39:14,292 - __main__ - INFO - Gap detection enabled: True
+2025-12-17 22:39:14,292 - __main__ - INFO - Gap threshold: 1 year(s)
+2025-12-17 22:39:14,314 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.29.245:5002
+2025-12-17 22:39:14,314 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-17 22:44:40,316 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 22:44:40] "POST /api/upload HTTP/1.1" 200 -
+2025-12-17 22:45:20,137 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 22:45:20] "[31m[1mPOST /api/extract/sync HTTP/1.1[0m" 400 -
+2025-12-17 22:45:48,819 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 22:45:48] "[31m[1mPOST /api/extract/sync HTTP/1.1[0m" 400 -
+2025-12-17 22:46:31,075 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 22:46:31] "[35m[1mPOST /api/extract/async HTTP/1.1[0m" 202 -
+2025-12-17 22:46:35,998 - __mp_main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-17 22:46:36,009 - __mp_main__ - INFO - Job d31bd6cb-2572-4f36-aafb-3955c251d1f5 completed in 0.00s
+2025-12-17 22:46:53,458 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 22:46:53] "[31m[1mPOST /api/extract/sync HTTP/1.1[0m" 400 -
+2025-12-17 22:48:04,490 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 22:48:04] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-17 22:51:10,023 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 22:51:10] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-17 22:55:11,017 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-17 22:55:11,392 - __main__ - INFO - Server shutdown complete
+2025-12-17 22:55:17,941 - __main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-17 22:55:17,948 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5002
+2025-12-17 22:55:17,948 - __main__ - INFO - Process workers: 6
+2025-12-17 22:55:17,949 - __main__ - INFO - Upload folder: ./academic_uploads
+2025-12-17 22:55:17,949 - __main__ - INFO - Gap detection enabled: True
+2025-12-17 22:55:17,949 - __main__ - INFO - Gap threshold: 1 year(s)
+2025-12-17 22:55:17,971 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.29.245:5002
+2025-12-17 22:55:17,971 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-17 22:55:32,428 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 22:55:32] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-17 22:57:47,280 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-17 22:57:47,284 - __main__ - INFO - Server shutdown complete
+2025-12-17 22:57:53,183 - __main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-17 22:57:53,189 - __main__ - INFO - Starting Academic Records Extraction Server on 0.0.0.0:5002
+2025-12-17 22:57:53,190 - __main__ - INFO - Process workers: 6
+2025-12-17 22:57:53,190 - __main__ - INFO - Upload folder: ./academic_uploads
+2025-12-17 22:57:53,190 - __main__ - INFO - Gap detection enabled: True
+2025-12-17 22:57:53,191 - __main__ - INFO - Gap threshold: 1 year(s)
+2025-12-17 22:57:53,209 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.29.245:5002
+2025-12-17 22:57:53,210 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-17 22:58:02,190 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 22:58:02] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-17 23:05:14,046 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 23:05:14] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-17 23:06:08,691 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-17 23:06:08,695 - __main__ - INFO - Server shutdown complete
+2025-12-17 23:40:51,997 - __main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-17 23:40:52,030 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.29.245:5002
+2025-12-17 23:40:52,030 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-12-17 23:41:04,068 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-12-17 23:41:19,899 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2025-12-17 23:41:19,906 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 23:41:19] "POST /api/extract/sync HTTP/1.1" 200 -
+2025-12-17 23:44:58,517 - werkzeug - INFO - 127.0.0.1 - - [17/Dec/2025 23:44:58] "[31m[1mPOST /api/extract/sync HTTP/1.1[0m" 400 -
+2025-12-18 00:13:35,180 - __main__ - INFO - Shutdown signal received. Shutting down gracefully...
+2025-12-18 00:13:35,197 - __main__ - INFO - Server shutdown complete
+2025-12-18 00:13:45,941 - __main__ - WARNING - Redis not available, using in-memory job storage
+2025-12-18 00:13:45,970 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://192.168.29.245:5002
+2025-12-18 00:13:45,970 - werkzeug - INFO - [33mPress CTRL+C to quit[0m

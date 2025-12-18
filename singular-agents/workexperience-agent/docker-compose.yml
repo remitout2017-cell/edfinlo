@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  work-experience-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.work_experience
+    ports:
+      - "5004:5004"  # Changed from 5002 to match frontend
+    environment:
+      - REDIS_HOST=redis
+      - MAX_WORKERS=4
+      - WORK_UPLOAD_FOLDER=/app/work_experience_uploads
+      - USE_IMAGE_EXTRACTION=true
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - WORK_PORT=5004  # Add this
+    volumes:
+      - ./work_experience_uploads:/app/work_experience_uploads
+      - ./work_logs:/app/logs
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5004/api/health"]  # Updated port
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Share Redis with other services
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  redis-data:
