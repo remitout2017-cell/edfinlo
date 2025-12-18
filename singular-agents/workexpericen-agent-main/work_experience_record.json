@@ -1,0 +1,53 @@
+{
+  "session_id": "cda97978",
+  "processing_timestamp": "2025-12-18T14:33:21.572886",
+  "work_experiences": [
+    {
+      "company_name": "Blue Sparkles Hospitality LLP",
+      "job_title": "Executive-Quality and Hygiene",
+      "employment_type": "full_time",
+      "start_date": "01/11/2023",
+      "end_date": null,
+      "currently_working": true,
+      "is_paid": true,
+      "stipend_amount": null,
+      "extraction_confidence": 0.9,
+      "document_quality": 0.8,
+      "notes": "Salary package was discussed but not explicitly mentioned in the document.",
+      "source_document_type": "experience_letter",
+      "has_experience_letter": true
+    }
+  ],
+  "verifications": [
+    {
+      "valid": true,
+      "confidence": "high",
+      "reason": "All required fields present and valid with experience letter",
+      "issues": [],
+      "warnings": [],
+      "has_mandatory_documents": true
+    }
+  ],
+  "documents": [
+    {
+      "filename": "Experience_Offer Letter Magicomeal .pdf",
+      "path": "C:\\project-version-1\\testingdata\\workexperiecnedata\\Experience_Offer Letter Magicomeal .pdf",
+      "extension": ".pdf",
+      "size_mb": 0.1612377166748047,
+      "page_count": 1,
+      "quality_score": 0.7,
+      "document_type": "experience_letter",
+      "is_mandatory": true
+    }
+  ],
+  "total_documents": 1,
+  "mandatory_documents_count": 1,
+  "optional_documents_count": 0,
+  "valid_experiences": 1,
+  "total_years_experience": 2.1,
+  "has_all_mandatory_documents": true,
+  "missing_mandatory_documents": [],
+  "processing_time_seconds": 10.443711042404175,
+  "status": "success",
+  "errors": []
+}

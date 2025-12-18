@@ -1,0 +1,45 @@
+# ============================================
+# Core Framework
+# ============================================
+Flask
+flask-cors
+python-dotenv
+redis
+
+# ============================================
+# PDF and Image Processing
+# ============================================
+pdfplumber
+PyPDF2
+Pillow
+
+# ============================================
+# LangChain + Gemini
+# ============================================
+langchain-core
+langchain-google-genai
+google-generativeai
+
+# (Optional – only if you actually use Groq)
+langchain-groq
+pymupdf
+langchain_openai
+# ============================================
+# HTTP / Async
+# ============================================
+requests
+aiohttp
+httpx
+opencv-python
+# ============================================
+# Data Processing
+# ============================================
+numpy
+pandas
+
+# ============================================
+# Dev & Testing
+# ============================================
+black
+pytest
+pytest-asyncio
