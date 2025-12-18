@@ -1,0 +1,70 @@
+{
+  "session_id": "9aca564a",
+  "processing_timestamp": "2025-12-18T16:04:51.625029",
+  "admission_letters": [
+    {
+      "university_name": "University College Cork",
+      "program_name": "Business Analytics - MSc (Non-EU applications only)",
+      "degree_level": "master",
+      "intake_term": null,
+      "intake_year": 2025,
+      "country": "Ireland",
+      "city": "Cork",
+      "duration": null,
+      "tuition_fee": null,
+      "tuition_currency": null,
+      "scholarship_amount": null,
+      "scholarship_mentioned": false,
+      "acceptance_deadline": null,
+      "enrollment_deadline": null,
+      "fee_payment_deadline": null,
+      "student_id": null,
+      "application_id": "124119829",
+      "conditional_admission": false,
+      "conditions": null,
+      "documents_required": null,
+      "extraction_confidence": 0.9,
+      "document_quality": 0.95,
+      "notes": "This is an email confirming the acceptance of an offer. Further details regarding registration and fee payment will be communicated later. No specific intake term, program duration, tuition fees, scholarship, or deadlines are mentioned in this email.",
+      "source_document_type": "admission_letter",
+      "has_admission_letter": true
+    }
+  ],
+  "verifications": [
+    {
+      "valid": true,
+      "confidence": "high",
+      "reason": "All required fields present and valid with admission letter",
+      "issues": [],
+      "warnings": [],
+      "has_mandatory_documents": true
+    }
+  ],
+  "documents": [
+    {
+      "filename": "admissionletter.pdf",
+      "path": "C:\\project-version-1\\testingdata\\workexperiecnedata\\admissionletter.pdf",
+      "extension": ".pdf",
+      "size_mb": 0.05127239227294922,
+      "page_count": 1,
+      "quality_score": 0.7,
+      "document_type": "admission_letter",
+      "is_mandatory": true
+    }
+  ],
+  "total_documents": 1,
+  "mandatory_documents_count": 1,
+  "optional_documents_count": 0,
+  "valid_admissions": 1,
+  "universities": [
+    "University College Cork"
+  ],
+  "countries": [
+    "Ireland"
+  ],
+  "has_all_mandatory_documents": true,
+  "missing_mandatory_documents": [],
+  "processing_time_seconds": 14.882254362106323,
+  "status": "success",
+  "errors": []
+}

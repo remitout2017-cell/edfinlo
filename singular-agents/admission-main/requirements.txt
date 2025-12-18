@@ -1,0 +1,21 @@
+# Core dependencies
+python-dotenv
+pydantic
+
+# LangChain and AI models
+langchain
+langchain-google-genai
+langchain-openai
+langchain-groq
+google-generativeai
+openai
+groq
+
+# Image processing
+opencv-python
+numpy
+Pillow
+PyMuPDF
+
+# Utilities
+requests
