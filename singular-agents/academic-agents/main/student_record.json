@@ -1,0 +1,120 @@
+{
+  "student_id": "e750c608",
+  "processing_timestamp": "2025-12-18T12:21:10.024812",
+  "class_10": {
+    "board_name": "INDIAN CERTIFICATE OF SECONDARY EDUCATION",
+    "year_of_passing": 2018,
+    "school_name": "BILLABONG HIGH INTERNATIONAL SCHOOL, THANE (WEST)",
+    "percentage": 82.0,
+    "cgpa": null,
+    "grade": "A",
+    "converted_grade": "A"
+  },
+  "class_12": {
+    "board_name": "Maharashtra State Board of Secondary and Higher Secondary Education, Pune",
+    "year_of_passing": 2020,
+    "stream": "Science",
+    "school_name": null,
+    "percentage": 75.38,
+    "cgpa": null,
+    "grade": "I-DIST",
+    "converted_grade": "I-DIST"
+  },
+  "graduation": {
+    "institution_name": "SIR VITHALDAS THACKERSEY COLLEGE OF HOME SCIENCE (AUTONOMOUS) S.N.D.T. WOMEN'S UNIVERSITY",
+    "degree": "B.Sc. in Home Science",
+    "specialization": "Food Nutrition and Dietetics",
+    "year_of_passing": 2023,
+    "duration_years": 3,
+    "semesters": [
+      {
+        "semester_year": "Semester 1",
+        "year_of_completion": 2021,
+        "percentage": 73.27,
+        "cgpa": 8.33,
+        "grade": "A+"
+      },
+      {
+        "semester_year": "Semester 2",
+        "year_of_completion": 2021,
+        "percentage": 76.2,
+        "cgpa": 8.56,
+        "grade": "A+"
+      },
+      {
+        "semester_year": "Semester 3",
+        "year_of_completion": 2022,
+        "percentage": 55.89,
+        "cgpa": 6.21,
+        "grade": "B+"
+      },
+      {
+        "semester_year": "Semester 4",
+        "year_of_completion": 2022,
+        "percentage": null,
+        "cgpa": 5.3,
+        "grade": null
+      },
+      {
+        "semester_year": "Semester V",
+        "year_of_completion": 2023,
+        "percentage": 56.6,
+        "cgpa": 6.31,
+        "grade": "B+"
+      },
+      {
+        "semester_year": "Semester 6",
+        "year_of_completion": null,
+        "percentage": null,
+        "cgpa": 7.45,
+        "grade": null
+      },
+      {
+        "semester_year": "Exam Period Result",
+        "year_of_completion": 2021,
+        "percentage": 67.4,
+        "cgpa": 7.45,
+        "grade": "A"
+      }
+    ],
+    "final_percentage": null,
+    "final_cgpa": null,
+    "converted_grade": "Not Available"
+  },
+  "certificates": null,
+  "gap_analysis": {
+    "has_gaps": true,
+    "total_gaps": 2,
+    "gaps": [
+      {
+        "gap_type": "after_10th",
+        "gap_years": 2.0,
+        "from_education": "10th Standard",
+        "to_education": "12th Standard",
+        "is_significant": false,
+        "explanation": "Normal gap of 2 years between 10th and 12th"
+      },
+      {
+        "gap_type": "after_12th",
+        "gap_years": 1.0,
+        "from_education": "12th Standard",
+        "to_education": "Graduation",
+        "is_significant": false,
+        "explanation": "Normal gap of 1 year between 12th and graduation start"
+      },
+      {
+        "gap_type": "during_graduation",
+        "gap_years": 0.0,
+        "from_education": "Semester 5",
+        "to_education": "Semester 6",
+        "is_significant": false,
+        "explanation": "No gap during graduation"
+      }
+    ],
+    "overall_assessment": "The timeline has a normal gap of 2 years between 10th and 12th, and 1 year between 12th and graduation start. There are no gaps during graduation.",
+    "timeline_consistent": true
+  },
+  "processing_time_seconds": 172.66482758522034,
+  "status": "success",
+  "errors": []
+}

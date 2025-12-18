@@ -9,15 +9,20 @@ from typing import List
 
 class ProductionImagePreprocessor:
     """
-    Production-ready preprocessor:
-    - No deskew (removed as requested)
-    - No poppler dependency (uses PyMuPDF instead)
-    - Works in Docker/Cloud deployment
+    Production-ready preprocessor with configurable threshold
     """
 
-    def __init__(self, target_width: int = 2000):
+    def __init__(self, target_width: int = 2000, use_threshold: bool = True, threshold_strength: str = "medium"):
+        """
+        Args:
+            target_width: Target image width
+            use_threshold: Whether to apply thresholding (True/False)
+            threshold_strength: "light", "medium", "strong", or "none"
+        """
         self.target_width = target_width
-        print("✅ Preprocessor initialized (PyMuPDF - no poppler needed!)")
+        self.use_threshold = use_threshold
+        self.threshold_strength = threshold_strength
+        print(f"✅ Preprocessor initialized (Threshold: {threshold_strength})")
 
     def convert_pdf_to_images(self, pdf_path: str, output_folder: str = "temp_images") -> List[str]:
         """
@@ -51,7 +56,6 @@ class ProductionImagePreprocessor:
                 page = pdf_document.load_page(page_num)
 
                 # Render page to image (high quality)
-                # matrix = fitz.Matrix(2, 2) means 2x zoom = 144 DPI
                 pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
 
                 # Save as JPEG
@@ -73,8 +77,7 @@ class ProductionImagePreprocessor:
 
     def preprocess_image(self, image_path: str, save_debug: bool = False) -> np.ndarray:
         """
-        Preprocess image for AI extraction
-        NO DESKEW (removed as requested)
+        Preprocess image for AI extraction with configurable threshold
 
         Steps:
         1. Grayscale
@@ -82,7 +85,7 @@ class ProductionImagePreprocessor:
         3. Strong noise removal
         4. Contrast enhancement
         5. Sharpen
-        6. Otsu threshold
+        6. Optional threshold (based on settings)
         7. Clean noise
         """
         print(f"\n🖼️  Processing: {Path(image_path).name}")
@@ -107,7 +110,7 @@ class ProductionImagePreprocessor:
         if save_debug:
             cv2.imwrite("step_2_resized.jpg", resized)
 
-        # Step 3: Strong noise removal (removes security patterns)
+        # Step 3: Strong noise removal
         print("   🧹 Removing noise...")
         denoised = cv2.fastNlMeansDenoising(
             resized, None, h=10, templateWindowSize=7, searchWindowSize=21)
@@ -126,16 +129,33 @@ class ProductionImagePreprocessor:
         if save_debug:
             cv2.imwrite("step_5_sharpened.jpg", sharpened)
 
-        # Step 6: Otsu threshold (automatic!)
-        print("   🎯 Applying threshold...")
-        _, thresholded = cv2.threshold(
-            sharpened, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        # Step 6: Apply threshold based on settings
+        if self.threshold_strength == "none" or not self.use_threshold:
+            print("   ⏭️  Skipping threshold...")
+            thresholded = sharpened
+        elif self.threshold_strength == "light":
+            print("   🎯 Applying light threshold...")
+            thresholded = self._apply_light_threshold(sharpened)
+        elif self.threshold_strength == "medium":
+            print("   🎯 Applying medium threshold...")
+            thresholded = self._apply_medium_threshold(sharpened)
+        elif self.threshold_strength == "strong":
+            print("   🎯 Applying strong threshold (Otsu)...")
+            _, thresholded = cv2.threshold(
+                sharpened, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        else:
+            thresholded = sharpened
+
         if save_debug:
             cv2.imwrite("step_6_thresholded.jpg", thresholded)
 
-        # Step 7: Clean small noise
-        print("   🧼 Final cleanup...")
-        cleaned = self._clean_noise(thresholded)
+        # Step 7: Clean small noise (only if threshold was applied)
+        if self.use_threshold and self.threshold_strength != "none":
+            print("   🧼 Final cleanup...")
+            cleaned = self._clean_noise(thresholded)
+        else:
+            cleaned = thresholded
+
         if save_debug:
             cv2.imwrite("step_7_final.jpg", cleaned)
 
@@ -143,6 +163,21 @@ class ProductionImagePreprocessor:
         print(f"   ✅ Done! {original_size} → {final_size}")
 
         return cleaned
+
+    def _apply_light_threshold(self, image: np.ndarray) -> np.ndarray:
+        """Light threshold - preserves more gray tones"""
+        # Simple binary with higher threshold (keeps more detail)
+        _, result = cv2.threshold(image, 180, 255, cv2.THRESH_BINARY)
+        return result
+
+    def _apply_medium_threshold(self, image: np.ndarray) -> np.ndarray:
+        """Medium threshold - adaptive threshold"""
+        # Adaptive threshold - better for varying lighting
+        result = cv2.adaptiveThreshold(
+            image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY, 11, 2
+        )
+        return result
 
     def _smart_resize(self, image: np.ndarray) -> np.ndarray:
         """Upscale small images, downscale large ones"""
@@ -200,75 +235,71 @@ class ProductionImagePreprocessor:
 
 
 # ============================================================================
-# TESTING
+# EXAMPLES OF DIFFERENT CONFIGURATIONS
 # ============================================================================
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("🚀 PRODUCTION PREPROCESSOR TEST")
-    print("   - No deskew")
-    print("   - No poppler dependency")
-    print("   - Production ready!")
+    print("🚀 PREPROCESSOR TEST - DIFFERENT THRESHOLD OPTIONS")
     print("=" * 70)
 
-    preprocessor = ProductionImagePreprocessor(target_width=2000)
+    image_path = r"C:\project-version-1\testingdata\academicdata\10.png"
 
-    # Test 1: Single image (10th/12th marksheet)
-    print("\n" + "=" * 70)
-    print("TEST 1: Single Image (10th Marksheet)")
-    print("=" * 70)
+    if not os.path.exists(image_path):
+        print(f"❌ Image not found: {image_path}")
+        exit()
 
-    try:
-        image_path = "10.jpg"
+    # Option 1: NO THRESHOLD (Just grayscale + enhancement)
+    print("\n" + "="*70)
+    print("OPTION 1: No Threshold (Recommended for AI)")
+    print("="*70)
+    preprocessor1 = ProductionImagePreprocessor(
+        target_width=2000,
+        threshold_strength="none"
+    )
+    result1 = preprocessor1.preprocess_image(image_path)
+    preprocessor1.save_preprocessed_image(result1, "output_no_threshold.jpg")
 
-        if os.path.exists(image_path):
-            processed = preprocessor.preprocess_image(
-                image_path, save_debug=True)
-            preprocessor.save_preprocessed_image(
-                processed, "final_10th_marksheet.jpg")
+    # Option 2: LIGHT THRESHOLD
+    print("\n" + "="*70)
+    print("OPTION 2: Light Threshold")
+    print("="*70)
+    preprocessor2 = ProductionImagePreprocessor(
+        target_width=2000,
+        threshold_strength="light"
+    )
+    result2 = preprocessor2.preprocess_image(image_path)
+    preprocessor2.save_preprocessed_image(
+        result2, "output_light_threshold.jpg")
 
-            print("\n✅ Test 1 PASSED!")
-            print("📁 Check: step_*.jpg and final_10th_marksheet.jpg")
-        else:
-            print(f"⚠️ Image not found: {image_path}")
+    # Option 3: MEDIUM THRESHOLD (Adaptive)
+    print("\n" + "="*70)
+    print("OPTION 3: Medium Threshold (Adaptive)")
+    print("="*70)
+    preprocessor3 = ProductionImagePreprocessor(
+        target_width=2000,
+        threshold_strength="medium"
+    )
+    result3 = preprocessor3.preprocess_image(image_path)
+    preprocessor3.save_preprocessed_image(
+        result3, "output_medium_threshold.jpg")
 
-    except Exception as e:
-        print(f"❌ Test 1 FAILED: {e}")
-        import traceback
-        traceback.print_exc()
+    # Option 4: STRONG THRESHOLD (Original Otsu)
+    print("\n" + "="*70)
+    print("OPTION 4: Strong Threshold (Otsu - Original)")
+    print("="*70)
+    preprocessor4 = ProductionImagePreprocessor(
+        target_width=2000,
+        threshold_strength="strong"
+    )
+    result4 = preprocessor4.preprocess_image(image_path)
+    preprocessor4.save_preprocessed_image(
+        result4, "output_strong_threshold.jpg")
 
-    # Test 2: PDF to images (graduation marksheet)
-    print("\n" + "=" * 70)
-    print("TEST 2: PDF Conversion (Graduation)")
-    print("=" * 70)
-
-    try:
-        pdf_path = "graduation.pdf"  # Change to your PDF path
-
-        if os.path.exists(pdf_path):
-            # Convert PDF to images
-            image_paths = preprocessor.convert_pdf_to_images(
-                pdf_path, output_folder="graduation_pages")
-
-            # Process each page
-            for i, img_path in enumerate(image_paths):
-                print(f"\n--- Processing Page {i+1} ---")
-                processed = preprocessor.preprocess_image(
-                    img_path, save_debug=False)
-                output_path = f"final_graduation_page_{i+1}.jpg"
-                preprocessor.save_preprocessed_image(processed, output_path)
-
-            print("\n✅ Test 2 PASSED!")
-            print(f"📁 {len(image_paths)} pages processed")
-        else:
-            print(f"⚠️ PDF not found: {pdf_path}")
-            print("   Skipping PDF test...")
-
-    except Exception as e:
-        print(f"❌ Test 2 FAILED: {e}")
-        import traceback
-        traceback.print_exc()
-
-    print("\n" + "=" * 70)
-    print("🎉 ALL TESTS COMPLETED")
-    print("=" * 70)
+    print("\n" + "="*70)
+    print("✅ All outputs saved! Compare the results:")
+    print("   - output_no_threshold.jpg (No threshold)")
+    print("   - output_light_threshold.jpg (Light)")
+    print("   - output_medium_threshold.jpg (Medium/Adaptive)")
+    print("   - output_strong_threshold.jpg (Strong/Otsu)")
+    print("="*70)
