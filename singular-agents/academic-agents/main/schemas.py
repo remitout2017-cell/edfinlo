@@ -5,23 +5,25 @@ from datetime import datetime
 
 # ========== CLASS 10 SCHEMA ==========
 class Class10Marksheet(BaseModel):
-    """10th marksheet data"""
-    board_name: str = Field(
-        description="Board name (CBSE, ICSE, State Board, etc.)")
-    year_of_passing: int = Field(description="Year of passing")
-    school_name: Optional[str] = Field(default=None, description="School name")
+    board_name: str = Field(description="Exact board name from marksheet")
+    board_type: Optional[str] = Field(default=None, description="Auto-detected: cbse/icse/maharashtra/etc")
+    year_of_passing: int
+    roll_number: Optional[str] = None
+    school_name: Optional[str] = None
+    
+    # Original marks (as on marksheet)
+    percentage: Optional[float] = None
+    cgpa: Optional[float] = None
+    cgpa_scale: Optional[int] = Field(default=10, description="10-point or 4-point")
+    grade: Optional[str] = None
+    division: Optional[str] = None
+    
+    # Converted to universal system
+    universal_grade: Optional[str] = Field(default=None, description="A1/A2/B1/etc")
+    normalized_percentage: Optional[float] = Field(default=None, description="Estimated if not given")
+    conversion_info: Optional[dict] = Field(default=None, description="How conversion was done")
 
-    # Marks can be percentage OR grade
-    percentage: Optional[float] = Field(
-        default=None, description="Overall percentage (if available)")
-    cgpa: Optional[float] = Field(
-        default=None, description="CGPA (if available)")
-    grade: Optional[str] = Field(
-        default=None, description="Grade (if available)")
 
-    # Will be calculated
-    converted_grade: Optional[str] = Field(
-        default=None, description="Converted to standard grade")
 
 
 # ========== CLASS 12 SCHEMA ==========

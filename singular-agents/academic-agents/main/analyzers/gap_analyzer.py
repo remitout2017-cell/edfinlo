@@ -80,8 +80,7 @@ Be very accurate and calculate gaps precisely.
                 print(f"      Total gaps: {result.total_gaps}")
                 if result.has_gaps:
                     for gap in result.gaps:
-                        print(
-                            f"      - {gap.gap_type}: {gap.gap_years} years ({gap.explanation})")
+                        print(f"      - {gap.gap_type}: {gap.gap_years} years ({gap.explanation})")
 
             return result
 
@@ -97,20 +96,26 @@ Be very accurate and calculate gaps precisely.
         context_parts = []
 
         if class_10:
+            # FIXED: Use universal_grade instead of converted_grade
+            grade_display = class_10.universal_grade or class_10.grade or "N/A"
             context_parts.append(f"""
 **10th Standard:**
 - Board: {class_10.board_name}
 - Year of Passing: {class_10.year_of_passing}
-- Grade: {class_10.converted_grade}
+- Grade: {grade_display}
+- Percentage: {class_10.normalized_percentage or class_10.percentage or 'N/A'}
 """)
 
         if class_12:
+            # Class 12 uses converted_grade ✓
+            grade_display = class_12.converted_grade or class_12.grade or "N/A"
             context_parts.append(f"""
 **12th Standard:**
 - Board: {class_12.board_name}
 - Year of Passing: {class_12.year_of_passing}
 - Stream: {class_12.stream or 'Not specified'}
-- Grade: {class_12.converted_grade}
+- Grade: {grade_display}
+- Percentage: {class_12.percentage or 'N/A'}
 """)
 
         if graduation:
@@ -119,6 +124,8 @@ Be very accurate and calculate gaps precisely.
                 for sem in graduation.semesters
             ])
 
+            # Graduation uses converted_grade ✓
+            grade_display = graduation.converted_grade or "N/A"
             context_parts.append(f"""
 **Graduation:**
 - Institution: {graduation.institution_name}
@@ -127,7 +134,9 @@ Be very accurate and calculate gaps precisely.
 - Duration: {graduation.duration_years or 'Not specified'} years
 - Semesters:
 {sem_info}
-- Final Grade: {graduation.converted_grade}
+- Final Grade: {grade_display}
+- Final CGPA: {graduation.final_cgpa or 'N/A'}
+- Final Percentage: {graduation.final_percentage or 'N/A'}
 """)
 
         return "\n".join(context_parts)

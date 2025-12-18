@@ -1,6 +1,6 @@
 from extractors.base_extractor import BaseExtractor
 from schemas import GraduationMarksheet, GraduationSemester
-from analyzers.grade_converter import GradeConverter
+from analyzers.grade_converter import UniversalGradeConverter
 from typing import List, Optional
 
 
@@ -46,15 +46,22 @@ Be very smart and thorough - extract ALL semester data you can see.
         )
 
         if result:
-            # Convert final grade
-            result.converted_grade = GradeConverter.convert_to_grade(
+            # Convert final grade using UniversalGradeConverter
+            conversion = UniversalGradeConverter.convert_to_universal_grade(
                 percentage=result.final_percentage,
-                cgpa=result.final_cgpa
+                cgpa=result.final_cgpa,
+                board_name=result.institution_name,
+                is_graduation=True
             )
+
+            result.converted_grade = conversion["universal_grade"]
+
             print(
                 f"   ✅ Graduation: {result.degree}, {result.institution_name}")
             print(
                 f"      Semesters: {len(result.semesters)}, Final Grade: {result.converted_grade}")
+            print(
+                f"      Final CGPA/Percentage: {result.final_cgpa or result.final_percentage}")
         else:
             print(f"   ⚠️ Failed to extract from this page (skipping)")
 
@@ -78,7 +85,7 @@ Be very smart and thorough - extract ALL semester data you can see.
                 all_results.append(result)
             else:
                 skipped += 1
-                print(f"   ⏭️  Skipped page {i+1} (extraction failed)")
+                print(f"   ⭐ Skipped page {i+1} (extraction failed)")
 
                 # If too many failures, stop processing
                 if skipped >= 3:
@@ -123,11 +130,17 @@ Be very smart and thorough - extract ALL semester data you can see.
             if result.final_cgpa and not base.final_cgpa:
                 base.final_cgpa = result.final_cgpa
 
-        # Recalculate converted grade
-        base.converted_grade = GradeConverter.convert_to_grade(
+        # Recalculate converted grade using UniversalGradeConverter
+        conversion = UniversalGradeConverter.convert_to_universal_grade(
             percentage=base.final_percentage,
-            cgpa=base.final_cgpa
+            cgpa=base.final_cgpa,
+            board_name=base.institution_name,
+            is_graduation=True
         )
 
+        base.converted_grade = conversion["universal_grade"]
+
         print(f"   ✅ Merged: {len(base.semesters)} unique semesters")
+        print(f"      Final Grade: {base.converted_grade}")
+
         return base
