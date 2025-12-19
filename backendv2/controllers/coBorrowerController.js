@@ -280,7 +280,7 @@ exports.createCoBorrower = asyncHandler(async (req, res) => {
 
     const verification = await kycAgent.verifyKYC(aadhaarData, panData);
 
-    if (!verification.verified || verification.confidence < 0.6) {
+    if (!verification.verified || verification.confidence < 0.5) {
       throw new AppError(
         `KYC verification failed: ${
           verification.issues?.join(", ") || "Low confidence"

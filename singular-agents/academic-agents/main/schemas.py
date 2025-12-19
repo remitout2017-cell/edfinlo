@@ -2,31 +2,46 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
 from datetime import datetime
 
+# ========== CONVERSION INFO SCHEMA ==========
+
+
+class ConversionInfo(BaseModel):
+    """Information about grade/percentage conversion"""
+    conversion_method: Optional[str] = Field(
+        default=None, description="Method used")
+    original_grade: Optional[str] = Field(
+        default=None, description="Original grade from marksheet")
 
 # ========== CLASS 10 SCHEMA ==========
+
+
 class Class10Marksheet(BaseModel):
     board_name: str = Field(description="Exact board name from marksheet")
-    board_type: Optional[str] = Field(default=None, description="Auto-detected: cbse/icse/maharashtra/etc")
+    board_type: Optional[str] = Field(
+        default=None, description="Auto-detected: cbse/icse/maharashtra/etc")
     year_of_passing: int
     roll_number: Optional[str] = None
     school_name: Optional[str] = None
-    
+
     # Original marks (as on marksheet)
     percentage: Optional[float] = None
     cgpa: Optional[float] = None
-    cgpa_scale: Optional[int] = Field(default=10, description="10-point or 4-point")
+    cgpa_scale: Optional[int] = Field(
+        default=10, description="10-point or 4-point")
     grade: Optional[str] = None
     division: Optional[str] = None
-    
+
     # Converted to universal system
-    universal_grade: Optional[str] = Field(default=None, description="A1/A2/B1/etc")
-    normalized_percentage: Optional[float] = Field(default=None, description="Estimated if not given")
-    conversion_info: Optional[dict] = Field(default=None, description="How conversion was done")
-
-
-
+    universal_grade: Optional[str] = Field(
+        default=None, description="A1/A2/B1/etc")
+    normalized_percentage: Optional[float] = Field(
+        default=None, description="Estimated if not given")
+    conversion_info: Optional[ConversionInfo] = Field(
+        default=None, description="How conversion was done")  # CHANGED FROM dict
 
 # ========== CLASS 12 SCHEMA ==========
+
+
 class Class12Marksheet(BaseModel):
     """12th marksheet data"""
     board_name: str = Field(description="Board name")
@@ -34,7 +49,7 @@ class Class12Marksheet(BaseModel):
     stream: Optional[str] = Field(
         default=None, description="Stream (Science/Commerce/Arts)")
     school_name: Optional[str] = Field(default=None, description="School name")
-    
+
     # Marks
     percentage: Optional[float] = Field(
         default=None, description="Overall percentage")
@@ -45,10 +60,11 @@ class Class12Marksheet(BaseModel):
     converted_grade: Optional[str] = Field(
         default=None, description="Converted to standard grade")
 
-
 # ========== GRADUATION SCHEMAS ==========
+
+
 class GraduationSemester(BaseModel):
-    """Single semester/year data - ADDED THIS CLASS"""
+    """Single semester/year data"""
     semester_year: str = Field(
         description="Semester/Year identifier (e.g., 'Semester 1', 'Year 1')")
     year_of_completion: Optional[int] = Field(
@@ -82,8 +98,9 @@ class GraduationMarksheet(BaseModel):
     converted_grade: Optional[str] = Field(
         default=None, description="Converted to standard grade")
 
-
 # ========== CERTIFICATE SCHEMAS ==========
+
+
 class Certificate(BaseModel):
     """Certificate information"""
     certificate_name: str = Field(description="Name of certificate")
@@ -98,8 +115,9 @@ class Certificates(BaseModel):
     certificates: List[Certificate] = Field(
         description="List of all certificates")
 
-
 # ========== GAP ANALYSIS SCHEMA ==========
+
+
 class EducationGap(BaseModel):
     """Education gap information"""
     gap_type: Literal["after_10th", "after_12th", "during_graduation"] = Field(
@@ -121,8 +139,9 @@ class GapAnalysis(BaseModel):
     overall_assessment: str = Field(description="Overall timeline assessment")
     timeline_consistent: bool = Field(description="Is timeline logical")
 
-
 # ========== FINAL OUTPUT SCHEMA ==========
+
+
 class StudentAcademicRecord(BaseModel):
     """Complete student academic record"""
     student_id: str = Field(description="Unique session ID")

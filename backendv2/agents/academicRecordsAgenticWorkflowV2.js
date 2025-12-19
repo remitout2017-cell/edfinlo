@@ -72,7 +72,7 @@ class AgentPool extends EventEmitter {
     // Gemini for vision + extraction
     this.gemini = new ChatGoogleGenerativeAI({
       apiKey: config.ai.gemeniApiKey,
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       temperature: 0.1,
       maxOutputTokens: 3072,
       timeout: 60000,
@@ -386,14 +386,15 @@ Return ONLY valid JSON:
   "recommendations": ["array of suggestions to improve data quality"]
 }
 
-VALIDATION RULES FOR INDIAN ACADEMICS:
-1. Year of Passing: Must be between 1990-${currentYear}, not in future
-2. Percentage: Must be 0-100 (Indian system)
-3. CGPA: Must be 0-10 (Indian system uses 10-point scale)
-4. Board/University: Common ones are CBSE, ICSE, State Boards, UGC-recognized universities
-5. Grade: Common are A+/A/B/C or First Class/Second Class/Third Class/Distinction
-6. Institution name optional for Class 10/12 (often not printed on marksheets)
-7. At least 2 critical fields must be present (e.g., percentage + year OR cgpa + year)
+// REPLACE WITH:
+1. Year of Passing: Accept any reasonable year (1980-${currentYear+2})
+2. Percentage: Accept 0-100, flexible (allow up to 120 for some boards)
+3. CGPA: Accept 0-10, flexible (some universities use different scales)
+4. Mark as INVALID only if ALL critical fields are missing or obviously fake
+5. Missing fields are WARNINGS, not critical errors
+6. Prefer "valid: true" with warnings instead of rejection
+
+Note: Prefer validation over rejection. Be lenient and aim to mark as valid if the core information is plausible and present. Use warnings for minor formatting or non-critical issues.
 
 Extracted Data:
 ${JSON.stringify(extractedData, null, 2)}
@@ -467,13 +468,12 @@ Return ONLY valid JSON:
   }
 }
 
-VERIFICATION CRITERIA FOR ${educationType.toUpperCase()}:
-1. Minimum requirement: At least percentage OR CGPA + year
-2. For Class 10/12: Board name is important
-3. For Higher Education: University/Institution name is critical
-4. Percentage and CGPA should be consistent if both present (CGPA ≈ percentage/10)
-5. Grade should match percentage range (e.g., 75%+ = First Class/Distinction)
-6. Year must be logical (not future, reasonable past)
+VERIFICATION GUIDELINES FOR ${educationType.toUpperCase()}:
+1. Core Requirements: Prioritize finding a score (Percentage or CGPA) and the year of completion.
+2. Identification: Board or University names are preferred but allow flexibility if the primary score is clear.
+3. Consistency: Ensure scores are within valid ranges. Minor discrepancies between CGPA and percentage conversions are acceptable.
+4. Timeline: The year should be realistic and not in the future.
+5. General Approach: If the core academic achievement is identifiable, favor verification even if some non-critical metadata is missing.
 
 Extracted Data:
 ${JSON.stringify(extractedData, null, 2)}

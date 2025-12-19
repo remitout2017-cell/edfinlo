@@ -1,5 +1,5 @@
 from extractors.base_extractor import BaseExtractor
-from schemas import Class10Marksheet
+from schemas import Class10Marksheet, ConversionInfo  # ADD ConversionInfo import
 from analyzers.grade_converter import UniversalGradeConverter
 from typing import Optional
 
@@ -16,7 +16,6 @@ Extract:
 2. **Year of passing**
 3. **Roll number**
 4. **School/Institution name**
-
 5. **Academic Performance** - Extract EVERYTHING you see:
    - If **overall percentage** is shown → extract it
    - If **individual subject marks** are shown → calculate overall percentage
@@ -31,7 +30,6 @@ Extract ALL types of grades/marks you see - don't miss anything!
 
     def extract(self, image_path: str) -> Optional[Class10Marksheet]:
         print(f"📊 Extracting 10th marksheet...")
-
         result = self.extract_structured(
             image_path=image_path,
             schema=Class10Marksheet,
@@ -51,14 +49,16 @@ Extract ALL types of grades/marks you see - don't miss anything!
             result.board_type = conversion["board_type"]
             result.universal_grade = conversion["universal_grade"]
             result.normalized_percentage = conversion["percentage"]
-            result.conversion_info = {
-                "method": conversion["conversion_method"],
-                "original": conversion["original_grade"]
-            }
+
+            # CHANGED: Create ConversionInfo object instead of dict
+            result.conversion_info = ConversionInfo(
+                conversion_method=conversion["conversion_method"],
+                original_grade=conversion["original_grade"]
+            )
 
             print(f"   ✅ 10th: {result.board_name}")
-            print(f"      Board Type: {result.board_type}")
-            print(f"      Original: {conversion['original_grade']}")
-            print(f"      Universal Grade: {result.universal_grade}")
+            print(f"   Board Type: {result.board_type}")
+            print(f"   Original: {conversion['original_grade']}")
+            print(f"   Universal Grade: {result.universal_grade}")
 
         return result

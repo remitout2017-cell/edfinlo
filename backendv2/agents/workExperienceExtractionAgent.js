@@ -43,7 +43,7 @@ async function getGeminiClient(primary = true) {
 
     const client = new ChatGoogleGenerativeAI({
       apiKey: key,
-      model: "gemini-2.5-flash", // vision model
+      model: "gemini-2.5-flash-lite", // vision model
       temperature: 0.1,
       maxOutputTokens: 2048,
       timeout: 30000,

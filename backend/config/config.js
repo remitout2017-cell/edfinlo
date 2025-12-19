@@ -15,6 +15,8 @@ module.exports = {
   isDev,
   port: Number(env.PORT) || 5000,
 
+  academicurl: env.ACADEMIC_URL,
+
   ai: {
     openaiApiKey: env.OPENAI_API_KEY,
     groqApiKey: env.GROQ_API_KEY,

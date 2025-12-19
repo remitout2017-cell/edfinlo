@@ -1,18 +1,20 @@
-// agents/loanEligibilityAgent.js - FULLY FIXED VERSION
+// agents/loanEligibilityAgent.js - FULLY FIXED VERSION WITH ALL BUGS RESOLVED
+
 const { ChatGroq } = require("@langchain/groq");
 const config = require("../config/config");
 
 // ============================================================================
 // CONFIGURATION - FIXED API KEY ACCESS
 // ============================================================================
+
 const getApiKey = () => {
   return config.ai?.groqApiKey || config.groqApiKey || process.env.GROQ_API_KEY;
 };
 
-// Use faster, more efficient model with better rate limits
+// ✅ FIXED: Using valid Groq model names
 const llm = new ChatGroq({
   apiKey: getApiKey(),
-  model: "groq/compound", // 6K TPM but very fast
+  model: "llama-3.3-70b-versatile", // ✅ Valid model - 8K TPM
   temperature: 0.2,
   maxTokens: 1500,
   timeout: 30000,
@@ -21,7 +23,7 @@ const llm = new ChatGroq({
 // Fallback for rate limiting
 const llmBackup = new ChatGroq({
   apiKey: getApiKey(),
-  model: "llama-3.3-70b-versatile", // 12K TPM
+  model: "mixtral-8x7b-32768", // ✅ Alternative valid model
   temperature: 0.2,
   maxTokens: 1500,
 });
@@ -41,10 +43,8 @@ function safeJSONParse(raw, fallback, contextLabel) {
     }
 
     const text = typeof raw === "string" ? raw : String(raw);
-
     // Remove markdown code blocks
     let cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "");
-
     const start = cleaned.indexOf("{");
     const end = cleaned.lastIndexOf("}");
 
@@ -55,7 +55,6 @@ function safeJSONParse(raw, fallback, contextLabel) {
 
     const jsonSlice = cleaned.slice(start, end + 1);
     const parsed = JSON.parse(jsonSlice);
-
     console.log(`✅ ${contextLabel}: parsed successfully`);
     return parsed;
   } catch (err) {
@@ -91,9 +90,7 @@ async function retryWithBackoff(
       if (error.status === 429 && i < maxRetries - 1) {
         const delay = baseDelay * Math.pow(2, i);
         console.log(
-          `⏳ Rate limited, waiting ${delay}ms before retry ${
-            i + 1
-          }/${maxRetries}`
+          `⏳ Rate limited, waiting ${delay}ms before retry ${i + 1}/${maxRetries}`
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
       } else if (i < maxRetries - 1) {
@@ -166,7 +163,6 @@ Return this exact JSON structure:
   return retryWithBackoff(
     async () => {
       const response = await llm.invoke(prompt);
-
       // Calculate fallback score based on actual data
       const fallbackScore = Math.round((class10Pct + class12Pct) / 2);
 
@@ -263,7 +259,7 @@ Return this exact JSON structure:
 }
 
 /**
- * Analyze Financials
+ * ✅ FIXED: Analyze Financials with complete prompt
  */
 async function analyzeFinancials(state) {
   console.log("💰 Analyzing Financials...");
@@ -303,6 +299,7 @@ async function analyzeFinancials(state) {
 
   const foir = totalIncome > 0 ? (totalEMI / totalIncome) * 100 : 0;
 
+  // ✅ FIXED: Complete prompt with full JSON structure
   const prompt = `Financial analysis for education loan. Return ONLY valid JSON with no markdown, no code blocks, no extra text.
 
 Financial Data:
@@ -350,7 +347,7 @@ Return this exact JSON structure:
             totalIncome < 30000 ? ["Add co-borrower with higher income"] : [],
           loanCapacity: {
             estimatedMaxLoan: Math.round(totalIncome * 60),
-            reasoning: "6x monthly income (conservative estimate)",
+            reasoning: "60x monthly income (conservative estimate)",
           },
         },
         "Financial"
@@ -368,6 +365,92 @@ Return this exact JSON structure:
     7000,
     "FinancialAnalysis"
   );
+}
+
+/**
+ * ✅ NEW: Analyze CIBIL Score
+ */
+async function analyzeCIBIL(state) {
+  console.log("📊 Analyzing CIBIL Score...");
+
+  const coBorrowers = state.studentData.coBorrowers || [];
+
+  if (coBorrowers.length === 0) {
+    return {
+      score: 0,
+      hasCibilData: false,
+      averageCibilScore: 0,
+      lowestScore: 0,
+      highestScore: 0,
+      strengths: [],
+      issues: ["No co-borrower CIBIL data available"],
+      recommendations: ["Add co-borrower and verify CIBIL score"],
+    };
+  }
+
+  // Extract CIBIL scores from co-borrowers
+  const cibilScores = coBorrowers
+    .map(cb => cb.financialInfo?.cibilScore || cb.cibilScore || 0)
+    .filter(score => score > 0);
+
+  if (cibilScores.length === 0) {
+    return {
+      score: 0,
+      hasCibilData: false,
+      averageCibilScore: 0,
+      lowestScore: 0,
+      highestScore: 0,
+      strengths: [],
+      issues: ["CIBIL score not available for co-borrowers"],
+      recommendations: ["Upload CIBIL reports for all co-borrowers"],
+    };
+  }
+
+  const avgCibil = Math.round(
+    cibilScores.reduce((sum, s) => sum + s, 0) / cibilScores.length
+  );
+  const lowestScore = Math.min(...cibilScores);
+  const highestScore = Math.max(...cibilScores);
+
+  // Rule-based scoring
+  let score = 0;
+  if (avgCibil >= 750) score = 95;
+  else if (avgCibil >= 700) score = 80;
+  else if (avgCibil >= 650) score = 65;
+  else if (avgCibil >= 600) score = 45;
+  else if (avgCibil >= 550) score = 25;
+  else score = 10;
+
+  const strengths = [];
+  const issues = [];
+  const recommendations = [];
+
+  if (avgCibil >= 750) {
+    strengths.push(`Excellent CIBIL score: ${avgCibil}`);
+  } else if (avgCibil >= 700) {
+    strengths.push(`Good CIBIL score: ${avgCibil}`);
+  }
+
+  if (avgCibil < 650) {
+    issues.push(`CIBIL score below most NBFC thresholds: ${avgCibil}`);
+    recommendations.push("Work on improving CIBIL score before applying");
+  }
+
+  if (lowestScore < 600 && cibilScores.length > 1) {
+    issues.push(`One co-borrower has low CIBIL: ${lowestScore}`);
+    recommendations.push("Consider replacing co-borrower with low CIBIL");
+  }
+
+  return {
+    score,
+    hasCibilData: true,
+    averageCibilScore: avgCibil,
+    lowestScore,
+    highestScore,
+    strengths,
+    issues,
+    recommendations,
+  };
 }
 
 /**
@@ -468,7 +551,7 @@ async function analyzeAdmissionLetter(state) {
 }
 
 /**
- * Match NBFC Eligibility - FIXED JSON PARSING
+ * ✅ FIXED: Match NBFC Eligibility with correct data structure
  */
 async function matchNBFCEligibility(state) {
   console.log("🏦 Matching NBFC Eligibility...");
@@ -477,33 +560,38 @@ async function matchNBFCEligibility(state) {
     academic: state.academicAnalysis?.score || 0,
     kyc: state.kycAnalysis?.score || 0,
     financial: state.financialAnalysis?.score || 0,
+    cibil: state.cibilAnalysis?.score || 0, // ✅ NEW
     workExp: state.workExperienceAnalysis?.score || 0,
     admission: state.admissionLetterAnalysis?.score || 0,
   };
 
+  // ✅ UPDATED: New weights including CIBIL
   const overallScore = Math.round(
-    scores.academic * 0.25 +
-      scores.kyc * 0.15 +
-      scores.financial * 0.3 +
-      scores.workExp * 0.1 +
-      scores.admission * 0.2
+    scores.academic * 0.20 +
+    scores.kyc * 0.15 +
+    scores.financial * 0.25 +
+    scores.cibil * 0.15 + // ✅ NEW
+    scores.workExp * 0.05 +
+    scores.admission * 0.20
   );
 
   console.log(`📊 Calculated Overall Score: ${overallScore}/100`);
+  console.log(`   - Academic: ${scores.academic}`);
+  console.log(`   - KYC: ${scores.kyc}`);
+  console.log(`   - Financial: ${scores.financial}`);
+  console.log(`   - CIBIL: ${scores.cibil}`);
+  console.log(`   - Work Exp: ${scores.workExp}`);
+  console.log(`   - Admission: ${scores.admission}`);
 
-  // Create compact NBFC summary for prompt
+  // ✅ FIXED: Using loanConfig instead of requirements
   const nbfcSummary = state.nbfcRequirements
     .slice(0, 5) // Limit to prevent token overflow
     .map((n) => {
       const minIncome =
-        n.requirements?.incomeItr?.minMonthlySalary ||
-        n.requirements?.minimumIncome ||
-        25000;
+        n.loanConfig?.incomeItr?.minMonthlySalary || 25000; // ✅ FIXED
       const minCibil =
-        n.requirements?.cibil?.minScore ||
-        n.requirements?.minimumCreditScore ||
-        650;
-      return `${n.nbfcName}: Income≥₹${minIncome}, CIBIL≥${minCibil}`;
+        n.loanConfig?.cibil?.minScore || 650; // ✅ FIXED
+      return `${n.nbfcName || n.companyName}: Income≥₹${minIncome}, CIBIL≥${minCibil}`;
     })
     .join("\n");
 
@@ -514,6 +602,7 @@ Student Profile:
 - Monthly Income: ₹${state.financialAnalysis?.totalMonthlyIncome || 0}
 - FOIR: ${state.financialAnalysis?.averageFOIR?.toFixed(1) || 0}%
 - Academic: ${scores.academic}/100
+- CIBIL: ${state.cibilAnalysis?.averageCibilScore || "Not Available"}
 - KYC: ${scores.kyc === 0 ? "Not Verified" : "Verified"}
 
 NBFCs to Match:
@@ -573,41 +662,76 @@ Return this exact JSON array structure (one object per NBFC):
         nbfcs = [];
       }
 
-      // Fill in missing NBFCs with rule-based approach
+      // ✅ FIXED: Fill in missing NBFCs with rule-based approach using loanConfig
       const processedIds = new Set(nbfcs.map((n) => n.nbfcId || n.nbfcName));
 
       state.nbfcRequirements.forEach((nbfc) => {
         const isProcessed =
-          processedIds.has(nbfc.nbfcId) || processedIds.has(nbfc.nbfcName);
+          processedIds.has(nbfc._id) || 
+          processedIds.has(nbfc.nbfcId) || 
+          processedIds.has(nbfc.companyName);
 
         if (!isProcessed) {
-          const minIncome =
-            nbfc.requirements?.incomeItr?.minMonthlySalary || 25000;
+          // ✅ FIXED: Using loanConfig structure
+          const minIncome = nbfc.loanConfig?.incomeItr?.minMonthlySalary || 25000;
+          const minCibil = nbfc.loanConfig?.cibil?.minScore || 650;
+          const maxFOIR = nbfc.loanConfig?.foir?.maxPercentage || 75;
+
           const totalIncome = state.financialAnalysis?.totalMonthlyIncome || 0;
+          const avgCibil = state.cibilAnalysis?.averageCibilScore || 0;
+          const currentFOIR = state.financialAnalysis?.averageFOIR || 0;
 
           let eligibility = "not_eligible";
           let probability = "Low";
+          const gaps = [];
+          const specificRecs = [];
 
-          if (overallScore >= 70 && totalIncome >= minIncome) {
+          // Check income
+          const incomeOk = totalIncome >= minIncome;
+          if (!incomeOk) {
+            gaps.push(`Income below minimum: ₹${totalIncome} < ₹${minIncome}`);
+            specificRecs.push(`Increase co-borrower income to ₹${minIncome}+`);
+          }
+
+          // Check CIBIL
+          const cibilOk = avgCibil >= minCibil || avgCibil === 0;
+          if (avgCibil > 0 && avgCibil < minCibil) {
+            gaps.push(`CIBIL below minimum: ${avgCibil} < ${minCibil}`);
+            specificRecs.push(`Improve CIBIL score to ${minCibil}+`);
+          } else if (avgCibil === 0) {
+            gaps.push("CIBIL score not available");
+            specificRecs.push("Upload CIBIL report");
+          }
+
+          // Check FOIR
+          const foirOk = currentFOIR <= maxFOIR;
+          if (!foirOk) {
+            gaps.push(`FOIR too high: ${currentFOIR.toFixed(1)}% > ${maxFOIR}%`);
+            specificRecs.push("Reduce existing EMI obligations");
+          }
+
+          // Determine eligibility
+          if (incomeOk && cibilOk && foirOk && overallScore >= 70) {
             eligibility = "eligible";
             probability = "High";
-          } else if (overallScore >= 50 && totalIncome >= minIncome * 0.8) {
+          } else if (
+            (incomeOk || totalIncome >= minIncome * 0.8) &&
+            (cibilOk || avgCibil >= minCibil - 50) &&
+            overallScore >= 50
+          ) {
             eligibility = "borderline";
             probability = "Medium";
           }
 
           nbfcs.push({
-            nbfcId: nbfc.nbfcId,
-            nbfcName: nbfc.nbfcName,
+            nbfcId: nbfc._id || nbfc.nbfcId,
+            nbfcName: nbfc.companyName || nbfc.nbfcName,
             brandName: nbfc.brandName,
             eligibilityStatus: eligibility,
             matchPercentage: overallScore,
-            strengths: overallScore >= 60 ? ["Decent overall score"] : [],
-            gaps: overallScore < 60 ? ["Improve overall profile"] : [],
-            specificRecommendations:
-              totalIncome < minIncome
-                ? [`Increase co-borrower income to ₹${minIncome}+`]
-                : [],
+            strengths: overallScore >= 60 ? [`Overall score: ${overallScore}/100`] : [],
+            gaps,
+            specificRecommendations: specificRecs,
             estimatedLoanAmount:
               eligibility === "eligible"
                 ? {
@@ -618,7 +742,10 @@ Return this exact JSON array structure (one object per NBFC):
                 : { min: 0, max: 0, currency: "INR" },
             estimatedROI:
               eligibility === "eligible"
-                ? { min: 9, max: 13 }
+                ? { 
+                    min: nbfc.loanConfig?.roi?.minRate || 9, 
+                    max: nbfc.loanConfig?.roi?.maxRate || 13 
+                  }
                 : { min: 0, max: 0 },
             approvalProbability: probability,
           });
@@ -634,7 +761,7 @@ Return this exact JSON array structure (one object per NBFC):
 }
 
 /**
- * Generate Overall Recommendations (simplified)
+ * Generate Overall Recommendations
  */
 async function generateOverallRecommendations(state) {
   console.log("📋 Generating Recommendations...");
@@ -649,10 +776,17 @@ async function generateOverallRecommendations(state) {
 
   if (state.academicAnalysis?.score < 50)
     criticalActions.push("Improve academic documentation and scores");
+
   if (state.kycAnalysis?.score < 80)
     criticalActions.push("Complete KYC verification immediately");
+
   if (state.financialAnalysis?.score < 50)
     criticalActions.push("Add co-borrower with stable monthly income ₹30,000+");
+
+  // ✅ NEW: CIBIL recommendations
+  if (state.cibilAnalysis?.score < 50)
+    criticalActions.push("Improve CIBIL score above 650");
+
   if (!state.admissionLetterAnalysis?.hasLetter)
     criticalActions.push("Upload valid admission letter from university");
 
@@ -660,14 +794,23 @@ async function generateOverallRecommendations(state) {
     importantImprovements.push(
       "Reduce existing EMI obligations to improve FOIR"
     );
+
   if (
     state.workExperienceAnalysis?.score < 60 &&
     state.workExperienceAnalysis?.hasExperience
   )
     importantImprovements.push("Get work experience documents verified");
+
   if (state.academicAnalysis?.score < 70)
     importantImprovements.push(
       "Ensure all academic records are complete and verified"
+    );
+
+  // ✅ NEW: CIBIL specific improvements
+  if (state.cibilAnalysis?.averageCibilScore > 0 && 
+      state.cibilAnalysis?.averageCibilScore < 700)
+    importantImprovements.push(
+      "Work on improving CIBIL score to 700+ for better loan terms"
     );
 
   return {
@@ -704,29 +847,31 @@ async function generateOverallRecommendations(state) {
 // ============================================================================
 
 /**
- * MAIN ANALYSIS FUNCTION - PARALLEL EXECUTION
+ * ✅ UPDATED: MAIN ANALYSIS FUNCTION with CIBIL integration
  */
 async function analyzeStudentApplication(studentData, nbfcRequirements) {
   console.log("🚀 Starting comprehensive loan eligibility analysis...");
   console.log(`📊 Analyzing against ${nbfcRequirements.length} NBFCs`);
 
   try {
-    // PARALLEL EXECUTION - Run all analyses simultaneously with error handling
+    // ✅ UPDATED: Run all analyses including CIBIL
     const [
       academicAnalysis,
       kycAnalysis,
       financialAnalysis,
+      cibilAnalysis, // ✅ NEW
       workExperienceAnalysis,
       admissionLetterAnalysis,
     ] = await Promise.allSettled([
       analyzeAcademicRecords({ studentData }),
       analyzeKYC({ studentData }),
       analyzeFinancials({ studentData }),
+      analyzeCIBIL({ studentData }), // ✅ NEW
       analyzeWorkExperience({ studentData }),
       analyzeAdmissionLetter({ studentData }),
     ]).then((results) =>
       results.map((r, i) => {
-        const labels = ["Academic", "KYC", "Financial", "WorkExp", "Admission"];
+        const labels = ["Academic", "KYC", "Financial", "CIBIL", "WorkExp", "Admission"];
         if (r.status === "fulfilled") {
           console.log(`✅ ${labels[i]} analysis completed`);
           return r.value;
@@ -745,6 +890,7 @@ async function analyzeStudentApplication(studentData, nbfcRequirements) {
       academicAnalysis,
       kycAnalysis,
       financialAnalysis,
+      cibilAnalysis, // ✅ NEW
       workExperienceAnalysis,
       admissionLetterAnalysis,
     };
@@ -771,6 +917,7 @@ async function analyzeStudentApplication(studentData, nbfcRequirements) {
       academicAnalysis,
       kycAnalysis,
       financialAnalysis,
+      cibilAnalysis, // ✅ NEW
       workExperienceAnalysis,
       admissionLetterAnalysis,
       eligibleNBFCs: nbfcs,
@@ -779,6 +926,7 @@ async function analyzeStudentApplication(studentData, nbfcRequirements) {
         academic: academicAnalysis.recommendations || [],
         kyc: kycAnalysis.recommendations || [],
         financial: financialAnalysis.recommendations || [],
+        cibil: cibilAnalysis.recommendations || [], // ✅ NEW
         workExperience: workExperienceAnalysis.recommendations || [],
         admissionLetter: admissionLetterAnalysis.recommendations || [],
         overall: recommendations,

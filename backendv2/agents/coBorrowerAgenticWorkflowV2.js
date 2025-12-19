@@ -81,7 +81,7 @@ class AgentPool extends EventEmitter {
     // Gemini 1.5 Flash - STABLE MODEL (better rate limits than 2.0-exp)
     this.gemini = new ChatGoogleGenerativeAI({
       apiKey: config.ai.gemeniApiKey,
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash-lite",
       temperature: 0.1,
       maxOutputTokens: 8192,
       timeout: 120000,

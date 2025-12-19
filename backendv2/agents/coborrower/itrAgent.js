@@ -10,7 +10,7 @@ class HybridITRAgent {
       const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
       this.geminiClient = new ChatGoogleGenerativeAI({
         apiKey: config.ai.gemeniApiKey,
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         temperature: 0.05,
         maxOutputTokens: 8192,
         timeout: 120000,

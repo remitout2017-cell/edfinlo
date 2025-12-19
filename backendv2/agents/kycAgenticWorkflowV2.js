@@ -72,7 +72,7 @@ class AgentPool extends EventEmitter {
     // Gemini for vision + extraction
     this.gemini = new ChatGoogleGenerativeAI({
       apiKey: config.ai.gemeniApiKey,
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       temperature: 0.1,
       maxOutputTokens: 4096,
       timeout: 60000,

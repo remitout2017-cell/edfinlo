@@ -72,7 +72,7 @@ class AgentPool {
 
         this.gemini = new ChatGoogleGenerativeAI({
             apiKey: config.ai.gemeniApiKey,
-            model: "gemini-2.0-flash-exp",
+            model: "gemini-2.5-flash-lite",
             temperature: 0.3,
             maxOutputTokens: 4096,
         });
