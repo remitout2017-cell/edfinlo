@@ -10,7 +10,9 @@ langchain-groq
 google-generativeai
 openai
 groq
-
+fastapi
+uvicorn[standard]
+python-multipart
 # Image processing
 opencv-python
 numpy

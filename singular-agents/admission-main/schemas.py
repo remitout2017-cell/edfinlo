@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Dict, Any
 from datetime import datetime
 
 # ========== DOCUMENT TYPE ENUM ==========
@@ -19,9 +19,8 @@ class DocumentType(str):
     UNCONDITIONAL_OFFER = "unconditional_offer"  # Optional
     OTHER = "other"  # Optional
 
+
 # ========== ADMISSION LETTER SCHEMA ==========
-
-
 class AdmissionLetter(BaseModel):
     """Single admission letter entry"""
     university_name: Optional[str] = Field(
@@ -30,17 +29,14 @@ class AdmissionLetter(BaseModel):
         default=None, description="Program/Course name")
     degree_level: Literal["bachelor", "master", "phd", "diploma", "certificate", "associate", "other"] = Field(
         default="other", description="Degree level")
-
     intake_term: Optional[str] = Field(
         default=None, description="Intake term (Fall/Spring/Summer/Winter)")
     intake_year: Optional[int] = Field(default=None, description="Intake year")
-
     country: Optional[str] = Field(
         default=None, description="Country of university")
     city: Optional[str] = Field(default=None, description="City of university")
     duration: Optional[str] = Field(
         default=None, description="Program duration (e.g., '2 years', '4 semesters')")
-
     tuition_fee: Optional[float] = Field(
         default=None, description="Annual tuition fee amount")
     tuition_currency: Optional[str] = Field(
@@ -49,26 +45,22 @@ class AdmissionLetter(BaseModel):
         default=None, description="Scholarship/Financial aid amount")
     scholarship_mentioned: bool = Field(
         default=False, description="Is scholarship mentioned")
-
     acceptance_deadline: Optional[str] = Field(
         default=None, description="Acceptance deadline (DD/MM/YYYY)")
     enrollment_deadline: Optional[str] = Field(
         default=None, description="Enrollment deadline (DD/MM/YYYY)")
     fee_payment_deadline: Optional[str] = Field(
         default=None, description="Fee payment deadline (DD/MM/YYYY)")
-
     student_id: Optional[str] = Field(
         default=None, description="Student ID if mentioned")
     application_id: Optional[str] = Field(
         default=None, description="Application ID if mentioned")
-
     conditional_admission: bool = Field(
         default=False, description="Is this a conditional admission")
     conditions: Optional[List[str]] = Field(
         default=None, description="Conditions for admission (if conditional)")
     documents_required: Optional[List[str]] = Field(
         default=None, description="Documents required for enrollment")
-
     extraction_confidence: float = Field(
         default=0.0, description="Extraction confidence (0-1)")
     document_quality: float = Field(
@@ -81,9 +73,14 @@ class AdmissionLetter(BaseModel):
     has_admission_letter: bool = Field(
         default=False, description="Has mandatory admission/offer letter")
 
+    # ✅ NEW: Extraction metadata for scoring results
+    extraction_metadata: Optional[Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Scoring and ranking metadata (university_score, risk_level, strengths, issues, etc.)"
+    )
+
+
 # ========== VERIFICATION SCHEMA ==========
-
-
 class VerificationResult(BaseModel):
     """Verification result for admission letter"""
     valid: bool = Field(default=False, description="Is the entry valid")
@@ -96,9 +93,8 @@ class VerificationResult(BaseModel):
     has_mandatory_documents: bool = Field(
         default=False, description="Has admission/offer letter (mandatory)")
 
+
 # ========== DOCUMENT INFO SCHEMA ==========
-
-
 class DocumentInfo(BaseModel):
     """Document metadata"""
     filename: str = Field(description="Document filename")
@@ -112,9 +108,8 @@ class DocumentInfo(BaseModel):
     is_mandatory: bool = Field(
         default=False, description="Is this a mandatory document")
 
+
 # ========== COMPLETE ADMISSION RECORD ==========
-
-
 class AdmissionLetterRecord(BaseModel):
     """Complete admission letter record for a student"""
     session_id: str = Field(description="Unique session ID")

@@ -1,0 +1,19 @@
+services:
+  academic-api:
+    build: .
+    container_name: academic-api
+    ports:
+      - "8000:8000"   # host:container port-forwarding [file:2]
+    environment:
+      PORT: "8000"
+      WEB_CONCURRENCY: "2"
+      GUNICORN_TIMEOUT: "180"
+
+      # REQUIRED (your Config.validate() runs at import time and will fail without keys) [file:3]
+      GEMINI_API_KEY: "${GEMINI_API_KEY}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY}"
+      GROQ_API_KEY: "${GROQ_API_KEY}"
+    volumes:
+      # Optional: persist temp sessions; your app uses temp_sessions/ [file:3]
+      - ./temp_sessions:/app/temp_sessions
+    restart: unless-stopped

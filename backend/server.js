@@ -12,7 +12,7 @@ const config = require("./config/config");
 const connectDB = require("./config/database");
 const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 const academicRoutes = require("./routes/students/academic.routes");
-
+const admissionRoutes = require("./routes/students/admission.routes");
 const app = express();
 app.set("trust proxy", 1);
 
@@ -61,7 +61,8 @@ app.use(
   require("./routes/students/studentEducationPlanRoutes")
 );
 app.use("/api/user/kyc", require("./routes/students/kyc.routes"));
-app.use("/api/user/academics",academicRoutes)
+app.use("/api/user/academics", academicRoutes);
+app.use("/api/user/admission", admissionRoutes);
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,

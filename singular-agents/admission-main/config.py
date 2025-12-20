@@ -14,8 +14,8 @@ class Config:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
     # ========== MODEL SETTINGS ==========
-    GEMINI_MODEL = "gemini-2.5-flash"
-    OPENROUTER_MODEL = "google/gemini-flash-1.5"
+    GEMINI_MODEL = "gemini-2.5-flash-lite"
+    OPENROUTER_MODEL = "nvidia/nemotron-nano-12b-v2-vl:free"
     GROQ_MODEL = "llama-3.3-70b-versatile"
 
     # ========== PREPROCESSING ==========
