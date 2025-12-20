@@ -1,0 +1,23 @@
+# Core Framework
+Flask
+flask-cors
+python-dotenv
+
+# PDF and Image Processing
+PyMuPDF
+Pillow
+opencv-python
+numpy
+
+# LangChain + AI
+langchain-core
+langchain-google-genai
+google-generativeai
+langchain-groq
+pydantic
+
+# HTTP
+requests
+
+# Production server
+gunicorn

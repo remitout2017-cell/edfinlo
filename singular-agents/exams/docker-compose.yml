@@ -1,0 +1,20 @@
+services:
+  test-scores-agent:
+    build: .
+    container_name: test-scores-agent
+    ports:
+      - "7006:7006"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - PORT=7006
+    volumes:
+      - ./temp_uploads:/app/temp_uploads
+      - ./temp_test_scores:/app/temp_test_scores
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:7006/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5

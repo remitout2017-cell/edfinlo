@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# OS
+.DS_Store
+.idea/
+.vscode/
+
+# Temp directories (created at runtime)
+temp_uploads/
+temp_test_scores/
+
+# Tests
+.pytest_cache/
+.coverage
+
+# Git
+.git
+.gitignore
+
+# Docker
+docker-compose*.yml
+
+# Env
+.env

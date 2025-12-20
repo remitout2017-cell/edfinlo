@@ -127,6 +127,11 @@ const StudentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "AcademicRecords",
     },
+    // ✅ ADD THIS NEW FIELD
+    testScores: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "TestScores",
+    },
     workExperience: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Workexperience",
