@@ -1,0 +1,62 @@
+# Python cache / build artefacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+venv/
+.env/
+.venv/
+env/
+*.venv
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+logs/
+*.tmp
+
+# Test artefacts
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Local temp + sessions (your app uses temp_admission_sessions)
+temp/
+tmp/
+temp_admission_sessions/
+
+# Node stuff if you keep any frontend or JS bits here
+node_modules/
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+
+# Misc
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.tiff
+*.bmp

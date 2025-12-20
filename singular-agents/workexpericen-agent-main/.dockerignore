@@ -1,0 +1,49 @@
+# Python artefacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+venv/
+.env/
+.venv/
+env/
+*.venv
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs and temp
+*.log
+logs/
+*.tmp
+
+# Local temp dirs (created at runtime)
+temp_uploads/
+temp_sessions/
+
+# Tests
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Node stuff if any
+node_modules/
+npm-debug.log*
+
+# Git
+.git
+.gitignore
+
+# Docker/build config not needed in image
+docker-compose*.yml

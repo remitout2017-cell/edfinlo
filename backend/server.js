@@ -13,9 +13,14 @@ const config = require("./config/config");
 const connectDB = require("./config/database");
 const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 const academicRoutes = require("./routes/students/academic.routes");
-const admissionRoutes = require("./routes/students/admission.routes");
-const { cleanupOldTempFiles } = require("./utils/fileCleanup");
+const workExperienceRoutes = require("./routes/students/workexperience.routes"); // ✅ ADD THIS
 
+const admissionRoutes = require("./routes/students/admission.routes");
+const {
+  cleanupOldTempFiles,
+  getDirectorySize, // ✅ Make sure this is imported
+  emergencyCleanup, // ✅ And this too if you need it
+} = require("./utils/fileCleanup");
 const app = express();
 app.set("trust proxy", 1);
 const UPLOADS_DIR = path.join(__dirname, "uploads");
@@ -67,6 +72,8 @@ app.use(
 app.use("/api/user/kyc", require("./routes/students/kyc.routes"));
 app.use("/api/user/academics", academicRoutes);
 app.use("/api/user/admission", admissionRoutes);
+app.use("/api/user/workexperience", workExperienceRoutes); // ✅ ADD THIS
+
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -106,10 +113,15 @@ cron.schedule("*/15 * * * *", async () => {
   }
 });
 
-cron.schedule('0 0 * * *', async () => {
-  console.log('📊 Daily cleanup report:');
+cron.schedule("0 0 * * *", async () => {
+  console.log("📊 Daily cleanup report:");
   const stats = await getDirectorySize(UPLOADS_DIR);
-  console.log(`📁 Uploads directory: ${stats.files} files, ${(stats.size/(1024*1024)).toFixed(2)}MB`);
+  console.log(
+    `📁 Uploads directory: ${stats.files} files, ${(
+      stats.size /
+      (1024 * 1024)
+    ).toFixed(2)}MB`
+  );
 });
 
 const PORT = config.port;

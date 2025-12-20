@@ -1,0 +1,23 @@
+services:
+  work-experience-agent:
+    build: .
+    container_name: work-experience-agent
+    ports:
+      - "7005:7005"        # host:container
+    environment:
+      # Required by Config.validate()
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      # Optional
+      - PORT=7005
+    volumes:
+      # Useful for debugging files created by the app
+      - ./temp_uploads:/app/temp_uploads
+      - ./temp_sessions:/app/temp_sessions
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:7005/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
