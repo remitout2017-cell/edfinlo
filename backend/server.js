@@ -6,15 +6,19 @@ const helmet = require("helmet");
 const mongoSanitize = require("@exortek/express-mongo-sanitize");
 const { xss } = require("express-xss-sanitizer");
 const statusMonitor = require("express-status-monitor");
-
+const cron = require("node-cron");
+const path = require("path");
 const corsOptions = require("./config/cors");
 const config = require("./config/config");
 const connectDB = require("./config/database");
 const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 const academicRoutes = require("./routes/students/academic.routes");
 const admissionRoutes = require("./routes/students/admission.routes");
+const { cleanupOldTempFiles } = require("./utils/fileCleanup");
+
 const app = express();
 app.set("trust proxy", 1);
+const UPLOADS_DIR = path.join(__dirname, "uploads");
 
 if (config.env === "development") {
   app.use(statusMonitor());
@@ -79,6 +83,34 @@ app.use(errorHandler);
 
 // DB connect after middleware setup is fine, but ensure it's called once
 connectDB();
+
+cron.schedule("0 * * * *", async () => {
+  // Every hour at minute 0
+  console.log("🕒 Running hourly temp file cleanup...");
+  await cleanupOldTempFiles();
+});
+
+// Run more frequent cleanup during peak hours (optional)
+cron.schedule("*/15 * * * *", async () => {
+  // Every 15 minutes
+  console.log("🔄 Running frequent temp file check...");
+  const stats = await getDirectorySize(UPLOADS_DIR);
+  const dirSizeMB = stats.size / (1024 * 1024);
+
+  if (dirSizeMB > 500) {
+    // If directory exceeds 500MB
+    console.log(
+      `⚠️ Directory large (${dirSizeMB.toFixed(2)}MB), triggering cleanup`
+    );
+    await cleanupOldTempFiles();
+  }
+});
+
+cron.schedule('0 0 * * *', async () => {
+  console.log('📊 Daily cleanup report:');
+  const stats = await getDirectorySize(UPLOADS_DIR);
+  console.log(`📁 Uploads directory: ${stats.files} files, ${(stats.size/(1024*1024)).toFixed(2)}MB`);
+});
 
 const PORT = config.port;
 const server = app.listen(PORT, () => {

@@ -1,4 +1,4 @@
-// middlewares/imageUpload.js
+// middlewares/imageUpload.js - KEEP AS IS FOR TEMP STORAGE
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
