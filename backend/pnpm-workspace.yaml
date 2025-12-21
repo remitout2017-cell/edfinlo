@@ -1,4 +1,0 @@
-ignoredBuiltDependencies:
-  - event-loop-stats
-  - msgpackr-extract
-  - sharp
