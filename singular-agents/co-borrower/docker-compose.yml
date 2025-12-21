@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  loan-approval-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: loan-approval-ai
+    restart: unless-stopped
+    
+    # Port mapping
+    ports:
+      - "${API_PORT:-8000}:8000"
+    
+    # Environment variables from .env file
+    env_file:
+      - .env
+    
+    # Volume mounts for persistence
+    volumes:
+      - ./uploads:/app/uploads
+      - ./results:/app/results
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Network
+    networks:
+      - loan-approval-network
+
+networks:
+  loan-approval-network:
+    driver: bridge

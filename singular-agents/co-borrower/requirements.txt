@@ -1,27 +1,40 @@
 # Core Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
-pydantic==2.5.0
-pydantic-settings==2.1.0
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+pydantic-settings
 
-# LangChain - Use compatible versions
-langchain==0.1.0
-langchain-core==0.1.10
-langchain-google-genai==0.0.6
+# LangChain
+langchain
+langchain-core
+langchain-google-genai
 
 # Google AI
-google-generativeai==0.3.2
+google-generativeai
 
 # PDF Processing
-PyMuPDF==1.23.8
-Pillow==10.1.0
+PyMuPDF
+Pillow
 
 # Utilities
-python-dotenv==1.0.0
-tenacity==8.2.3
-werkzeug==3.0.1
+python-dotenv
+tenacity
+werkzeug
 
-# Optional but recommended
-requests==2.31.0
-aiofiles==23.2.1
+# Async support
+aiofiles
+
+# HTTP requests
+requests
+httpx
+
+# Monitoring & Logging (Production)
+python-json-logger
+
+# Testing (Optional - can remove in production)
+pytest
+pytest-asyncio
+
+# Performance
+orjson

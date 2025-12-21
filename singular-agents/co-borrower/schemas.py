@@ -1,8 +1,5 @@
-"""Pydantic schemas for structured outputs - analytics-first and crash-resistant.
-
-Key hardening:
-- All numeric fields accept None from LLM and are coerced to 0.0/0.
-- Schemas remain stable even when extraction is partial.
+"""Pydantic schemas for structured outputs - PRODUCTION READY
+CORRECTED: Removed unused student loan fields, enhanced validation
 """
 
 from __future__ import annotations
@@ -37,19 +34,31 @@ class CIBILRiskLevel(str, Enum):
 
 
 def _none_to_float(v):
+    """Convert None/empty to 0.0"""
     if v is None or v == "" or v == "null":
         return 0.0
     return v
 
 
 def _none_to_int(v):
+    """Convert None/empty to 0"""
     if v is None or v == "" or v == "null":
         return 0
     return v
 
 
+class BankTransaction(BaseModel):
+    """Individual bank transaction"""
+    date: str = Field(description="Transaction date, preferably DD-MM-YYYY or YYYY-MM-DD")
+    narration: str = Field(description="Transaction particulars/narration")
+    debit: float = 0.0
+    credit: float = 0.0
+    balance: float = 0.0
+
+
 # ========== ITR EXTRACTION SCHEMA ==========
 class ITRData(BaseModel):
+    """Income Tax Return data"""
     applicant_name: str = Field(description="Full name of the applicant")
     pan_number: Optional[str] = Field(None, description="PAN number")
 
@@ -86,22 +95,27 @@ class ITRData(BaseModel):
 
     @field_validator('average_annual_income', mode='after')
     def calc_avg_annual(cls, v, info):
-        # If LLM returned 0 but has incomes, compute average
+        """Calculate average if not provided"""
         data = info.data
         if v and v > 0:
             return v
-        return (data.get('gross_total_income_year1', 0.0) + data.get('gross_total_income_year2', 0.0)) / 2
+        y1 = data.get('gross_total_income_year1', 0.0)
+        y2 = data.get('gross_total_income_year2', 0.0)
+        return (y1 + y2) / 2 if (y1 or y2) else 0.0
 
     @field_validator('average_monthly_income', mode='after')
     def calc_avg_monthly(cls, v, info):
+        """Calculate monthly average if not provided"""
         data = info.data
         if v and v > 0:
             return v
-        return (data.get('average_annual_income', 0.0) / 12) if data.get('average_annual_income', 0.0) else 0.0
+        annual = data.get('average_annual_income', 0.0)
+        return annual / 12 if annual else 0.0
 
 
 # ========== BANK STATEMENT EXTRACTION SCHEMA ==========
 class BankStatementData(BaseModel):
+    """Bank statement data"""
     account_holder_name: str
     bank_name: str
     account_number: str
@@ -141,7 +155,11 @@ class BankStatementData(BaseModel):
 
     extraction_confidence: float = Field(ge=0, le=1)
     extraction_notes: List[str] = Field(default_factory=list)
-
+    transactions: List[BankTransaction] = Field(
+        default_factory=list, 
+        description="All statement transactions"
+    )
+    
     _float_fix = field_validator(
         'opening_balance', 'closing_balance', 'average_monthly_balance', 'minimum_balance',
         'average_monthly_salary', 'total_emi_debits', 'average_monthly_emi',
@@ -151,13 +169,15 @@ class BankStatementData(BaseModel):
 
     _int_fix = field_validator(
         'salary_credits_detected', 'salary_consistency_months', 'unique_loan_accounts',
-        'bounce_count', 'dishonor_count', 'insufficient_fund_incidents', 'credit_count', 'debit_count',
+        'bounce_count', 'dishonor_count', 'insufficient_fund_incidents', 
+        'credit_count', 'debit_count',
         mode='before'
     )(_none_to_int)
 
 
 # ========== SALARY SLIP EXTRACTION SCHEMA ==========
 class SalarySlipData(BaseModel):
+    """Salary slip data"""
     employee_name: str
     employee_id: Optional[str] = None
     employer_name: str
@@ -211,6 +231,7 @@ class SalarySlipData(BaseModel):
 
 # ========== FOIR (analytics only) ==========
 class FOIRResult(BaseModel):
+    """FOIR calculation result"""
     foir_percentage: float
     foir_status: FOIRStatus
     monthly_gross_income: float
@@ -223,6 +244,7 @@ class FOIRResult(BaseModel):
 
 # ========== CIBIL (analytics only) ==========
 class CIBILEstimate(BaseModel):
+    """CIBIL score estimation"""
     estimated_score: int = Field(ge=300, le=900)
     estimated_band: str
     risk_level: CIBILRiskLevel
@@ -239,20 +261,25 @@ class CIBILEstimate(BaseModel):
 
 # ========== FINAL OUTPUT ==========
 class LoanApplicationAnalysis(BaseModel):
+    """Complete loan application analysis - ANALYTICS ONLY"""
     session_id: str
     timestamp: datetime = Field(default_factory=datetime.now)
 
+    # Extracted data
     itr_data: Optional[ITRData] = None
     bank_data: Optional[BankStatementData] = None
     salary_data: Optional[SalarySlipData] = None
 
+    # Analytics
     foir_result: Optional[FOIRResult] = None
     cibil_estimate: Optional[CIBILEstimate] = None
 
+    # Quality metrics
     overall_confidence: float = Field(ge=0, le=1)
     data_sources_used: List[str] = Field(default_factory=list)
     missing_data: List[str] = Field(default_factory=list)
 
+    # Processing info
     processing_time_seconds: float
-    status: str
+    status: str  # success, partial, failed
     errors: List[str] = Field(default_factory=list)

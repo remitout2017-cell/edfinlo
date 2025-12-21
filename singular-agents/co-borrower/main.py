@@ -2,7 +2,6 @@
 Main Orchestration Engine for Loan Approval AI - ANALYTICS ONLY
 Processes all documents in parallel - NO ELIGIBILITY DECISIONS
 """
-
 import logging
 from pathlib import Path
 from typing import Optional
@@ -93,6 +92,7 @@ class LoanApprovalEngine:
             # Process documents in parallel
             logger.info(
                 "📊 Step 2: Extracting data from all documents (parallel processing)...")
+
             itr_data = None
             bank_data = None
             salary_data = None
@@ -139,8 +139,7 @@ class LoanApprovalEngine:
             foir_result = None
             try:
                 foir_result = self.foir_chain.calculate_foir(
-                    itr_data, bank_data, salary_data
-                )
+                    itr_data, bank_data, salary_data)
                 logger.info("   ✅ FOIR calculated\n")
             except Exception as e:
                 logger.error(f"   ❌ FOIR calculation failed: {e}")
@@ -151,8 +150,7 @@ class LoanApprovalEngine:
             cibil_estimate = None
             try:
                 cibil_estimate = self.cibil_chain.estimate_cibil(
-                    bank_data, foir_result
-                )
+                    bank_data, foir_result)
                 logger.info("   ✅ CIBIL estimated\n")
             except Exception as e:
                 logger.error(f"   ❌ CIBIL estimation failed: {e}")
@@ -228,6 +226,7 @@ class LoanApprovalEngine:
 
         except Exception as e:
             logger.error(f"\n❌ CRITICAL ERROR: {e}", exc_info=True)
+
             # Return error result
             return LoanApplicationAnalysis(
                 session_id=session_id,
@@ -251,98 +250,32 @@ class LoanApprovalEngine:
         logger.info(f"✅ Status: {result.status.upper()}")
         logger.info(f"📊 Overall Confidence: {result.overall_confidence:.0%}")
 
-        # Data sources
-        if result.data_sources_used:
-            logger.info(f"\n📁 DATA SOURCES:")
-            for source in result.data_sources_used:
-                logger.info(f"   ✅ {source}")
-
-        if result.missing_data:
-            logger.info(f"\n❌ MISSING DATA:")
-            for missing in result.missing_data:
-                logger.info(f"   • {missing}")
-
-        # ITR Data
-        if result.itr_data:
-            logger.info(f"\n📊 ITR DATA:")
-            logger.info(f"   Applicant: {result.itr_data.applicant_name}")
-            logger.info(
-                f"   Average Annual Income: ₹{result.itr_data.average_annual_income:,.2f}")
-            logger.info(
-                f"   Average Monthly Income: ₹{result.itr_data.average_monthly_income:,.2f}")
-            logger.info(
-                f"   Income Growth: {result.itr_data.income_growth_rate:.1f}%")
-
-        # Bank Data
-        if result.bank_data:
-            logger.info(f"\n🏦 BANK STATEMENT DATA:")
-            logger.info(
-                f"   Account Holder: {result.bank_data.account_holder_name}")
-            logger.info(
-                f"   Average Monthly Balance: ₹{result.bank_data.average_monthly_balance:,.2f}")
-            logger.info(
-                f"   Average Monthly Salary: ₹{result.bank_data.average_monthly_salary:,.2f}")
-            logger.info(
-                f"   Average Monthly EMI: ₹{result.bank_data.average_monthly_emi:,.2f}")
-            logger.info(f"   Bounce Count: {result.bank_data.bounce_count}")
-
-        # Salary Data
-        if result.salary_data:
-            logger.info(f"\n💼 SALARY SLIP DATA:")
-            logger.info(f"   Employee: {result.salary_data.employee_name}")
-            logger.info(f"   Employer: {result.salary_data.employer_name}")
-            logger.info(
-                f"   Average Gross Salary: ₹{result.salary_data.average_gross_salary:,.2f}")
-            logger.info(
-                f"   Average Net Salary: ₹{result.salary_data.average_net_salary:,.2f}")
-
         # FOIR Results
         if result.foir_result:
             logger.info(f"\n💰 FOIR ANALYSIS:")
             logger.info(
                 f"   FOIR: {result.foir_result.foir_percentage}% ({result.foir_result.foir_status.value})")
             logger.info(
-                f"   Monthly Gross Income: ₹{result.foir_result.monthly_gross_income:,.2f}")
-            logger.info(
-                f"   Monthly Net Income: ₹{result.foir_result.monthly_net_income:,.2f}")
+                f"   Monthly Income: ₹{result.foir_result.monthly_net_income:,.2f}")
             logger.info(
                 f"   Monthly EMI: ₹{result.foir_result.total_monthly_emi:,.2f}")
             logger.info(
                 f"   Available Income: ₹{result.foir_result.available_monthly_income:,.2f}")
-            logger.info(
-                f"   DSCR: {result.foir_result.debt_service_coverage_ratio:.2f}")
 
         # CIBIL Estimate
         if result.cibil_estimate:
             logger.info(f"\n🎯 CIBIL ESTIMATION:")
             logger.info(
                 f"   Estimated Score: {result.cibil_estimate.estimated_score}")
-            logger.info(f"   Band: {result.cibil_estimate.estimated_band}")
             logger.info(
                 f"   Risk Level: {result.cibil_estimate.risk_level.value}")
 
-            if result.cibil_estimate.positive_factors:
-                logger.info(f"\n   ✅ Positive Factors:")
-                for factor in result.cibil_estimate.positive_factors:
-                    logger.info(f"      • {factor}")
-
-            if result.cibil_estimate.negative_factors:
-                logger.info(f"\n   ❌ Negative Factors:")
-                for factor in result.cibil_estimate.negative_factors:
-                    logger.info(f"      • {factor}")
-
-        # Errors
-        if result.errors:
-            logger.info(f"\n⚠️  ERRORS:")
-            for error in result.errors:
-                logger.info(f"   • {error}")
-
         logger.info(f"\n{'='*80}\n")
+
 
 # ============================================================================
 # TESTING
 # ============================================================================
-
 
 if __name__ == "__main__":
     print("\n" + "="*80)
@@ -373,7 +306,8 @@ if __name__ == "__main__":
         salary_slip_pdf=str(test_files["salary_slip"]),
         bank_statement_pdf=str(test_files["bank_statement"]),
         itr_pdf_1=str(test_files["itr_1"]),
-        # itr_pdf_2=str(test_files.get("itr_2")) if "itr_2" in test_files else None,
+        itr_pdf_2=str(test_files.get("itr_2")
+                      ) if "itr_2" in test_files else None,
     )
 
     print("\n" + "="*80)
