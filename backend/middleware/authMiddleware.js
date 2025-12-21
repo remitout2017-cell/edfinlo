@@ -15,7 +15,6 @@ const authMiddleware = (req, res, next) => {
     const decoded = jwt.verify(token, config.jwt.secret, {
       algorithms: ["HS256"],
       issuer: "student-loan",
-      audience: "student",
     });
 
     req.user = {

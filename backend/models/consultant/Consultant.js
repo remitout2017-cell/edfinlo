@@ -10,6 +10,7 @@ const invitedStudentSchema = new mongoose.Schema(
     expiresAt: { type: Date, required: true },
     accepted: { type: Boolean, default: false },
     sentAt: { type: Date, default: Date.now },
+    acceptedAt: { type: Date },
   },
   { _id: false }
 );

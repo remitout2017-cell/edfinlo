@@ -25,7 +25,6 @@ const generateAccessToken = (userId, role = "student") => {
     algorithm: "HS256",
     expiresIn: config.jwt.expiresIn || "7d", // SHORT lived
     issuer: "student-loan",
-    audience: "student",
   });
 };
 

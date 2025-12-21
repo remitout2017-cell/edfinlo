@@ -27,11 +27,12 @@ exports.register = async (req, res, next) => {
         message: "First name, last name, email, and password are required",
       });
     }
-
+    const query = { email: email.toLowerCase() };
+    if (phoneNumber) {
+      query.$or = [{ email: email.toLowerCase() }, { phoneNumber }];
+    }
     // Check if student already exists
-    const existingStudent = await Student.findOne({
-      $or: [{ email: email.toLowerCase() }, { phoneNumber }],
-    });
+    const existingStudent = await Student.findOne(query);
 
     if (existingStudent) {
       return res.status(400).json({
@@ -166,11 +167,12 @@ exports.registerFromInvite = async (req, res, next) => {
         message: "Invitation already used",
       });
     }
-
+    const query = { email: email.toLowerCase() };
+    if (phoneNumber) {
+      query.$or = [{ email: email.toLowerCase() }, { phoneNumber }];
+    }
     // Check if student already exists
-    const existingStudent = await Student.findOne({
-      $or: [{ email: email.toLowerCase() }, { phoneNumber }],
-    });
+    const existingStudent = await Student.findOne(query);
 
     if (existingStudent) {
       return res.status(400).json({
@@ -210,13 +212,13 @@ exports.registerFromInvite = async (req, res, next) => {
     // Send OTPs if not in dev mode
     if (!isDevelopment) {
       // Email OTP
-      const emailOTP = student.generateOTP();
-      student.emailVerificationToken = crypto
-        .createHash("sha256")
-        .update(emailOTP)
-        .digest("hex");
-      student.emailVerificationExpire = Date.now() + 10 * 60 * 1000;
-      await student.save();
+      // const emailOTP = student.generateOTP();
+      // student.emailVerificationToken = crypto
+      //   .createHash("sha256")
+      //   .update(emailOTP)
+      //   .digest("hex");
+      // student.emailVerificationExpire = Date.now() + 10 * 60 * 1000;
+      // await student.save();
 
       // try {
       //   await sendOTPEmail(email, emailOTP, "email");

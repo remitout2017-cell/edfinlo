@@ -104,9 +104,7 @@ exports.sendStudentInviteEmail = async (
   }
 };
 
-/**
- * Send password reset OTP email
- */
+// Add these complete functions
 exports.sendPasswordResetOTPEmail = async (email, otp) => {
   const subject = "Password Reset OTP";
   const html = `
@@ -139,6 +137,42 @@ exports.sendPasswordResetOTPEmail = async (email, otp) => {
   } catch (err) {
     console.error("sendPasswordResetOTPEmail error:", err.message);
     throw new Error("Failed to send password reset OTP email");
+  }
+};
+
+// Ensure sendStudentInviteEmail is complete (already partially there)
+exports.sendStudentInviteEmail = async (
+  email,
+  inviteLink,
+  consultantName,
+  companyName
+) => {
+  const subject = "Invitation to Join Student Loan Platform";
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #333;">You've Been Invited!</h2>
+      <p>Hello,</p>
+      <p><strong>${consultantName}</strong>${
+    companyName ? ` from <strong>${companyName}</strong>` : ""
+  } has invited you to create an account on our Student Loan Platform.</p>
+      <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Accept Invitation</a>
+      <p>This invitation expires in 7 days.</p>
+    </div>
+  `;
+
+  try {
+    if (isDevelopment) {
+      console.log(
+        `📧 [DEV] Student Invite for ${email} -> Link: ${inviteLink}`
+      );
+      return;
+    }
+
+    const mailOptions = { from: config.email.from, to: email, subject, html };
+    await getTransporter().sendMail(mailOptions);
+  } catch (err) {
+    console.error("sendStudentInviteEmail error:", err.message);
+    throw new Error("Failed to send invitation email");
   }
 };
 

@@ -16,6 +16,7 @@ const academicRoutes = require("./routes/students/academic.routes");
 const workExperienceRoutes = require("./routes/students/workexperience.routes"); // ✅ ADD THIS
 const testScoresRoutes = require("./routes/students/testscores.routes"); // ✅ NEW
 const coBorrowerRoutes = require("./routes/students/coborrower.routes");
+const { otpLimiter } = require("./middleware/rateLimit");
 
 const admissionRoutes = require("./routes/students/admission.routes");
 const {
@@ -65,28 +66,39 @@ if (config.env === "development") {
 }
 
 // ✅ ROUTES FIRST (must come before notFound/errorHandler)
-app.use("/api/auth", require("./routes/students/auth.routes"));
-app.use("/api/user", require("./routes/students/userRoutes"));
+app.use("/api/auth", otpLimiter, require("./routes/students/auth.routes"));
+app.use("/api/user", otpLimiter, require("./routes/students/userRoutes"));
 app.use(
   "/api/user/educationplanet",
+  otpLimiter,
   require("./routes/students/studentEducationPlanRoutes")
 );
-app.use("/api/user/kyc", require("./routes/students/kyc.routes"));
-app.use("/api/user/academics", academicRoutes);
-app.use("/api/user/admission", admissionRoutes);
-app.use("/api/user/workexperience", workExperienceRoutes); // ✅ ADD THIS
-app.use("/api/user/testscores", testScoresRoutes); // ✅ NEW TEST SCORES ROUTE
-app.use("/api/coborrower", coBorrowerRoutes);
-app.use("/api/nbfc/auth", require("./routes/nbfc/nbfc.auth.routes"));
-app.use("/api/nbfc", require("./routes/nbfc/nbfc.questionnaire.routes"));
+app.use("/api/user/kyc", otpLimiter, require("./routes/students/kyc.routes"));
+app.use("/api/user/academics", otpLimiter, academicRoutes);
+app.use("/api/user/admission", otpLimiter, admissionRoutes);
+app.use("/api/user/workexperience", otpLimiter, workExperienceRoutes); // ✅ ADD THIS
+app.use("/api/user/testscores", otpLimiter, testScoresRoutes); // ✅ NEW TEST SCORES ROUTE
+app.use("/api/coborrower", otpLimiter, coBorrowerRoutes);
+app.use(
+  "/api/nbfc/auth",
+  otpLimiter,
+  require("./routes/nbfc/nbfc.auth.routes")
+);
+app.use(
+  "/api/nbfc",
+  otpLimiter,
+  require("./routes/nbfc/nbfc.questionnaire.routes")
+);
 app.use(
   "/api/consultant/auth",
+  otpLimiter,
   require("./routes/consultant/consultant.auth.routes")
 );
 app.use(
   "/api/consultant/students",
   require("./routes/consultant/consultant.students.routes")
 );
+
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -111,7 +123,7 @@ cron.schedule("0 * * * *", async () => {
 });
 
 // Run more frequent cleanup during peak hours (optional)
-cron.schedule("*/15 * * * *", async () => {
+cron.schedule("*/10 * * * *", async () => {
   // Every 15 minutes
   console.log("🔄 Running frequent temp file check...");
   const stats = await getDirectorySize(UPLOADS_DIR);
@@ -141,11 +153,11 @@ const PORT = config.port;
 const server = app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════╗
-║ 🚀 Server Started Successfully        ║
+║ 🚀Server Started Successfully         ║
 ╠═══════════════════════════════════════╣
-║ Environment: ${config.env}
-║ Port: ${PORT}
-║ Time: ${new Date().toLocaleString()}
+║ Environment: ${config.env}            ║
+║ Port: ${PORT}                         ║
+║ Time: ${new Date().toLocaleString()}  ║
 ╚═══════════════════════════════════════╝
 `);
 });

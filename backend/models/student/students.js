@@ -30,7 +30,8 @@ const StudentSchema = new mongoose.Schema(
     passwordResetExpire: { type: Date, select: false },
 
     kycVerificationMethod: { type: String, required: false },
-
+    passwordResetOTP: { type: String, select: false },
+    passwordResetOTPExpire: { type: Date, select: false },
     kycData: {
       // URLs (private)
       aadhaarFrontUrl: { type: String, select: false },
