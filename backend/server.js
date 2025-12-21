@@ -77,7 +77,16 @@ app.use("/api/user/admission", admissionRoutes);
 app.use("/api/user/workexperience", workExperienceRoutes); // ✅ ADD THIS
 app.use("/api/user/testscores", testScoresRoutes); // ✅ NEW TEST SCORES ROUTE
 app.use("/api/coborrower", coBorrowerRoutes);
-
+app.use("/api/nbfc/auth", require("./routes/nbfc/nbfc.auth.routes"));
+app.use("/api/nbfc", require("./routes/nbfc/nbfc.questionnaire.routes"));
+app.use(
+  "/api/consultant/auth",
+  require("./routes/consultant/consultant.auth.routes")
+);
+app.use(
+  "/api/consultant/students",
+  require("./routes/consultant/consultant.students.routes")
+);
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,

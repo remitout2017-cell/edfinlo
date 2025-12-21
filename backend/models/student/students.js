@@ -205,8 +205,9 @@ StudentSchema.index({
 });
 
 // OTP
+// ✅ UPDATE THE OTP METHOD TO GENERATE 6-DIGIT OTP
 StudentSchema.methods.generateOTP = function () {
-  return Math.floor(1000 + Math.random() * 9000).toString();
+  return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 StudentSchema.methods.generateVerificationToken = function () {

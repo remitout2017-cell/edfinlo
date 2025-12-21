@@ -1,95 +1,266 @@
-const User = require("../../models/student/students");
+// controllers/students/student.auth.controller.js
+const Student = require("../../models/student/students");
+const Consultant = require("../../models/consultant/Consultant");
 const crypto = require("crypto");
 const generateToken = require("../../utils/generateToken");
 const {
   sendOTPEmail,
+  sendPasswordResetOTPEmail,
   sendSMSOTP,
   verifySMSOTP,
-  sendPasswordResetEmail,
 } = require("../../utils/phoneVerification");
 const config = require("../../config/config");
-const Admin = require("../../models/admin/Admin");
-const nbfc = require("../../models/nbfc/NBFC");
+
 const isDevelopment = config.env === "development";
-const Consultant = require("../../models/consultant/Consultant");
-const Invite = require("../../models/consultant/Invite");
-//adding rate limiting
+
+// @desc    Regular student registration (WITHOUT consultant invitation)
+// @route   POST /api/auth/register
+// @access  Public
+exports.register = async (req, res, next) => {
+  try {
+    const { firstName, lastName, email, password, phoneNumber } = req.body;
+
+    // Validation
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "First name, last name, email, and password are required",
+      });
+    }
+
+    // Check if student already exists
+    const existingStudent = await Student.findOne({
+      $or: [{ email: email.toLowerCase() }, { phoneNumber }],
+    });
+
+    if (existingStudent) {
+      return res.status(400).json({
+        success: false,
+        message: "Student with this email or phone number already exists",
+      });
+    }
+
+    // Create student
+    const student = await Student.create({
+      firstName,
+      lastName,
+      email: email.toLowerCase(),
+      password,
+      phoneNumber,
+      isEmailVerified: isDevelopment, // Auto-verify in dev
+      isPhoneVerified: phoneNumber ? isDevelopment : true, // Auto-verify in dev if phone provided
+      role: "student",
+    });
+
+    // Generate email OTP if not in dev mode
+    if (!isDevelopment && email) {
+      const emailOTP = student.generateOTP();
+      student.emailVerificationToken = crypto
+        .createHash("sha256")
+        .update(emailOTP)
+        .digest("hex");
+      student.emailVerificationExpire = Date.now() + 10 * 60 * 1000;
+      await student.save();
+
+      try {
+        await sendOTPEmail(email, emailOTP, "email");
+      } catch (err) {
+        console.error("Failed to send email OTP:", err);
+      }
+    }
+
+    // Generate phone OTP if phone provided and not in dev mode
+    if (!isDevelopment && phoneNumber) {
+      try {
+        await sendSMSOTP(phoneNumber);
+        student.phoneVerificationExpire = Date.now() + 10 * 60 * 1000;
+        await student.save();
+      } catch (err) {
+        console.error("Failed to send SMS OTP:", err);
+      }
+    }
+
+    // Generate login token
+    const token = generateToken(student._id, student.role);
+
+    res.status(201).json({
+      success: true,
+      message: isDevelopment
+        ? "Registration successful! (Auto-verified in dev mode)"
+        : "Registration successful! Please verify your email" +
+          (phoneNumber ? " and phone number" : ""),
+      data: {
+        token,
+        student: {
+          id: student._id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          email: student.email,
+          phoneNumber: student.phoneNumber,
+          role: student.role,
+          isEmailVerified: student.isEmailVerified,
+          isPhoneVerified: student.isPhoneVerified,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    next(error);
+  }
+};
+
+// @desc    Register student via consultant invitation
+// @route   POST /api/auth/register-from-invite
+// @access  Public
 exports.registerFromInvite = async (req, res, next) => {
   try {
     const { token, email, firstName, lastName, password, phoneNumber } =
       req.body;
 
+    // Validation
     if (!token || !email || !firstName || !lastName || !password) {
       return res.status(400).json({
         success: false,
-        message: "Token, email, firstName, lastName, and password are required",
+        message:
+          "Token, email, first name, last name, and password are required",
       });
     }
 
-    // Find and validate invite
-    const invite = await Invite.findOne({
-      token,
-      email: email.toLowerCase(),
-      status: "pending",
+    // Find consultant with this invite token
+    const consultant = await Consultant.findOne({
+      "invitedStudents.token": token,
+      "invitedStudents.email": email.toLowerCase(),
     });
+
+    if (!consultant) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired invitation token",
+      });
+    }
+
+    // Find the specific invite
+    const invite = consultant.invitedStudents.find(
+      (inv) => inv.token === token && inv.email === email.toLowerCase()
+    );
 
     if (!invite) {
       return res.status(400).json({
         success: false,
-        message: "Invalid or expired invite token",
+        message: "Invalid invitation",
       });
     }
 
     // Check if expired
     if (invite.expiresAt < new Date()) {
-      invite.status = "expired";
-      await invite.save();
       return res.status(400).json({
         success: false,
-        message: "Invite token has expired",
+        message: "Invitation has expired",
       });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
+    // Check if already accepted
+    if (invite.accepted) {
       return res.status(400).json({
         success: false,
-        message: "Email already registered",
+        message: "Invitation already used",
       });
     }
 
-    // Create user
-    const user = await User.create({
+    // Check if student already exists
+    const existingStudent = await Student.findOne({
+      $or: [{ email: email.toLowerCase() }, { phoneNumber }],
+    });
+
+    if (existingStudent) {
+      return res.status(400).json({
+        success: false,
+        message: "Student with this email or phone number already exists",
+      });
+    }
+
+    // Create student
+    const student = await Student.create({
       email: email.toLowerCase(),
       firstName,
       lastName,
       password,
       phoneNumber,
-      consultantId: invite.consultantId,
-      isEmailVerified: false, // Require verification
-      isPhoneVerified: phoneNumber ? false : true,
+      consultant: consultant._id, // Link to consultant
+      isEmailVerified: true,
+      isPhoneVerified: phoneNumber ? isDevelopment : true,
       role: "student",
     });
 
     // Mark invite as accepted
-    invite.status = "accepted";
-    await invite.save();
+    invite.accepted = true;
+    invite.acceptedAt = new Date();
+
+    // Add student to consultant's students array
+    consultant.students.push(student._id);
+    consultant.stats.totalStudents += 1;
+    consultant.stats.activeStudents += 1;
+    consultant.stats.pendingInvites = Math.max(
+      0,
+      consultant.stats.pendingInvites - 1
+    );
+
+    await consultant.save();
+
+    // Send OTPs if not in dev mode
+    if (!isDevelopment) {
+      // Email OTP
+      const emailOTP = student.generateOTP();
+      student.emailVerificationToken = crypto
+        .createHash("sha256")
+        .update(emailOTP)
+        .digest("hex");
+      student.emailVerificationExpire = Date.now() + 10 * 60 * 1000;
+      await student.save();
+
+      // try {
+      //   await sendOTPEmail(email, emailOTP, "email");
+      // } catch (err) {
+      //   console.error("Failed to send email OTP:", err);
+      // }
+
+      // Phone OTP
+      if (phoneNumber) {
+        try {
+          await sendSMSOTP(phoneNumber);
+          student.phoneVerificationExpire = Date.now() + 10 * 60 * 1000;
+          await student.save();
+        } catch (err) {
+          console.error("Failed to send SMS OTP:", err);
+        }
+      }
+    }
 
     // Generate login token
-    const tokenResponse = await generateToken(user.id, user.role);
+    const token_response = generateToken(student._id, student.role);
 
     res.status(201).json({
       success: true,
-      message: "Registration successful! Please verify your email.",
+      message: isDevelopment
+        ? "Registration successful! (Auto-verified in dev mode)"
+        : "Registration successful! Please verify your email" +
+          (phoneNumber ? " and phone number" : ""),
       data: {
-        token: tokenResponse.token,
-        user: {
-          id: user._id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
+        token: token_response,
+        student: {
+          id: student._id,
+          email: student.email,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          phoneNumber: student.phoneNumber,
+          role: student.role,
+          consultant: {
+            id: consultant._id,
+            name: `${consultant.firstName} ${consultant.lastName}`,
+            companyName: consultant.companyName,
+          },
+          isEmailVerified: student.isEmailVerified,
+          isPhoneVerified: student.isPhoneVerified,
         },
       },
     });
@@ -98,286 +269,229 @@ exports.registerFromInvite = async (req, res, next) => {
     next(error);
   }
 };
-//adding rate limiting
-exports.register = async (req, res, next) => {
-  try {
-    const {
-      firstname,
-      lastname,
-      password,
-      email,
-      phoneNumber,
-      inviteToken,
-      role,
-    } = req.body;
-    if (!firstname || !lastname || !password || !email || !phoneNumber) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, password, phone number, and role are required",
-      });
-    }
 
-    // Try to derive first/last from "name" if firstName/lastName not provided
-    let fName = firstname;
-    let lName = lastname;
-    if ((!fName || !lName) && firstname) {
-      const parts = String(firstname).trim().split(/\s+/);
-      fName = fName || parts[0];
-      lName = lName || parts.slice(1).join(" ") || "";
-    }
-
-    let existingUser;
-    existingUser = await User.findOne({
-      $or: [{ phoneNumber }, { email: email }],
-    });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "User with this phone number or email already exists",
-      });
-    }
-    let consultantId = null;
-    // If inviteToken provided, validate and link to consultant
-    if (inviteToken) {
-      const consultant = await Consultant.findOne({
-        "invitedStudents.token": inviteToken,
-        "invitedStudents.email": email.toLowerCase(),
-      });
-
-      if (!consultant) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid or expired invitation token",
-        });
-      }
-
-      // Find the specific invite
-      const invite = consultant.invitedStudents.find(
-        (inv) => inv.token === inviteToken && inv.email === email.toLowerCase()
-      );
-
-      // Check if email already added to consultant's students
-      const emailExists = consultant.invitedStudents.some(
-        (inv) => inv.email === email.toLowerCase() && inv.accepted
-      );
-
-      if (emailExists) {
-        return res.status(400).json({
-          success: false,
-          message: "Email already registered with this consultant",
-        });
-      }
-
-      if (!invite) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid invitation",
-        });
-      }
-
-      // Check if expired
-      if (invite.expiresAt < new Date()) {
-        return res.status(400).json({
-          success: false,
-          message: "Invitation has expired",
-        });
-      }
-
-      // Check if already accepted
-      if (invite.accepted) {
-        return res.status(400).json({
-          success: false,
-          message: "Invitation already used",
-        });
-      }
-
-      consultantId = consultant._id;
-
-      // Mark invite as accepted
-      invite.accepted = true;
-      await consultant.save();
-    }
-
-    const user = new User({
-      email,
-      password,
-      phoneNumber,
-      firstName: firstname,
-      lastName: lastname,
-      consultant: consultantId, // Link to consultant if invited
-      isEmailVerified: isDevelopment,
-      isPhoneVerified: isDevelopment,
-    });
-    await user.save();
-
-    // // Try sending email OTP
-    // try {
-    //   await sendOTPEmail(email, emailOTP, "email");
-    // } catch (err) {
-    //   return res.status(500).json({
-    //     success: false,
-    //     message: "Failed to send email OTP. User not registered.",
-    //   });
-    // }
-
-    // // Try sending SMS OTP if phone provided
-    // if (phoneNumber) {
-    //   try {
-    //     await sendSMSOTP(phoneNumber);
-    //   } catch (err) {
-    //     return res.status(500).json({
-    //       success: false,
-    //       message: "Failed to send SMS OTP. User not registered.",
-    //     });
-    //   }
-    // }
-    // await user.save();
-
-    // Add student to consultant's students array if invited
-    if (consultantId) {
-      await Consultant.findByIdAndUpdate(consultantId, {
-        $addToSet: { students: user._id },
-      });
-    }
-
-    // // Generate and set email OTP/token
-    // const emailOTP = user.generateOTP();
-    // user.emailVerificationToken = crypto
-    //   .createHash("sha256")
-    //   .update(emailOTP)
-    //   .digest("hex");
-    // user.emailVerificationExpire = Date.now() + 10 * 60 * 1000;
-    // user.phoneVerificationExpire = Date.now() + 10 * 60 * 1000;
-
-    // await user.save();
-
-    res.status(201).json({
-      success: true,
-      message: "User registered. OTPs sent to email and phone (if provided).",
-      linkedToConsultant: !!consultantId,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.verifyEmail = async (req, res, next) => {
-  try {
-    const { email, otp } = req.body;
-    const hashedOTP = crypto.createHash("sha256").update(otp).digest("hex");
-
-    const user = await User.findOne({
-      email,
-      emailVerificationToken: hashedOTP,
-      emailVerificationExpire: { $gt: Date.now() },
-    });
-
-    if (!user) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid or expired OTP." });
-    }
-
-    user.isEmailVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpire = undefined;
-    await user.save();
-
-    res.json({ success: true, message: "Email verified." });
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.verifyPhone = async (req, res, next) => {
-  try {
-    const { phoneNumber, otp } = req.body;
-    const isValid = await verifySMSOTP(phoneNumber, otp);
-
-    if (!isValid) {
-      return res.status(400).json({ success: false, message: "Invalid OTP." });
-    }
-
-    const user = await User.findOne({ phoneNumber });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found." });
-    }
-
-    user.isPhoneVerified = true;
-    await user.save();
-
-    res.json({ success: true, message: "Phone number verified." });
-  } catch (error) {
-    next(error);
-  }
-};
-//ading rate limiting
-
-// Ensure OTP resend invalidates previous OTP and respects expiry
-exports.resendEmailVerification = async (req, res, next) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email });
-  if (!user)
-    return res.status(404).json({ success: false, message: "User not found" });
-  if (user.isEmailVerified)
-    return res
-      .status(400)
-      .json({ success: false, message: "Email already verified" });
-
-  const emailOTP = user.generateOTP();
-  user.emailVerificationToken = crypto
-    .createHash("sha256")
-    .update(emailOTP)
-    .digest("hex");
-  user.emailVerificationExpire = Date.now() + 10 * 60 * 1000; // 10 min expiry
-  await user.save();
-
-  if (!config.isDevelopment)
-    await sendOTPEmail(user.email, emailOTP, "email").catch(console.error);
-  else console.log("DEV New Email OTP", emailOTP);
-
-  res
-    .status(200)
-    .json({ success: true, message: "Email OTP sent successfully" });
-};
-
-// Login: Handle both missing user and password mismatch
+// @desc    Student login
+// @route   POST /api/auth/login
+// @access  Public
 exports.login = async (req, res, next) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Email and password are required" });
-  }
-
   try {
-    const user = await User.findOne({ email }).select("+password");
-    if (!user || !(await user.comparePassword(password))) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid email or password" });
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
     }
 
-    const token = generateToken(user.id, user.role);
+    // Find student with password
+    const student = await Student.findOne({ email: email.toLowerCase() })
+      .select("+password")
+      .populate("consultant", "firstName lastName companyName");
+
+    if (!student || !(await student.comparePassword(password))) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    if (!student.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been deactivated. Contact support.",
+      });
+    }
+
+    // Update last login
+    student.lastLogin = new Date();
+    await student.save();
+
+    // Generate token
+    const token = generateToken(student._id, student.role);
+
     res.status(200).json({
       success: true,
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isEmailVerified: user.isEmailVerified,
-        isPhoneVerified: user.isPhoneVerified,
+      message: "Login successful",
+      data: {
+        token,
+        student: {
+          id: student._id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          email: student.email,
+          phoneNumber: student.phoneNumber,
+          role: student.role,
+          isEmailVerified: student.isEmailVerified,
+          isPhoneVerified: student.isPhoneVerified,
+          kycStatus: student.kycStatus,
+          lastLogin: student.lastLogin,
+          consultant: student.consultant,
+        },
       },
     });
   } catch (error) {
     next(error);
   }
 };
-//adding rate limiting
+
+// @desc    Verify email with OTP
+// @route   POST /api/auth/verify-email
+// @access  Public
+exports.verifyEmail = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and OTP are required",
+      });
+    }
+
+    const hashedOTP = crypto.createHash("sha256").update(otp).digest("hex");
+
+    const student = await Student.findOne({
+      email: email.toLowerCase(),
+      emailVerificationToken: hashedOTP,
+      emailVerificationExpire: { $gt: Date.now() },
+    });
+
+    if (!student) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    student.isEmailVerified = true;
+    student.emailVerificationToken = undefined;
+    student.emailVerificationExpire = undefined;
+    await student.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify phone with OTP
+// @route   POST /api/auth/verify-phone
+// @access  Public
+exports.verifyPhone = async (req, res, next) => {
+  try {
+    const { phoneNumber, otp } = req.body;
+
+    if (!phoneNumber || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number and OTP are required",
+      });
+    }
+
+    // Find student
+    const student = await Student.findOne({ phoneNumber });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    // Check if phone verification is still valid
+    if (
+      student.phoneVerificationExpire &&
+      student.phoneVerificationExpire < Date.now()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new one.",
+      });
+    }
+
+    // Verify OTP (this handles dev mode automatically)
+    const isValid = await verifySMSOTP(phoneNumber, otp);
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    student.isPhoneVerified = true;
+    student.phoneVerificationExpire = undefined;
+    await student.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Phone number verified successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Resend email verification OTP
+// @route   POST /api/auth/resend-email-otp
+// @access  Public
+exports.resendEmailOTP = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const student = await Student.findOne({ email: email.toLowerCase() });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    if (student.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already verified",
+      });
+    }
+
+    // Generate new OTP
+    const otp = student.generateOTP();
+    student.emailVerificationToken = crypto
+      .createHash("sha256")
+      .update(otp)
+      .digest("hex");
+    student.emailVerificationExpire = Date.now() + 10 * 60 * 1000;
+    await student.save();
+
+    // Send OTP (handles dev/prod automatically)
+    await sendOTPEmail(student.email, otp, "email");
+
+    res.status(200).json({
+      success: true,
+      message: isDevelopment
+        ? `Email verification OTP: ${otp} (check console in dev mode)`
+        : "Verification OTP sent to your email",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Resend phone verification OTP
+// @route   POST /api/auth/resend-phone-otp
+// @access  Public
 exports.resendPhoneOTP = async (req, res, next) => {
   try {
     const { phoneNumber } = req.body;
@@ -385,120 +499,230 @@ exports.resendPhoneOTP = async (req, res, next) => {
     if (!phoneNumber) {
       return res.status(400).json({
         success: false,
-        message: "Phone number required",
+        message: "Phone number is required",
       });
     }
 
-    const user = await User.findOne({ phoneNumber });
-    if (!user) {
+    const student = await Student.findOne({ phoneNumber });
+
+    if (!student) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "Student not found",
       });
     }
 
-    if (user.isPhoneVerified) {
+    if (student.isPhoneVerified) {
       return res.status(400).json({
         success: false,
-        message: "Phone already verified",
+        message: "Phone number already verified",
       });
     }
 
-    // Send new SMS OTP via OTP.dev
-    try {
-      const smsResult = await sendSMSOTP(phoneNumber);
-      const messageId =
-        smsResult.message_id || smsResult.id || smsResult.data?.id || null;
+    // Send new SMS OTP (handles dev/prod automatically)
+    await sendSMSOTP(phoneNumber);
+    student.phoneVerificationExpire = Date.now() + 10 * 60 * 1000;
+    await student.save();
 
-      if (!messageId) {
-        throw new Error("Failed to get SMS message ID from OTP service");
-      }
-
-      user.phoneVerificationMessageId = messageId;
-      user.phoneVerificationExpire = Date.now() + 10 * 60 * 1000;
-      await user.save();
-
-      res.status(200).json({
-        success: true,
-        message: "SMS OTP sent successfully",
-      });
-    } catch (error) {
-      console.error("SMS resend failed:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to send SMS OTP",
-      });
-    }
+    res.status(200).json({
+      success: true,
+      message: isDevelopment
+        ? "SMS OTP sent (check console in dev mode)"
+        : "SMS OTP sent successfully",
+    });
   } catch (error) {
+    console.error("SMS resend failed:", error);
     next(error);
   }
 };
 
+// @desc    Forgot Password - Send OTP to email
+// @route   POST /api/auth/forgot-password
+// @access  Public
 exports.forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({
+    if (!email) {
+      return res.status(400).json({
         success: false,
-        message: "User not found",
+        message: "Email is required",
       });
     }
 
-    const resetToken = user.generateVerificationToken();
-    user.passwordResetToken = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
-    user.passwordResetExpire = Date.now() + 60 * 60 * 1000;
-    await user.save();
+    const student = await Student.findOne({ email: email.toLowerCase() });
 
-    const resetUrl = `${config.frontendUrl}/reset-password/${resetToken}`;
-    sendPasswordResetEmail(user.email, resetUrl).catch(console.error);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "No student found with this email",
+      });
+    }
+
+    // Generate 6-digit OTP
+    const otp = student.generateOTP();
+
+    // Hash OTP and store
+    student.passwordResetOTP = crypto
+      .createHash("sha256")
+      .update(otp)
+      .digest("hex");
+    student.passwordResetOTPExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    await student.save();
+
+    // Send OTP via email (handles dev/prod automatically)
+    try {
+      await sendPasswordResetOTPEmail(student.email, otp);
+
+      res.status(200).json({
+        success: true,
+        message: isDevelopment
+          ? `Password reset OTP: ${otp} (check console in dev mode)`
+          : "Password reset OTP sent to your email",
+      });
+    } catch (error) {
+      student.passwordResetOTP = undefined;
+      student.passwordResetOTPExpire = undefined;
+      await student.save();
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send OTP email. Please try again.",
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify OTP and Reset Password
+// @route   POST /api/auth/reset-password
+// @access  Public
+exports.resetPassword = async (req, res, next) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, OTP, and new password are required",
+      });
+    }
+
+    // Validate password strength
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long",
+      });
+    }
+
+    // Hash the provided OTP
+    const hashedOTP = crypto.createHash("sha256").update(otp).digest("hex");
+
+    // Find student with matching OTP and not expired
+    const student = await Student.findOne({
+      email: email.toLowerCase(),
+      passwordResetOTP: hashedOTP,
+      passwordResetOTPExpire: { $gt: Date.now() },
+    }).select("+passwordResetOTP +passwordResetOTPExpire");
+
+    if (!student) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    // Update password
+    student.password = newPassword;
+    student.passwordResetOTP = undefined;
+    student.passwordResetOTPExpire = undefined;
+    await student.save();
 
     res.status(200).json({
       success: true,
-      message: "Password reset email sent",
+      message:
+        "Password reset successful. You can now login with your new password.",
     });
   } catch (error) {
     next(error);
   }
 };
 
-// @access Public
-exports.resetPassword = async (req, res, next) => {
+// @desc    Resend Password Reset OTP
+// @route   POST /api/auth/resend-reset-otp
+// @access  Public
+exports.resendResetOTP = async (req, res, next) => {
   try {
-    const { token, newPassword } = req.body;
+    const { email } = req.body;
 
-    if (!token || !newPassword) {
+    if (!email) {
       return res.status(400).json({
         success: false,
-        message: "Token and new password required",
+        message: "Email is required",
       });
     }
 
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-    const user = await User.findOne({
-      passwordResetToken: hashedToken,
-      passwordResetExpire: { $gt: Date.now() },
-    });
+    const student = await Student.findOne({ email: email.toLowerCase() });
 
-    if (!user) {
-      return res.status(400).json({
+    if (!student) {
+      return res.status(404).json({
         success: false,
-        message: "Invalid or expired token",
+        message: "No student found with this email",
       });
     }
 
-    user.password = newPassword;
-    user.passwordResetToken = undefined;
-    user.passwordResetExpire = undefined;
-    await user.save();
+    // Generate new OTP
+    const otp = student.generateOTP();
+    student.passwordResetOTP = crypto
+      .createHash("sha256")
+      .update(otp)
+      .digest("hex");
+    student.passwordResetOTPExpire = Date.now() + 10 * 60 * 1000;
+    await student.save();
+
+    // Send OTP
+    await sendPasswordResetOTPEmail(student.email, otp);
 
     res.status(200).json({
       success: true,
-      message: "Password reset successful",
+      message: isDevelopment
+        ? `OTP resent: ${otp} (check console in dev mode)`
+        : "OTP resent successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get current student profile
+// @route   GET /api/auth/me
+// @access  Private (Student only)
+exports.getMe = async (req, res, next) => {
+  try {
+    const student = await Student.findById(req.user.id)
+      .select("-password")
+      .populate(
+        "consultant",
+        "firstName lastName companyName email phoneNumber"
+      )
+      .populate("academicRecords")
+      .populate("testScores")
+      .populate("workExperience")
+      .populate("coBorrowers")
+      .populate("admissionLetters");
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: student,
     });
   } catch (error) {
     next(error);

@@ -1,33 +1,45 @@
+// routes/students/student.auth.routes.js
 const express = require("express");
 const router = express.Router();
-
-const auth = require("../../controllers/students/auth.controller");
+const {
+  register,
+  registerFromInvite,
+  login,
+  verifyEmail,
+  verifyPhone,
+  resendEmailOTP,
+  resendPhoneOTP,
+  forgotPassword,
+  resetPassword,
+  resendResetOTP,
+  getMe,
+} = require("../../controllers/students/auth.controller");
 const authMiddleware = require("../../middleware/authMiddleware");
 const authorize = require("../../middleware/authorize");
 
-// PUBLIC ROUTES
-router.post("/register", auth.register);
-router.post("/register/invite", auth.registerFromInvite);
+// ============ PUBLIC ROUTES ============
 
-router.post("/login", auth.login);
+// Registration (both methods)
+router.post("/register", register); // Self-registration
+router.post("/register-from-invite", registerFromInvite); // Via consultant invitation
 
-router.post("/verify-email", auth.verifyEmail);
-router.post("/verify-phone", auth.verifyPhone);
+// Login
+router.post("/login", login);
 
-router.post("/resend-email-otp", auth.resendEmailVerification);
-router.post("/resend-phone-otp", auth.resendPhoneOTP);
+// Email Verification
+router.post("/verify-email", verifyEmail);
+router.post("/resend-email-otp", resendEmailOTP);
 
-router.post("/forgot-password", auth.forgotPassword);
-router.post("/reset-password", auth.resetPassword);
+// Phone Verification
+router.post("/verify-phone", verifyPhone);
+router.post("/resend-phone-otp", resendPhoneOTP);
 
-// PROTECTED ROUTE EXAMPLE
-router.get(
-  "/me",
-  authMiddleware,
-  authorize("student", "admin", "consultant", "nbfc"),
-  (req, res) => {
-    res.json({ success: true, user: req.user });
-  }
-);
+// Password Reset
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
+router.post("/resend-reset-otp", resendResetOTP);
+
+// ============ PROTECTED ROUTES ============
+router.get("/me", authMiddleware, authorize("student"), getMe);
 
 module.exports = router;
