@@ -137,7 +137,12 @@ const StudentSchema = new mongoose.Schema(
       ref: "Workexperience",
     },
 
-    coBorrowers: [{ type: mongoose.Schema.Types.ObjectId, ref: "CoBorrower" }],
+    coBorrowers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CoBorrower",
+      },
+    ],
     admissionLetters: [
       { type: mongoose.Schema.Types.ObjectId, ref: "AdmissionLetter" },
     ],
@@ -223,6 +228,21 @@ StudentSchema.pre("save", function () {
 
 StudentSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
+};
+// ✅ Method to add co-borrower (newest first)
+StudentSchema.methods.addCoBorrower = async function (coBorrowerId) {
+  if (!this.coBorrowers.includes(coBorrowerId)) {
+    this.coBorrowers.unshift(coBorrowerId); // Add to beginning
+    await this.save();
+  }
+};
+
+// ✅ Method to remove co-borrower
+StudentSchema.methods.removeCoBorrower = async function (coBorrowerId) {
+  this.coBorrowers = this.coBorrowers.filter(
+    (id) => id.toString() !== coBorrowerId.toString()
+  );
+  await this.save();
 };
 
 module.exports = mongoose.model("Student", StudentSchema);

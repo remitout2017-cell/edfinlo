@@ -1,29 +1,38 @@
+# Dockerfile
 FROM python:3.11-slim
 
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for PDF processing
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
+    libmagic1 \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
+# Copy requirements first (for better caching)
 COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application files
 COPY . .
 
-# Create upload directory
-RUN mkdir -p /app/uploads
+# Create directories for uploads and logs
+RUN mkdir -p /app/academic_uploads /app/logs
 
-# Expose port
+# Expose port 5002
 EXPOSE 5002
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5002/api/health || exit 1
+# Set environment variables
+ENV HOST=0.0.0.0
+ENV PORT=5002
+ENV PYTHONUNBUFFERED=1
 
-# Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:5002", "--workers", "4", "--threads", "2", "--timeout", "120", "app:app"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:5002/api/health')" || exit 1
+
+# Run the Flask app
+CMD ["python", "app.py"]

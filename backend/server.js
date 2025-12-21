@@ -15,6 +15,7 @@ const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 const academicRoutes = require("./routes/students/academic.routes");
 const workExperienceRoutes = require("./routes/students/workexperience.routes"); // ✅ ADD THIS
 const testScoresRoutes = require("./routes/students/testscores.routes"); // ✅ NEW
+const coBorrowerRoutes = require("./routes/students/coborrower.routes");
 
 const admissionRoutes = require("./routes/students/admission.routes");
 const {
@@ -75,6 +76,7 @@ app.use("/api/user/academics", academicRoutes);
 app.use("/api/user/admission", admissionRoutes);
 app.use("/api/user/workexperience", workExperienceRoutes); // ✅ ADD THIS
 app.use("/api/user/testscores", testScoresRoutes); // ✅ NEW TEST SCORES ROUTE
+app.use("/api/coborrower", coBorrowerRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({

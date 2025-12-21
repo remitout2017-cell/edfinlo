@@ -18,7 +18,6 @@ const NBFCSchema = new mongoose.Schema(
       trim: true,
       unique: true,
     },
-    brandName: { type: String, trim: true },
     email: {
       type: String,
       required: true,
@@ -32,16 +31,6 @@ const NBFCSchema = new mongoose.Schema(
       select: false,
     },
     phoneNumber: { type: String, unique: true, sparse: true },
-    registrationNumber: { type: String, trim: true },
-    gstNumber: { type: String, trim: true },
-    address: {
-      line1: String,
-      line2: String,
-      city: String,
-      state: String,
-      pincode: String,
-      country: { type: String, default: "India" },
-    },
     contactPerson: {
       name: String,
       designation: String,
@@ -49,16 +38,8 @@ const NBFCSchema = new mongoose.Schema(
       phone: String,
     },
 
-    // Verification status
-    isEmailVerified: { type: Boolean, default: false },
-    isPhoneVerified: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
-    isApprovedByAdmin: { type: Boolean, default: false },
 
-    emailVerificationToken: { type: String, select: false },
-    emailVerificationExpire: { type: Date, select: false },
-    phoneVerificationMessageId: { type: String, select: false },
-    phoneVerificationExpire: { type: Date, select: false },
     passwordResetToken: { type: String, select: false },
     passwordResetExpire: { type: Date, select: false },
 
@@ -189,10 +170,7 @@ NBFCSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Generate OTP (6 digits)
-NBFCSchema.methods.generateOTP = function () {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
+
 
 // Generate verification token (for password reset)
 NBFCSchema.methods.generateVerificationToken = function () {

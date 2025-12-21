@@ -1,40 +1,37 @@
-# syntax=docker/dockerfile:1
-
+# Dockerfile
 FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
+# Set working directory
 WORKDIR /app
 
-# System deps (curl only for container HEALTHCHECK + basic TLS certs)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl ca-certificates \
+# Install system dependencies for PDF and image processing
+RUN apt-get update && apt-get install -y \
+  libgl1 \
+  libglib2.0-0 \
   && rm -rf /var/lib/apt/lists/*
 
-# Install Python deps first (better layer caching)
+# Copy requirements first (better caching)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-  && pip install --no-cache-dir gunicorn
 
-# Copy the application code
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all application files
 COPY . .
 
-# Create a non-root user and make sure temp folder is writable
-# Your code uses Config.TEMP_DIR = "temp_sessions" [file:3]
-RUN useradd -m -u 10001 appuser \
-  && mkdir -p /app/temp_sessions \
-  && chown -R appuser:appuser /app
+# Create temp sessions directory
+RUN mkdir -p /app/temp_sessions
 
-USER appuser
+# Expose port 8500
+EXPOSE 8500
 
-# Your server is configured to run on port 8000 in uvicorn.run(...) [file:2]
-EXPOSE 8000
+# Set environment variables
+ENV PORT=8500
+ENV PYTHONUNBUFFERED=1
 
-# Container-level healthcheck hits your /health endpoint [file:2]
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -fsS http://127.0.0.1:8000/health || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:8500/health')" || exit 1
 
-# Production command (NO reload)
-# Binds to 0.0.0.0 so it’s reachable outside the container [file:2]
-CMD ["sh", "-c", "gunicorn -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY:-2} -b 0.0.0.0:${PORT:-8000} --timeout ${GUNICORN_TIMEOUT:-180} agent_server:app"]
+# Run with uvicorn on port 8500
+CMD ["uvicorn", "agent_server:app", "--host", "0.0.0.0", "--port", "8500", "--workers", "2"]

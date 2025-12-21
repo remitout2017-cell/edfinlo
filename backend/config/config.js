@@ -36,8 +36,8 @@ module.exports = {
     geminiTemperature: Number(env.GEMINI_TEMPERATURE) || 0.05,
     groqTemperature: Number(env.GROQ_TEMPERATURE) || 0.1,
   },
-  kycServerUrl: env.KYC_SERVER_URL,
-
+  kycServerUrl:
+    process.env.KYC_SERVER_URL || "http://localhost:5001/api/kyc/process",
   rateLimit: {
     windowMinutes: Number(env.RATE_LIMIT_WINDOW) || 15,
     maxRequests: Number(env.RATE_LIMIT_MAX_REQUESTS) || 100,
@@ -71,6 +71,10 @@ module.exports = {
     password: process.env.REDIS_PASSWORD || undefined,
   },
 
+  // Python Financial Analysis Server URL
+  pythonFinancialServerUrl:
+    process.env.PYTHON_FINANCIAL_SERVER_URL ||
+    "http://localhost:8000/api/analyze",
   email: {
     service: env.EMAIL_SERVICE || "gmail",
     host: env.EMAIL_HOST || "smtp.gmail.com",

@@ -68,7 +68,7 @@ exports.registerNBFC = async (req, res, next) => {
       registrationNumber,
       gstNumber,
       contactPerson,
-      address,
+      address,  
       isEmailVerified: isDevelopment,
       isPhoneVerified: isDevelopment,
     });
