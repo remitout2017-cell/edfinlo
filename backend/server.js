@@ -98,6 +98,18 @@ app.use(
   "/api/consultant/students",
   require("./routes/consultant/consultant.students.routes")
 );
+app.use(
+  "/api/student/loan-matching",
+  otpLimiter,
+  require("./routes/students/loanMatching.routes")
+);
+
+// NBFC loan requests
+app.use(
+  "/api/nbfc/loan-requests",
+  otpLimiter,
+  require("./routes/nbfc/loanRequest.routes")
+);
 
 app.get("/health", (req, res) => {
   res.status(200).json({

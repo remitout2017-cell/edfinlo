@@ -22,6 +22,8 @@
   },
   "dependencies": {
     "@exortek/express-mongo-sanitize": "^1.1.1",
+    "@langchain/core": "^1.1.7",
+    "@langchain/groq": "^1.0.2",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.66.0",
@@ -40,7 +42,7 @@
     "install": "^0.13.0",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.3",
-    "langchain": "^1.2.0",
+    "langchain": "^1.2.2",
     "mongoose": "7.6.3",
     "multer": "^2.0.2",
     "node-cache": "^5.1.2",
