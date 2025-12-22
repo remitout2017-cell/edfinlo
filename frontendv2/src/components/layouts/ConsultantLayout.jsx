@@ -3,18 +3,15 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NotificationBell from '../common/NotificationBell';
-import { 
-  LayoutDashboard, 
-  Users, 
-  UserPlus, 
+import {
+  LayoutDashboard,
+  User,
   FileText, 
-  GraduationCap, 
-  Award, 
   LogOut,
   Menu,
   X,
-  UserCheck,
-  Shield
+  Shield,
+  Headphones
 } from 'lucide-react';
 
 const ConsultantLayout = ({ children }) => {
@@ -25,12 +22,9 @@ const ConsultantLayout = ({ children }) => {
 
   const navigation = [
     { name: 'Dashboard', href: '/consultant/dashboard', icon: LayoutDashboard },
-    { name: 'My Students', href: '/consultant/students', icon: Users },
-    { name: 'Invite Students', href: '/consultant/invite', icon: UserPlus },
-    { name: 'Student Profiles', href: '/consultant/profiles', icon: UserCheck },
-    { name: 'Loan Requests', href: '/consultant/loan-requests', icon: FileText },
-    { name: 'Admissions', href: '/consultant/admissions', icon: GraduationCap },
-    { name: 'Loan Analysis', href: '/consultant/loan-analysis', icon: Award },
+    { name: 'Profile', href: '/consultant/profile', icon: User },
+    { name: 'Student Applications Status', href: '/consultant/students', icon: FileText },
+    { name: 'Support', href: '/consultant/support', icon: Headphones },
   ];
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
@@ -81,7 +75,7 @@ const ConsultantLayout = ({ children }) => {
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 font-medium text-sm
                   ${isActive(item.href)
-                    ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-lg shadow-green-500/25' 
+                    ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-lg shadow-green-500/25'
                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md hover:-translate-x-1'
                   }
                 `}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import NotificationBell from "../../components/common/NotificationBell";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, X, Home } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -17,16 +17,9 @@ const DashboardLayout = ({ children }) => {
     switch (role) {
       case "student":
         return [
-          { name: "KYC", href: "/student/kyc" },
-          { name: "Academic Records", href: "/student/academic-records" },
-          { name: "Work Experience", href: "/student/work-experience" },
-          { name: "Co-Borrower", href: "/student/co-borrower" },
-          { name: "Admission Letter", href: "/student/admission" },
           { name: "Dashboard", href: "/student/dashboard" },
           { name: "Profile", href: "/student/profile" },
           { name: "My Application", href: "/student/education-plan" },
-          { name: "Loan Request", href: "/student/loan-request" },
-          { name: "Loan Analysis", href: "/student/loan-analysis" },
         ];
 
       case "nbfc":
@@ -86,9 +79,8 @@ const DashboardLayout = ({ children }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="h-full flex flex-col">
           {/* Close button */}
@@ -110,11 +102,10 @@ const DashboardLayout = ({ children }) => {
                   <Link
                     to={item.href}
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      isActive(item.href)
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${isActive(item.href)
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
                   >
                     <span>{item.name}</span>
                   </Link>
@@ -173,6 +164,15 @@ const DashboardLayout = ({ children }) => {
 
             {/* Right side - Notification Bell and User Profile */}
             <div className="flex items-center gap-4">
+              {/* Back to Home Button */}
+              <Link
+                to="/"
+                className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Home className="w-4 h-4" />
+                <span>Home</span>
+              </Link>
+
               <NotificationBell />
 
               {/* User Profile Dropdown */}

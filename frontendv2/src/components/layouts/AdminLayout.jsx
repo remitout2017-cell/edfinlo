@@ -3,15 +3,16 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NotificationBell from '../common/NotificationBell';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Building2, 
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
   Settings,
   LogOut,
   Menu,
   X,
-  Shield
+  Shield,
+  Home
 } from 'lucide-react';
 
 const AdminLayout = ({ children }) => {
@@ -22,20 +23,20 @@ const AdminLayout = ({ children }) => {
   const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
 
   const navigation = [
-    { 
-      name: 'Dashboard', 
-      href: '/admin/dashboard', 
-      icon: LayoutDashboard 
+    {
+      name: 'Dashboard',
+      href: '/admin/dashboard',
+      icon: LayoutDashboard
     },
-    { 
-      name: 'Students', 
-      href: '/admin/students', 
-      icon: Users 
+    {
+      name: 'Students',
+      href: '/admin/students',
+      icon: Users
     },
-    { 
-      name: 'NBFCs', 
-      href: '/admin/nbfcs', 
-      icon: Building2 
+    {
+      name: 'NBFCs',
+      href: '/admin/nbfcs',
+      icon: Building2
     },
     ...(isSuperAdmin ? [{
       name: 'Sub-Admins',
@@ -150,8 +151,17 @@ const AdminLayout = ({ children }) => {
               </h2>
             </div>
 
-            {/* Right side - Notifications */}
+            {/* Right side - Home Button and Notifications */}
             <div className="flex items-center gap-4 ml-auto">
+              {/* Back to Home Button */}
+              <Link
+                to="/"
+                className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Home className="h-4 w-4" />
+                <span>Home</span>
+              </Link>
+
               <NotificationBell />
             </div>
           </div>

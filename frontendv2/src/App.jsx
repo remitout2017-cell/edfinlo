@@ -45,6 +45,8 @@ import ConsultantLoanRequests from "./pages/consultant/LoanRequestDetail";
 import ConsultantAdmissions from "./pages/consultant/Admissions";
 import ConsultantLoanAnalysis from "./pages/consultant/LoanAnalysis";
 import ConsultantStudentDetail from "./pages/consultant/StudentDetail";
+import ConsultantProfile from "./pages/consultant/Profile";
+import ConsultantSupport from "./pages/consultant/Support";
 import Studyeducationplan from "./pages/student/StudentEducationPlan";
 // ==================== COMMON PAGES ====================
 import Unauthorized from "./pages/Unauthorized";
@@ -172,6 +174,14 @@ function App() {
                   <Route
                     path="/consultant/loan-analysis"
                     element={<ConsultantLoanAnalysis />}
+                  />
+                  <Route
+                    path="/consultant/profile"
+                    element={<ConsultantProfile />}
+                  />
+                  <Route
+                    path="/consultant/support"
+                    element={<ConsultantSupport />}
                   />
                 </Route>
 

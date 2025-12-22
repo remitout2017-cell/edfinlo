@@ -254,6 +254,9 @@ export const consultantAPI = {
   getStudentSummary: (studentId) =>
     api.get(`/consultant/students/${studentId}/summary`),
 
+  // ==================== REGISTER STUDENTS ====================
+  registerStudents: (data) => api.post("/consultant/register-students", data),
+
   // ==================== INVITE STUDENTS ====================
   inviteStudents: (data) => api.post("/consultant/invite-students", data),
 
