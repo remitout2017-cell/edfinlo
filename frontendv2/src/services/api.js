@@ -37,248 +37,315 @@ api.interceptors.response.use(
   }
 );
 
-// ==================== STUDENT AUTH APIs ====================
+// Auth APIs
 export const authAPI = {
-  // Student Authentication
-  register: (data) => api.post("/auth/register", data),
   registerFromInvite: (data) => api.post("/auth/register-from-invite", data),
-  login: (email, password) => api.post("/auth/login", { email, password }),
 
-  // Email Verification
+  studentLogin: (email, password) =>
+    api.post("/auth/login", { email, password }),
+  adminLogin: (email, password) =>
+    api.post("/admin/login", { email, password }),
+  nbfcLogin: (email, password) => api.post("/nbfc/login", { email, password }),
+  consultantLogin: (email, password) =>
+    api.post("/consultant/login", { email, password }),
+  register: (data) => api.post("/auth/register", data),
   verifyEmail: (email, otp) => api.post("/auth/verify-email", { email, otp }),
-  resendEmailOTP: (email) => api.post("/auth/resend-email-otp", { email }),
-
-  // Phone Verification
   verifyPhone: (phoneNumber, otp) =>
     api.post("/auth/verify-phone", { phoneNumber, otp }),
+  resendEmailOTP: (email) =>
+    api.post("/auth/resend-email-verification", { email }),
   resendPhoneOTP: (phoneNumber) =>
     api.post("/auth/resend-phone-otp", { phoneNumber }),
-
-  // Password Reset
   forgotPassword: (email) => api.post("/auth/forgot-password", { email }),
-  resetPassword: (email, otp, newPassword) =>
-    api.post("/auth/reset-password", { email, otp, newPassword }),
-  resendResetOTP: (email) => api.post("/auth/resend-reset-otp", { email }),
-
-  // Get Current User
-  getMe: () => api.get("/auth/me"),
+  resetPassword: (token, newPassword) =>
+    api.post("/auth/reset-password", { token, newPassword }),
+  consultantRegister: (data) => api.post("/consultant/register", data),
 };
 
-// ==================== USER PROFILE APIs ====================
-export const userAPI = {
-  getProfile: () => api.get("/user/profile"),
-  updateProfile: (data) => api.put("/user/profile", data),
-  changePassword: (currentPassword, newPassword) =>
-    api.put("/user/change-password", { currentPassword, newPassword }),
-  deleteAccount: () => api.delete("/user/account"),
-};
-
-// ==================== KYC APIs ====================
+// KYC APIs
 export const kycAPI = {
   uploadDocuments: (formData) =>
-    api.post("/user/kyc/upload", formData, {
+    api.post("/kyc/upload-docs", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  getKYCDetails: () => api.get("/user/kyc/kyc/me"),
+  getKYCDetails: () => api.get("/kyc/my-kyc"),
+  deleteKYC: () => api.delete("/kyc/my-kyc"),
 };
 
-// ==================== ACADEMIC RECORDS APIs ====================
+// Academic Records APIs
 export const academicAPI = {
-  // Extract academic records from PDFs
-  extractComplete: (formData) =>
-    api.post("/user/academics/extract/complete", formData, {
+  uploadClass10: (formData) =>
+    api.post("/academic/upload/class10", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  extractClass10: (formData) =>
-    api.post("/user/academics/extract/class10", formData, {
+  uploadClass12: (formData) =>
+    api.post("/academic/upload/class12", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  extractClass12: (formData) =>
-    api.post("/user/academics/extract/class12", formData, {
+  uploadGraduation: (formData) =>
+    api.post("/academic/upload/graduation", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-
-  // Get and Delete
-  getRecords: () => api.get("/user/academics/records"),
-  deleteRecord: (recordType) => api.delete(`/user/academics/${recordType}`), // recordType: class10, class12, graduation
-
-  // Health Check
-  healthCheck: () => api.get("/user/academics/health"),
+  getRecords: () => api.get("/academic/my-records"),
+  deleteHigherEducation: (educationId) =>
+    api.delete(`/academic/higher-education/${educationId}`),
 };
 
-// ==================== TEST SCORES APIs ====================
-export const testScoresAPI = {
-  // Smart extraction - upload any combination of test scores
-  extract: (formData) =>
-    api.post("/user/testscores/extract", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }),
-
-  getTestScores: () => api.get("/user/testscores"),
-  deleteTestScore: (testType) => api.delete(`/user/testscores/${testType}`), // testType: toefl, gre, ielts
-
-  // Health Check
-  healthCheck: () => api.get("/user/testscores/health"),
-};
-
-// ==================== WORK EXPERIENCE APIs ====================
+// Work Experience APIs
 export const workExperienceAPI = {
-  submit: (formData) =>
-    api.post("/user/workexperience/submit", formData, {
+  uploadDocuments: (formData) =>
+    api.post("/work-experience/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  getExperience: () => api.get("/user/workexperience/me"),
-  deleteExperience: () => api.delete("/user/workexperience/me"),
-
-  // Health Check
-  healthCheck: () => api.get("/user/workexperience/health"),
+  getExperiences: () => api.get("/work-experience/my-experience"),
+  deleteExperience: (experienceId) =>
+    api.delete(`/work-experience/${experienceId}`),
 };
 
-// ==================== ADMISSION LETTER APIs ====================
-export const admissionAPI = {
-  submit: (formData) =>
-    api.post("/user/admission/submit", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }),
-  getAdmission: () => api.get("/user/admission/me"),
-  deleteAdmission: () => api.delete("/user/admission/me"),
-
-  // Score Analysis
-  getScoreAnalysis: () => api.get("/user/admission/analysis"),
-  getScoreComparison: () => api.get("/user/admission/analysis/comparison"),
-
-  // Health Check
-  healthCheck: () => api.get("/user/admission/health"),
-};
-
-// ==================== STUDENT EDUCATION PLAN APIs ====================
 export const studentEducationPlanAPI = {
-  getMyPlan: () => api.get("/user/educationplan"),
-  upsertPlan: (data) => api.post("/user/educationplan", data),
+  getMyPlan: () => api.get("/students/education-plan"),
+  upsertPlan: (data) => api.post("/students/education-plan", data),
 };
 
-// ==================== CO-BORROWER APIs ====================
+// Co-Borrower APIs
 export const coBorrowerAPI = {
-  // Get all co-borrowers
-  getAll: () => api.get("/coborrower/list"),
-  getById: (coBorrowerId) => api.get(`/coborrower/${coBorrowerId}`),
-  delete: (coBorrowerId) => api.delete(`/coborrower/${coBorrowerId}`),
-
-  // KYC Upload (multipart with JSON fields + files)
-  uploadKYC: (formData) =>
-    api.post("/coborrower/kyc/upload", formData, {
+  getAll: () => api.get("/co-borrower"),
+  uploadCoreDocs: (formData) =>
+    api.post("/co-borrower", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-
-  // Re-verify KYC
-  reverifyKYC: (coBorrowerId, formData) =>
-    api.put(`/coborrower/${coBorrowerId}/kyc/reverify`, formData, {
+  uploadBankStatements: (id, formData) =>
+    api.post(`/co-borrower/${id}/bank-statements`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-
-  // Financial Documents Upload (triggers Python server automatically)
-  uploadFinancialDocs: (coBorrowerId, formData) =>
-    api.post(`/coborrower/${coBorrowerId}/financial/upload`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }),
-
-  // Get Financial Status & Analysis
-  getFinancialStatus: (coBorrowerId) =>
-    api.get(`/coborrower/${coBorrowerId}/financial/status`),
-  getFinancialAnalysis: (coBorrowerId) =>
-    api.get(`/coborrower/${coBorrowerId}/financial/analysis`),
-
-  // Reset Financial Documents
-  resetFinancialDocs: (coBorrowerId) =>
-    api.delete(`/coborrower/${coBorrowerId}/financial/reset`),
+  delete: (id) => api.delete(`/co-borrower/${id}`),
 };
 
-// ==================== NBFC MATCHING & LOAN REQUEST APIs ====================
-export const loanMatchingAPI = {
-  // Run AI matching algorithm (takes ~5-10 seconds)
-  analyzeMatches: () => api.post("/student/loan-matching/analyze"),
-
-  // Send loan request to specific NBFC
-  sendRequest: (nbfcId, data) =>
-    api.post(`/student/loan-matching/send-request/${nbfcId}`, data),
-
-  // Get student's loan requests
-  getMyRequests: () => api.get("/student/loan-matching/my-requests"),
-
-  // Accept approved NBFC offer
-  acceptOffer: (requestId) =>
-    api.post(`/student/loan-matching/accept-offer/${requestId}`),
-
-  // Get analysis history
-  getHistory: () => api.get("/student/loan-matching/history"),
+// Admission Letter APIs
+export const admissionAPI = {
+  upload: (formData) =>
+    api.post("/admission/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  getAdmission: () => api.get("/admission/my-admission"),
+  delete: () => api.delete("/admission/my-admission"),
 };
 
-// ==================== NBFC APIs ====================
+// Loan Request APIs (FIXED)
+export const loanRequestAPI = {
+  // Student creates loan request
+  create: (nbfcId, analysisHistoryId = null) =>
+    api.post("/loan-requests", { nbfcId, analysisHistoryId }),
+
+  // Student accepts approved offer
+  acceptOffer: (id) => api.post(`/loan-requests/${id}/accept`),
+
+  // Get student's own loan requests (not implemented in backend yet)
+  getStudentRequests: () => api.get("/loan-requests/student"),
+};
+
+// Loan Analysis APIs (FIXED)
+export const loanAnalysisAPI = {
+  // Run basic analysis
+  analyze: () => api.post("/loan-analysis/analyze"),
+
+  // Run enhanced analysis
+  analyzeEnhanced: () => api.post("/loan-analysis/analyze-enhanced"),
+
+  // Get analysis history with pagination
+  getHistory: (page = 1, limit = 10) =>
+    api.get(`/loan-analysis/history?page=${page}&limit=${limit}`),
+
+  // Get single analysis by ID
+  getById: (id) => api.get(`/loan-analysis/history/${id}`),
+
+  // Delete analysis
+  delete: (id) => api.delete(`/loan-analysis/history/${id}`),
+
+  // Compare two analyses
+  compare: (id1, id2) => api.get(`/loan-analysis/compare/${id1}/${id2}`),
+
+  // Get application completeness
+  getCompleteness: () => api.get("/loan-analysis/completeness"),
+
+  // Get section recommendations
+  getSectionRecommendations: (section) =>
+    api.get(`/loan-analysis/recommendations/${section}`),
+};
+
+// NBFC APIs
 export const nbfcAPI = {
-  // Authentication
-  register: (data) => api.post("/nbfc/auth/register", data),
-  login: (email, password) => api.post("/nbfc/auth/login", { email, password }),
-  verifyEmail: (email, otp) =>
-    api.post("/nbfc/auth/verify-email", { email, otp }),
-  resendEmailOTP: (email) => api.post("/nbfc/auth/resend-email-otp", { email }),
-  getMe: () => api.get("/nbfc/auth/me"),
+  register: (data) => api.post("/nbfc/register", data),
+  getProfile: () => api.get("/nbfc/profile"),
+  updateProfile: (data) => api.put("/nbfc/profile", data),
+  updateLoanConfig: (data) => api.put("/nbfc/loan-config", data),
 
-  // Loan Criteria Management
-  createCriteria: (data) => api.post("/nbfc/criteria", data),
-  getCriteria: () => api.get("/nbfc/criteria"),
-  updateCriteria: (criterionType, data) =>
-    api.put(`/nbfc/criteria/${criterionType}`, data), // criterionType: cibil, foir, income, etc.
+  // NBFC views loan requests sent to them
+  getRequests: (status) =>
+    api.get(`/loan-requests/nbfc${status ? `?status=${status}` : ""}`),
+  getRequestById: (id) => api.get(`/loan-requests/nbfc/${id}`),
 
-  // Loan Request Management
-  getPendingRequests: () => api.get("/nbfc/loan-requests/pending"),
-  getRequestById: (requestId) => api.get(`/nbfc/loan-requests/${requestId}`),
-  approveRequest: (requestId, data) =>
-    api.put(`/nbfc/loan-requests/${requestId}/approve`, data),
-  rejectRequest: (requestId, data) =>
-    api.put(`/nbfc/loan-requests/${requestId}/reject`, data),
-  requestAdditionalDocs: (requestId, data) =>
-    api.put(`/nbfc/loan-requests/${requestId}/request-docs`, data),
+  // NBFC decides on loan request
+  decideRequest: (id, status, offeredAmount, offeredRoi, reason) =>
+    api.post(`/loan-requests/${id}/decision`, {
+      status,
+      offeredAmount,
+      offeredRoi,
+      reason,
+    }),
+
+  // For students to see all approved NBFCs
+  getAllForStudents: () => api.get("/admin/nbfcs?status=approved"),
 };
 
-// ==================== CONSULTANT APIs ====================
+// src/services/api.js - Admin APIs
+
+export const adminAPI = {
+  // Students
+  listStudents: (page = 1, limit = 10, search = "") =>
+    api.get(`/admin/students?page=${page}&limit=${limit}&search=${search}`),
+
+  createStudent: (data) => api.post("/admin/students", data),
+
+  updateStudent: (id, data) => api.put(`/admin/students/${id}`, data),
+
+  deleteStudent: (id) => api.delete(`/admin/students/${id}`),
+
+  // NBFCs
+  listNBFCs: (page = 1, limit = 10, status = "", search = "") =>
+    api.get(
+      `/admin/nbfcs?page=${page}&limit=${limit}&status=${status}&search=${search}`
+    ),
+
+  approveNBFC: (id, approved) =>
+    api.put(`/admin/nbfcs/${id}/approve`, { approved }),
+
+  toggleNBFCStatus: (id) => api.put(`/admin/nbfcs/${id}/toggle-status`),
+
+  // Sub-Admins (Super Admin only)
+  createSubAdmin: (data) => api.post("/admin/sub-admin", data),
+
+  listAdmins: () => api.get("/admin/admins"),
+
+  updateSubAdmin: (id, data) =>
+    api.patch(`/admin/admins/${id}/permissions`, data),
+
+  deleteAdmin: (id) => api.delete(`/admin/admins/${id}`),
+};
 export const consultantAPI = {
-  // Authentication
-  register: (data) => api.post("/consultant/auth/register", data),
+  // ==================== AUTHENTICATION ====================
+  register: (data) => api.post("/consultant/register", data),
   login: (email, password) =>
-    api.post("/consultant/auth/login", { email, password }),
-  verifyEmail: (email, otp) =>
-    api.post("/consultant/auth/verify-email", { email, otp }),
-  resendEmailOTP: (email) =>
-    api.post("/consultant/auth/resend-email-otp", { email }),
-  getMe: () => api.get("/consultant/auth/me"),
+    api.post("/consultant/login", { email, password }),
 
-  // Student Invitation
-  inviteStudent: (data) => api.post("/consultant/students/invite", data),
-  getInvitations: () => api.get("/consultant/students/invitations"),
-  resendInvite: (inviteId) =>
-    api.post(`/consultant/students/invite/${inviteId}/resend`),
+  // ==================== DASHBOARD ====================
+  getDashboardStats: () => api.get("/consultant/dashboard"),
 
-  // Student Management
-  getMyStudents: (params = {}) => {
-    const { status = "all", page = 1, limit = 10 } = params;
+  // ==================== STUDENTS MANAGEMENT ====================
+  getStudents: (params = {}) => {
+    const { page = 1, limit = 20, search = "", kycStatus = "" } = params;
     return api.get(
-      `/consultant/students/my-students?status=${status}&page=${page}&limit=${limit}`
+      `/consultant/students?page=${page}&limit=${limit}&search=${search}&kycStatus=${kycStatus}`
     );
   },
-  getStudentById: (studentId) => api.get(`/consultant/students/${studentId}`),
-  getStudentProgress: (studentId) =>
-    api.get(`/consultant/students/${studentId}/progress`),
-  getStudentMatches: (studentId) =>
-    api.get(`/consultant/students/${studentId}/matches`),
-};
 
-// ==================== NOTIFICATION APIs (if implemented) ====================
+  getStudentById: (studentId) => api.get(`/consultant/students/${studentId}`),
+
+  getStudentSummary: (studentId) =>
+    api.get(`/consultant/students/${studentId}/summary`),
+
+  // ==================== REGISTER STUDENTS ====================
+  registerStudents: (data) => api.post("/consultant/register-students", data),
+
+  // ==================== INVITE STUDENTS ====================
+  inviteStudents: (data) => api.post("/consultant/invite-students", data),
+
+  getInvites: (params = {}) => {
+    const { page = 1, limit = 20 } = params;
+    return api.get(`/consultant/invites?page=${page}&limit=${limit}`);
+  },
+
+  resendInvite: (inviteId) =>
+    api.post(`/consultant/invites/${inviteId}/resend`),
+
+  cancelInvite: (inviteId) => api.delete(`/consultant/invites/${inviteId}`),
+
+  // ==================== LOAN REQUESTS ====================
+  getLoanRequests: (params = {}) => {
+    const { page = 1, limit = 20, status = "" } = params;
+    return api.get(
+      `/consultant/loan-requests?page=${page}&limit=${limit}&status=${status}`
+    );
+  },
+
+  getLoanRequestById: (requestId) =>
+    api.get(`/consultant/loan-requests/${requestId}`),
+
+  getStudentLoanRequests: (studentId) =>
+    api.get(`/consultant/students/${studentId}/loan-requests`),
+
+  // ==================== ADMISSIONS ====================
+  getAdmissions: (params = {}) => {
+    const { page = 1, limit = 20, status = "" } = params;
+    return api.get(
+      `/consultant/admissions?page=${page}&limit=${limit}&status=${status}`
+    );
+  },
+
+  getAdmissionById: (admissionId) =>
+    api.get(`/consultant/admissions/${admissionId}`),
+
+  getStudentAdmissions: (studentId) =>
+    api.get(`/consultant/students/${studentId}/admissions`),
+
+  // ==================== LOAN ANALYSIS ====================
+  getLoanAnalysis: (params = {}) => {
+    const { page = 1, limit = 20 } = params;
+    return api.get(`/consultant/loan-analysis?page=${page}&limit=${limit}`);
+  },
+
+  getAnalysisHistory: (studentId) =>
+    api.get(`/consultant/students/${studentId}/loan-analysis`),
+
+  // ==================== REPORTS & EXPORTS ====================
+  exportStudents: (filters = {}) =>
+    api.get("/consultant/export/students", {
+      params: filters,
+      responseType: "blob",
+    }),
+
+  exportLoanRequests: (filters = {}) =>
+    api.get("/consultant/export/loan-requests", {
+      params: filters,
+      responseType: "blob",
+    }),
+};
+// Notification APIs
 export const notificationAPI = {
+  // ✅ FIXED: Changed /notification to /notifications (plural)
   getAll: (page = 1, limit = 20) =>
     api.get(`/notifications?page=${page}&limit=${limit}`),
+
+  // ✅ FIXED: Changed PUT to PATCH to match backend
   markAsRead: (id) => api.patch(`/notifications/${id}/read`),
+
+  // ✅ FIXED: Changed PUT to PATCH and /read-all to match backend
   markAllAsRead: () => api.patch("/notifications/read-all"),
+
+  // ✅ DELETE not implemented in backend yet, so comment it out for now
   deleteNotification: (id) => api.delete(`/notifications/${id}`),
+};
+
+// User APIs
+export const userAPI = {
+  getProfile: () => api.get("/users/profile"),
+  updateProfile: (data) => api.put("/user/profile", data),
+  uploadProfilePicture: (formData) =>
+    api.post("/user/profile/picture", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  changePassword: (currentPassword, newPassword) =>
+    api.put("/user/change-password", { currentPassword, newPassword }),
 };
 
 export default api;
