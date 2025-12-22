@@ -192,6 +192,7 @@ const CoBorrowerSchema = new mongoose.Schema(
       default: "pending",
       index: true,
     },
+
     financialVerifiedAt: Date,
     financialVerificationConfidence: { type: Number, min: 0, max: 1 },
     financialVerificationErrors: [String],
@@ -203,6 +204,12 @@ const CoBorrowerSchema = new mongoose.Schema(
       estimatedAnnualIncome: Number,
       totalExistingEmi: Number,
       foir: Number,
+      // ✅ ADD THESE 5 FIELDS:
+      avgBankBalance: Number,
+      minBankBalance: Number,
+      bounceCount: Number,
+      dishonorCount: Number,
+      insufficientFundIncidents: Number,
       foirStatus: String,
       cibilEstimate: Number,
       cibilRiskLevel: String,
@@ -367,33 +374,43 @@ CoBorrowerSchema.statics.checkDuplicateName = async function (
   );
 };
 
-// ============================================================================
-// Instance Methods
-// ============================================================================
 CoBorrowerSchema.methods.updateFinancialSummary = function () {
   if (!this.financialAnalysis) return;
 
   const analysis = this.financialAnalysis;
+  const foir = analysis.foir || {};
+  const cibil = analysis.cibil || {};
+  const extracted = analysis.extractedData || {};
+  const salary = extracted.salary_slips || {};
+  const itr = extracted.itr || {};
+  const bank = extracted.bank_statement || {};
 
   this.financialSummary = {
-    avgMonthlySalary:
-      analysis.extractedData?.salarySlips?.summary?.averageNetSalary || 0,
-    avgMonthlyIncome: analysis.foir?.monthlyNetIncome || 0,
-    estimatedAnnualIncome: (analysis.foir?.monthlyNetIncome || 0) * 12,
-    totalExistingEmi: analysis.foir?.totalMonthlyEmi || 0,
-    foir: analysis.foir?.foirPercentage || 0,
-    foirStatus: analysis.foir?.foirStatus || "unknown",
-    cibilEstimate: analysis.cibil?.estimatedScore || 0,
-    cibilRiskLevel: analysis.cibil?.riskLevel || "unknown",
+    avgMonthlySalary: salary.average_net_salary || 0,
+    avgMonthlyIncome: itr.average_monthly_income || 0,
+    estimatedAnnualIncome: itr.average_annual_income || 0,
+    totalExistingEmi: bank.average_monthly_emi || foir.total_monthly_emi || 0,
+
+    // ✅ ADD THESE 5 MAPPINGS:
+    avgBankBalance: bank.average_monthly_balance || 0,
+    minBankBalance: bank.minimum_balance || 0,
+    bounceCount: bank.bounce_count || 0,
+    dishonorCount: bank.dishonor_count || 0,
+    insufficientFundIncidents: bank.insufficient_fund_incidents || 0,
+
+    foir: foir.foir_percentage || 0,
+    foirStatus: foir.foir_status || "unknown",
+    cibilEstimate: cibil.estimated_score || cibil.estimatedScore || 0,
+    cibilRiskLevel: cibil.risk_level || cibil.riskLevel || "unknown",
     incomeStability:
-      analysis.extractedData?.salarySlips?.summary?.consistency || "unknown",
-    overallScore: analysis.quality?.overallConfidence || 0,
+      salary.salary_consistency_months > 0 ? "stable" : "unstable",
+    overallScore: analysis.quality?.overall_confidence || 0,
     documentCompleteness: {
       hasKYC: this.kycStatus === "verified",
-      hasSalarySlips: analysis.documentsProcessed?.salarySlips || false,
-      hasBankStatement: analysis.documentsProcessed?.bankStatement || false,
-      hasITR: analysis.documentsProcessed?.itr1 || false,
-      hasForm16: analysis.documentsProcessed?.form16 || false,
+      hasSalarySlips: analysis.documents_processed?.salary_slips || false,
+      hasBankStatement: analysis.documents_processed?.bank_statement || false,
+      hasITR: analysis.documents_processed?.itr1 || false,
+      hasForm16: analysis.documents_processed?.form16 || false,
       completenessScore: this.calculateCompletenessScore(),
     },
     verificationStatus: this.financialVerificationStatus,

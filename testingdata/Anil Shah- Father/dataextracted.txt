@@ -1,0 +1,1198 @@
+{
+  "_id": {
+    "$oid": "6948dd8620e9ac08f84bd213"
+  },
+  "student": {
+    "$oid": "6942c3a0750671380e95fbc1"
+  },
+  "firstName": "Ramesh",
+  "lastName": "Sharma",
+  "relationToStudent": "Father",
+  "email": "ramesh.sharma@example.com",
+  "phoneNumber": "9999999999",
+  "dateOfBirth": {
+    "$date": "1970-01-01T00:00:00.000Z"
+  },
+  "kycStatus": "verified",
+  "financialVerificationStatus": "verified",
+  "financialVerificationErrors": [],
+  "isDeleted": false,
+  "kycVerifiedAt": {
+    "$date": "2025-12-22T05:56:29.109Z"
+  },
+  "kycRejectedAt": null,
+  "kycData": {
+    "aadhaarFrontUrl": "https://res.cloudinary.com/ddnk1in8q/raw/authenticated/s--sQYnboL6--/v1766382989/coborrower_kyc_documents/giids0lkjafzzgkalq8a.png",
+    "aadhaarBackUrl": "https://res.cloudinary.com/ddnk1in8q/raw/authenticated/s--P4WEpR92--/v1766382991/coborrower_kyc_documents/eflkoqc7crduggioennu.png",
+    "panFrontUrl": "https://res.cloudinary.com/ddnk1in8q/raw/authenticated/s--mQlQPqjy--/v1766382992/coborrower_kyc_documents/bcq7ugwnzfmyjrbngtu9.jpeg",
+    "passportUrl": "",
+    "aadhaarFrontPublicId": "coborrower_kyc_documents/giids0lkjafzzgkalq8a.png",
+    "aadhaarBackPublicId": "coborrower_kyc_documents/eflkoqc7crduggioennu.png",
+    "panFrontPublicId": "coborrower_kyc_documents/bcq7ugwnzfmyjrbngtu9.jpeg",
+    "passportPublicId": "",
+    "aadhaarFrontResourceType": "raw",
+    "aadhaarBackResourceType": "raw",
+    "panFrontResourceType": "raw",
+    "passportResourceType": "image",
+    "aadhaarFrontType": "authenticated",
+    "aadhaarBackType": "authenticated",
+    "panFrontType": "authenticated",
+    "passportType": "authenticated",
+    "aadhaarNumber": "v1:068734be49f654159618b65f:714cfa167a8b71f29f9fd688ce9d07df:16a94dd5cc5eed9d0643a9f9",
+    "panNumber": "v1:0d5dc83f8367f2e277f92ae8:869b7390d5cf59d140253a089037c0ff:72257492bac2a9693041",
+    "aadhaarName": "Anil Ratilal Shah",
+    "aadhaarDOB": "15/06/1966",
+    "aadhaarGender": "Male",
+    "aadhaarAddress": "C/O: Ratilal Shah, 29, Floor 2, 147, Halimabai Building, Lady Jamshedji Road, Near Lokmanya School, Sitladevi, Mahim West, Mumbai, Mumbai City, Maharashtra - 400016",
+    "panName": "ANIL RATILAL SHAH",
+    "panFatherName": "RATILAL MAGANLAL SHAH",
+    "panDOB": "15/06/1966",
+    "passportName": null,
+    "verificationScore": 0.85,
+    "verificationMethod": "Groq",
+    "verificationReason": "",
+    "lastVerifiedAt": {
+      "$date": "2025-12-22T05:56:29.115Z"
+    }
+  },
+  "createdAt": {
+    "$date": "2025-12-22T05:56:29.122Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-22T06:24:53.074Z"
+  },
+  "__v": 2,
+  "financialVerificationConfidence": 0.95,
+  "financialVerifiedAt": {
+    "$date": "2025-12-22T06:24:53.068Z"
+  },
+  "financialAnalysis": {
+    "sessionId": "20251222_115309_9917d79a",
+    "processingTimeSeconds": 95.66,
+    "timestamp": {
+      "$date": "2025-12-22T06:24:53.064Z"
+    },
+    "extractedData": {
+      "itr": {
+        "applicant_name": "ANIL RATILAL SHAH",
+        "pan_number": "AMGP5970SE",
+        "assessment_year_1": "2023-24",
+        "assessment_year_2": "2021-22",
+        "gross_total_income_year1": 470843,
+        "deductions_year1": 4326,
+        "taxable_income_year1": 432110,
+        "tax_paid_year1": 0,
+        "gross_total_income_year2": 1798814,
+        "deductions_year2": 202696,
+        "taxable_income_year2": 1596120,
+        "tax_paid_year2": 312905,
+        "average_annual_income": 1134828.5,
+        "average_monthly_income": 94569.04,
+        "income_growth_rate": -73.82,
+        "itr_form_type": "ITR-4",
+        "filing_status": "e-verified",
+        "extraction_confidence": 0.98,
+        "extraction_notes": [
+          "Assessment Year 2023-24 (Year 1) is filed as ITR-4.",
+          "Assessment Year 2021-22 (Year 2) is filed as ITR-2.",
+          "Gross Total Income shows a significant negative growth rate from AY 2021-22 to AY 2023-24."
+        ]
+      }
+    },
+    "cibil": {
+      "positiveFactors": [],
+      "negativeFactors": []
+    },
+    "quality": {
+      "dataSourcesUsed": [],
+      "missingData": []
+    },
+    "documentsProcessed": {
+      "form16": false
+    },
+    "errors": [],
+    "rawResponse": {
+      "status": "success",
+      "session_id": "20251222_115309_9917d79a",
+      "processing_time_seconds": 95.66,
+      "timestamp": "2025-12-22T11:54:45.102730",
+      "extracted_data": {
+        "itr": {
+          "applicant_name": "ANIL RATILAL SHAH",
+          "pan_number": "AMGP5970SE",
+          "assessment_year_1": "2023-24",
+          "assessment_year_2": "2021-22",
+          "gross_total_income_year1": 470843,
+          "deductions_year1": 4326,
+          "taxable_income_year1": 432110,
+          "tax_paid_year1": 0,
+          "gross_total_income_year2": 1798814,
+          "deductions_year2": 202696,
+          "taxable_income_year2": 1596120,
+          "tax_paid_year2": 312905,
+          "average_annual_income": 1134828.5,
+          "average_monthly_income": 94569.04,
+          "income_growth_rate": -73.82,
+          "itr_form_type": "ITR-4",
+          "filing_status": "e-verified",
+          "extraction_confidence": 0.98,
+          "extraction_notes": [
+            "Assessment Year 2023-24 (Year 1) is filed as ITR-4.",
+            "Assessment Year 2021-22 (Year 2) is filed as ITR-2.",
+            "Gross Total Income shows a significant negative growth rate from AY 2021-22 to AY 2023-24."
+          ]
+        },
+        "bank_statement": {
+          "account_holder_name": "ANIL RATILAL SHAH",
+          "bank_name": "AXIS BANK",
+          "account_number": "108010100043315",
+          "account_type": "PRESTIGE SALARY ACCOUNT",
+          "statement_period_start": "2024-07-01",
+          "statement_period_end": "2024-12-31",
+          "opening_balance": 675420.08,
+          "closing_balance": 103226.33,
+          "average_monthly_balance": 311251.97,
+          "minimum_balance": 56003.33,
+          "salary_credits_detected": 0,
+          "average_monthly_salary": 0,
+          "salary_consistency_months": 0,
+          "last_salary_date": null,
+          "total_emi_debits": 1205000,
+          "average_monthly_emi": 172142.86,
+          "emi_transactions": [
+            {
+              "date": "2024-07-25",
+              "narration": "TRF 2503/SMFG INDIA HOME FINA/Smfg India Home Fina",
+              "amount": 1200000,
+              "balance": 124501.08
+            },
+            {
+              "date": "2024-12-26",
+              "narration": "ACH-Dr/DSJADHAINDYESTPVT-02412141001007-UTIB000000",
+              "amount": 5000,
+              "balance": 96847.33
+            }
+          ],
+          "unique_loan_accounts": 2,
+          "bounce_count": 0,
+          "dishonor_count": 0,
+          "insufficient_fund_incidents": 0,
+          "total_credits": 3285895.75,
+          "total_debits": 2803586.5,
+          "credit_count": 90,
+          "debit_count": 29,
+          "average_monthly_spending": 228369.5,
+          "high_value_transactions": [],
+          "red_flags": [],
+          "positive_indicators": [],
+          "extraction_confidence": 0.95,
+          "extraction_notes": [
+            "Extracted all transactions from four pages.",
+            "Verified opening and closing balances against total debits and credits: (Opening Balance - Total Debits + Total Credits = Closing Balance) which is (675420.08 - 3176838.50 + 2604644.75 = 103226.33), matching the closing balance of 103226.33. This indicates high accuracy of transaction extraction.",
+            "Narration kept exact as provided in the statement."
+          ],
+          "transactions": [
+            {
+              "date": "01-07-2024",
+              "narration": "NEFT/N/183243122049861/NEOTECH INFOCOM/HDFC BANK/Babita Rout Ticket",
+              "debit": 0,
+              "credit": 5950,
+              "balance": 681370.08
+            },
+            {
+              "date": "01-07-2024",
+              "narration": "1828LICHO | LCC | 189948",
+              "debit": 30647,
+              "credit": 0,
+              "balance": 650723.08
+            },
+            {
+              "date": "03-07-2024",
+              "narration": "RTGS/HDFCFC020240703719224889/NTTESH KAM | MEHTA HDFC BANK//loan 1803099",
+              "debit": 0,
+              "credit": 200000,
+              "balance": 850723.08
+            },
+            {
+              "date": "05-07-2024",
+              "narration": "RTGS/HDFCFR52024070371923474/NTTESH KAM | MEHTA HDFC BANK//loan 1803099/OP",
+              "debit": 0,
+              "credit": 200000,
+              "balance": 1050723.08
+            },
+            {
+              "date": "05-07-2024",
+              "narration": "NEFT/MB/AXOMB18700109086/Bhanu hills bwing co op/ICICI BANK LIMITED",
+              "debit": 2500,
+              "credit": 0,
+              "balance": 1048223.08
+            },
+            {
+              "date": "06-07-2024",
+              "narration": "IMPS/P2A/187130191834190/BHAVISHA INDUSIND/P2AMOB/910000000000923/4000",
+              "debit": 0,
+              "credit": 32000,
+              "balance": 1080223.08
+            },
+            {
+              "date": "09-07-2024",
+              "narration": "NEFT/MB/AXOMB1914156010/ATARA/HDF C BANK",
+              "debit": 176000,
+              "credit": 0,
+              "balance": 904223.08
+            },
+            {
+              "date": "09-07-2024",
+              "narration": "NEFT/MB/AXOMB1914733584/Sai MIRAJUDIN_MOHIUDIN SABJIDIWAT COOPERATIVE//",
+              "debit": 0,
+              "credit": 10000,
+              "balance": 894223.08
+            },
+            {
+              "date": "09-07-2024",
+              "narration": "NEFT/MB/AXOMB1915473728/N K TRNNSVISIONNKSB COOPERATIVE BA/",
+              "debit": 330,
+              "credit": 0,
+              "balance": 893893.08
+            },
+            {
+              "date": "11-07-2024",
+              "narration": "NEFT/TN19153164963/JANUSHI MANISH TRIVEDI/HDFC BANK/July rent",
+              "debit": 0,
+              "credit": 20000,
+              "balance": 913893.08
+            },
+            {
+              "date": "13-07-2024",
+              "narration": "NEFT/MB/AXOMB19582679209/Anil Ratilal Shah/BANK OF BARODA/gott",
+              "debit": 0,
+              "credit": 1000,
+              "balance": 912893.08
+            },
+            {
+              "date": "13-07-2024",
+              "narration": "NEFT/MB/AXOMB1958445005/Anil Ratilal Shah/BANK OF BARODA/gott",
+              "debit": 27751,
+              "credit": 0,
+              "balance": 885142.08
+            },
+            {
+              "date": "15-07-2024",
+              "narration": "S CASH WITHDL/420240789551/1243/MAHIM,MUM/SEL",
+              "debit": 400000,
+              "credit": 0,
+              "balance": 485142.08
+            },
+            {
+              "date": "15-07-2024",
+              "narration": "RTGS/K KBBKR52024071500906057/VIJAY CHELARAM DABRAI/KOTAK MAHINDRA BANK/",
+              "debit": 0,
+              "credit": 800000,
+              "balance": 1285142.08
+            },
+            {
+              "date": "16-07-2024",
+              "narration": "NEFT/P19824033634787/KALYANI TULKAR/AIRCOMONAR/CANARA BANK/",
+              "debit": 0,
+              "credit": 400000,
+              "balance": 1325142.08
+            },
+            {
+              "date": "21-07-2024",
+              "narration": "NEFT/MB/AXOMB20316102609/Anila Girish Korde/STATE BANK OF INDIA/",
+              "debit": 699,
+              "credit": 0,
+              "balance": 1324443.08
+            },
+            {
+              "date": "22-07-2024",
+              "narration": "IMPS/P2A/420418683124120/PFTNKS/STATEB ANK/P2AMOB/000000000000/00",
+              "debit": 0,
+              "credit": 58,
+              "balance": 1324501.08
+            },
+            {
+              "date": "25-07-2024",
+              "narration": "TRF 2503/SMFG INDIA HOME FINA/Smfg India Home Fina",
+              "debit": 1200000,
+              "credit": 0,
+              "balance": 124501.08
+            },
+            {
+              "date": "25-07-2024",
+              "narration": "IMPS/P2A/42072377059000/VENKATES/ICICIBA NK/IMPS/p180453656000923/4000",
+              "debit": 0,
+              "credit": 50000,
+              "balance": 174501.08
+            },
+            {
+              "date": "27-07-2024",
+              "narration": "IMPS/P2A/420913996536/VENKATES/ICICIBA NK/IMPS/Tran/p1804536560009229001",
+              "debit": 0,
+              "credit": 7280,
+              "balance": 181781.08
+            },
+            {
+              "date": "28-07-2024",
+              "narration": "Cash Tfrn Chrgs Incl Gst",
+              "debit": 1032.5,
+              "credit": 0,
+              "balance": 180748.58
+            },
+            {
+              "date": "31-07-2024",
+              "narration": "IMPS/P2A/421316375125/Hardik AnilShah/X002257/DEVELOPMENTCREDITBAN",
+              "debit": 0,
+              "credit": 6000,
+              "balance": 174748.58
+            },
+            {
+              "date": "03-08-2024",
+              "narration": "ACH-Cr/CR-KNR CONST FIN INV/SMALL-NACH-431530-923-930",
+              "debit": 0,
+              "credit": 6,
+              "balance": 174754.58
+            },
+            {
+              "date": "05-08-2024",
+              "narration": "NEFT/MB/AXOMB21820378721/Singh Associates/INDUSIND BANK/",
+              "debit": 0,
+              "credit": 4000,
+              "balance": 170754.58
+            },
+            {
+              "date": "05-08-2024",
+              "narration": "NEFT/MB/AXOMB21820410009/Bhanu hills bwing co op/ICICI BANK LIMITED/",
+              "debit": 0,
+              "credit": 2500,
+              "balance": 168254.58
+            },
+            {
+              "date": "06-08-2024",
+              "narration": "IMPS/P2A/421918708810/BHAVISHA INDUSI ND/P2AMOB/910000000000923/4000",
+              "debit": 0,
+              "credit": 32000,
+              "balance": 200254.58
+            },
+            {
+              "date": "06-08-2024",
+              "narration": "NEFT/MB/AXOMB21920060021/N K Transvision/NKSB COOPERATIVE BA/",
+              "debit": 0,
+              "credit": 330,
+              "balance": 199924.58
+            },
+            {
+              "date": "07-08-2024",
+              "narration": "NEFT/MB/AXOMB22035048933/kartik Anil Shah/BANK OF INDIA/",
+              "debit": 10000,
+              "credit": 0,
+              "balance": 189924.58
+            },
+            {
+              "date": "11-08-2024",
+              "narration": "NEFT/TN19153164963/JANUSHI MANISH TRIVEDI/HDFC BANK/Adhar card",
+              "debit": 0,
+              "credit": 20000,
+              "balance": 207924.58
+            },
+            {
+              "date": "13-08-2024",
+              "narration": "NEFT/MB/AXOMB22609256189/Singh Associates/INDUSIND BANK/",
+              "debit": 0,
+              "credit": 400,
+              "balance": 207524.58
+            },
+            {
+              "date": "13-08-2024",
+              "narration": "NEFT/MB/AXOMB22610266398/Hardik Anil Shah/DCB BANK LIMITED/",
+              "debit": 500,
+              "credit": 0,
+              "balance": 207024.58
+            },
+            {
+              "date": "17-08-2024",
+              "narration": "NEFT/BRN-Flexi/924049284344/ITAX REFUND 2024-25/MGPS9/STATE BANK OF INDIA/ -ITAX-5818",
+              "debit": 0,
+              "credit": 49030,
+              "balance": 256054.58
+            },
+            {
+              "date": "19-08-2024",
+              "narration": "NEFT/MB/AXOMB232642990/ANAND PRABHAKAR ADLEE/BANK OF INDIA/",
+              "debit": 0,
+              "credit": 40000,
+              "balance": 296054.58
+            },
+            {
+              "date": "20-08-2024",
+              "narration": "NEFT/MB/AXOMB23321527787/Pinky Denny Shah/CENTRAL BANK OF INDL/",
+              "debit": 0,
+              "credit": 7600,
+              "balance": 288454.58
+            },
+            {
+              "date": "22-08-2024",
+              "narration": "NEFT/MB/AXOMB23502316778/Hardik Anil Shah/DCB BANK LIMITED/",
+              "debit": 2000,
+              "credit": 0,
+              "balance": 286454.58
+            },
+            {
+              "date": "25-08-2024",
+              "narration": "Cash Tfrn Chrgs Incl Gst",
+              "debit": 1180,
+              "credit": 0,
+              "balance": 285274.58
+            },
+            {
+              "date": "26-08-2024",
+              "narration": "IMPS/P2A/423914092240/HardikAnilshah/X002257/DEVELOPMENTCREDITBAN",
+              "debit": 0,
+              "credit": 26000,
+              "balance": 259274.58
+            },
+            {
+              "date": "28-08-2024",
+              "narration": "NEFT/MB/AXOMB24163919662/Kanhaiya Pravan/RCS BANK/",
+              "debit": 0,
+              "credit": 5000,
+              "balance": 254274.58
+            },
+            {
+              "date": "29-08-2024",
+              "narration": "NEFT/MB/AXOMB2757500428/Singh Associates/INDUSIND BANK/",
+              "debit": 0,
+              "credit": 3600,
+              "balance": 250674.58
+            },
+            {
+              "date": "29-08-2024",
+              "narration": "10LICHO | LCC | 189953",
+              "debit": 29972,
+              "credit": 0,
+              "balance": 220702.58
+            },
+            {
+              "date": "31-08-2024",
+              "narration": "NEFT/MB/AXOMB24496347458/Anil Shah/SARASWAT COOPERATIVE//",
+              "debit": 0,
+              "credit": 25000,
+              "balance": 195702.58
+            },
+            {
+              "date": "31-08-2024",
+              "narration": "NEFT/RE/TURN/AXOMB24496347558/R05/Anil Shah/AXIS BK/",
+              "debit": 0,
+              "credit": 25000,
+              "balance": 220702.58
+            },
+            {
+              "date": "01-09-2024",
+              "narration": "NEFT/MB/AXOMB24507144028/N K Transvision/NKSB COOPERATIVE BA/",
+              "debit": 0,
+              "credit": 330,
+              "balance": 220372.58
+            },
+            {
+              "date": "05-09-2024",
+              "narration": "NEFT/MB/AXOMB24932669977/Hardik Anil Shah/DCB BANK LIMITED/",
+              "debit": 0,
+              "credit": 3000,
+              "balance": 217372.58
+            },
+            {
+              "date": "06-09-2024",
+              "narration": "NEFT/MB/AXOMB24991074906/Bhanu hills bwing co op/ICICI BANK LIMITED/",
+              "debit": 0,
+              "credit": 2500,
+              "balance": 214872.58
+            },
+            {
+              "date": "07-09-2024",
+              "narration": "BRN-CLG/CHQ PAID TO Cosmic Holidays/H D F C Bank L",
+              "debit": 55000,
+              "credit": 0,
+              "balance": 159872.58
+            },
+            {
+              "date": "08-09-2024",
+              "narration": "IMPS/P2A/425217524318180/BHAVISHA INDUSI ND/P2AMOB/910000000000923/4000",
+              "debit": 0,
+              "credit": 32000,
+              "balance": 191872.58
+            },
+            {
+              "date": "11-09-2024",
+              "narration": "NEFT/N25243260810832/LIC OF INDIA IPP CALL NEFT/HDFC BANK/",
+              "debit": 0,
+              "credit": 2958,
+              "balance": 194830.58
+            },
+            {
+              "date": "12-09-2024",
+              "narration": "NEFT/TN19153164963/JANUSHI MANISH TRIVEDI/HDFC BANK/Sept 24 Rent",
+              "debit": 0,
+              "credit": 18000,
+              "balance": 212830.58
+            },
+            {
+              "date": "17-09-2024",
+              "narration": "MOBI TPT/RAJASHREE ANIL SHAH/IDFC BANK/",
+              "debit": 0,
+              "credit": 20000,
+              "balance": 192830.58
+            },
+            {
+              "date": "17-09-2024",
+              "narration": "IMPS/P2A/42616373425/kartikAnilShah/X0112028/CANINDIAA/",
+              "debit": 0,
+              "credit": 20000,
+              "balance": 172830.58
+            },
+            {
+              "date": "19-09-2024",
+              "narration": "IMPS/P2A/426118423746/Hardik AnilShah/X002257/DEVELOPMENTCREDITBAN",
+              "debit": 0,
+              "credit": 20000,
+              "balance": 152830.58
+            },
+            {
+              "date": "20-09-2024",
+              "narration": "IMPS/P2A/427007737381/PANKAJOPRA/Banko fIN/UAMB5B1/91966422342901/1000",
+              "debit": 0,
+              "credit": 40000,
+              "balance": 192830.58
+            },
+            {
+              "date": "24-09-2024",
+              "narration": "BRN-CLG/CHQ PAID To New Nikita No 2/THE SARASWAT/",
+              "debit": 25000,
+              "credit": 0,
+              "balance": 167830.58
+            },
+            {
+              "date": "24-09-2024",
+              "narration": "RTGS/HDFCFR52024092495730497/NTTESH KAM | MEHTA HDFC BANK//returned amount:/OP",
+              "debit": 0,
+              "credit": 200000,
+              "balance": 367830.58
+            },
+            {
+              "date": "24-09-2024",
+              "narration": "RTGS/HDFCFR52024092495730497/NTTESH KAM | MEHTA HDFC BANK//returned back HAM/OP",
+              "debit": 0,
+              "credit": 200000,
+              "balance": 567830.58
+            },
+            {
+              "date": "26-09-2024",
+              "narration": "BRN-CLG/CHQ PAID To Shree Net/KOTAK MAHINDRA/",
+              "debit": 5500,
+              "credit": 0,
+              "balance": 562330.58
+            },
+            {
+              "date": "30-09-2024",
+              "narration": "NEFT/N-CD-B2599723/LIC OF INDIA IPP CALL NEFT/HDFC BANK/",
+              "debit": 0,
+              "credit": 564,
+              "balance": 562894.58
+            },
+            {
+              "date": "01-10-2024",
+              "narration": "SB:108010100043315.Int.Pd:01-07-2024 to 30-09-2024",
+              "debit": 0,
+              "credit": 3539,
+              "balance": 566433.58
+            },
+            {
+              "date": "04-10-2024",
+              "narration": "NEFT/MB/AXOMB27828282828/Bhanu hills bwing co op/ICICI BANK LIMITED/",
+              "debit": 0,
+              "credit": 3000,
+              "balance": 563433.58
+            },
+            {
+              "date": "04-10-2024",
+              "narration": "NEFT/MB/AXOMB27845811776/N K Transvision/NKSB COOPERATIVE BA/",
+              "debit": 0,
+              "credit": 330,
+              "balance": 563103.58
+            },
+            {
+              "date": "09-10-2024",
+              "narration": "NEFT/MB/AXOMB28374636332/Anil Ratilal Shah/BANK OF BARODA/",
+              "debit": 0,
+              "credit": 3000,
+              "balance": 560103.58
+            },
+            {
+              "date": "09-10-2024",
+              "narration": "NEFT/MB/AXOMB28374636332/Anil Ratilal Shah/BANK OF BARODA/",
+              "debit": 1101,
+              "credit": 0,
+              "balance": 559002.58
+            },
+            {
+              "date": "09-10-2024",
+              "narration": "IMPS/P2A/428236178331/BHAVISHA INDUSI ND/P2AMOB/910000000000923/4000",
+              "debit": 0,
+              "credit": 33000,
+              "balance": 592002.58
+            },
+            {
+              "date": "15-10-2024",
+              "narration": "NEFT/MB/AXOMB29091269805/Hardik Anil Shah/DCB BANK LIMITED/",
+              "debit": 10000,
+              "credit": 0,
+              "balance": 582002.58
+            },
+            {
+              "date": "15-10-2024",
+              "narration": "NEFT/BRNDN29153139324/ANAND PRABHAKAR ADLEE/BANK OF INDIA/",
+              "debit": 0,
+              "credit": 40000,
+              "balance": 622002.58
+            },
+            {
+              "date": "15-10-2024",
+              "narration": "ACH-Cr/KNR CONST FINDIV' 24-NACH-100261-100261",
+              "debit": 0,
+              "credit": 0.75,
+              "balance": 622003.33
+            },
+            {
+              "date": "15-10-2024",
+              "narration": "Flexi/92404929434344/ANIL RATILAL SHAH",
+              "debit": 520000,
+              "credit": 0,
+              "balance": 102003.33
+            },
+            {
+              "date": "16-10-2024",
+              "narration": "S/D CASH WDL/429414224954/1243/MAHIM,MUM/SEL",
+              "debit": 200000,
+              "credit": 0,
+              "balance": -97996.67
+            },
+            {
+              "date": "16-10-2024",
+              "narration": "BRN-Flexi/92404929434344/16-06-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 200000,
+              "balance": 102003.33
+            },
+            {
+              "date": "17-10-2024",
+              "narration": "NEFT/MB/AXOMB2914382646/Anil Ratilal Shah/BANK OF BARODA/",
+              "debit": 0,
+              "credit": 2500,
+              "balance": 99503.33
+            },
+            {
+              "date": "17-10-2024",
+              "narration": "NEFTN291213337536931/JANUSHI MANISH TRIVEDI/HDFC BANK/October 24 Rent",
+              "debit": 0,
+              "credit": 17000,
+              "balance": 116503.33
+            },
+            {
+              "date": "22-10-2024",
+              "narration": "Flexi/92404929434344/ANIL RATILAL SHAH",
+              "debit": 10000,
+              "credit": 0,
+              "balance": 106503.33
+            },
+            {
+              "date": "26-10-2024",
+              "narration": "NEFT/MB/AXOMB30017012550/Anil Ratilal Shah/BANK OF BARODA/",
+              "debit": 0,
+              "credit": 500,
+              "balance": 106003.33
+            },
+            {
+              "date": "30-10-2024",
+              "narration": "NEFT/MB/AXOMB30410597039/Janushi Manish Trivedi/HDFC BANK/",
+              "debit": 0,
+              "credit": 50000,
+              "balance": 56003.33
+            },
+            {
+              "date": "30-10-2024",
+              "narration": "BRN-Flexi/92404929462844/23-06-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 10000,
+              "balance": 66003.33
+            },
+            {
+              "date": "30-10-2024",
+              "narration": "BRN-Flexi/92404929434344/16-06-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 35000,
+              "balance": 101003.33
+            },
+            {
+              "date": "30-10-2024",
+              "narration": "BRN-FLEXI DEPOSIT INT TFR FROM 92404929434344",
+              "debit": 0,
+              "credit": 29,
+              "balance": 101031.33
+            },
+            {
+              "date": "30-10-2024",
+              "narration": "BRN-FLEXI DEPOSIT INT TFR FROM 92404929434344",
+              "debit": 0,
+              "credit": 7,
+              "balance": 101038.33
+            },
+            {
+              "date": "03-11-2024",
+              "narration": "NEFT/MB/AXOMB3076617473/Anil Ratilal Shah/BANK OF BARODA/",
+              "debit": 1001,
+              "credit": 0,
+              "balance": 100037.33
+            },
+            {
+              "date": "05-11-2024",
+              "narration": "NEFT/MB/AXOMB31092151286/Bhanu hills bwing co op/ICICI BANK LIMITED/",
+              "debit": 0,
+              "credit": 3000,
+              "balance": 97037.33
+            },
+            {
+              "date": "05-11-2024",
+              "narration": "NEFT/MB/AXOMB31092151286/N K Transvision/NKSB COOPERATIVE BA/",
+              "debit": 0,
+              "credit": 330,
+              "balance": 96707.33
+            },
+            {
+              "date": "05-11-2024",
+              "narration": "BRN-Flexi/92404929434344/16-06-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 5000,
+              "balance": 101707.33
+            },
+            {
+              "date": "05-11-2024",
+              "narration": "BRN-FLEXI DEPOSIT INT TFR FROM 92404929434344",
+              "debit": 0,
+              "credit": 6,
+              "balance": 101713.33
+            },
+            {
+              "date": "07-11-2024",
+              "narration": "IMPS/P2A/43212188429/BHAVISHA INDUSI ND/P2AMOB/910000000000923/4000",
+              "debit": 0,
+              "credit": 33000,
+              "balance": 134713.33
+            },
+            {
+              "date": "12-11-2024",
+              "narration": "Flexi/924049297453064/ANIL RATILAL SHAH",
+              "debit": 30000,
+              "credit": 0,
+              "balance": 104713.33
+            },
+            {
+              "date": "17-11-2024",
+              "narration": "NEFT/MB/AXOMB32774539448/Kanhaiya Pravan/RCS BANK/",
+              "debit": 0,
+              "credit": 5000,
+              "balance": 99713.33
+            },
+            {
+              "date": "17-11-2024",
+              "narration": "BRN-Flexi/924049297453064/13-07-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 5000,
+              "balance": 104713.33
+            },
+            {
+              "date": "18-11-2024",
+              "narration": "NEFT/BHADKAR ADLEE/BANK OF INDIA/",
+              "debit": 0,
+              "credit": 40000,
+              "balance": 144713.33
+            },
+            {
+              "date": "19-11-2024",
+              "narration": "NEFT/BHADKAR ADLEE/BANK OF INDIA/",
+              "debit": 0,
+              "credit": 5130,
+              "balance": 149843.33
+            },
+            {
+              "date": "21-11-2024",
+              "narration": "BRN-Flexi/924049298063152/ANIL RATILAL SHAH",
+              "debit": 0,
+              "credit": 4000,
+              "balance": 109843.33
+            },
+            {
+              "date": "21-11-2024",
+              "narration": "4916LICHO | LCC | 189958",
+              "debit": 2201,
+              "credit": 0,
+              "balance": 107642.33
+            },
+            {
+              "date": "30-11-2024",
+              "narration": "IMPS/P2A/4355132298482/NIC KNAME/X005461/HDFC BANK/IDA/with",
+              "debit": 0,
+              "credit": 1,
+              "balance": 107641.33
+            },
+            {
+              "date": "30-11-2024",
+              "narration": "NEFT/MB/AXOMB33628435281/CLASSIC TRAVEL SHOPPE/HDFC BANK/",
+              "debit": 16200,
+              "credit": 0,
+              "balance": 91441.33
+            },
+            {
+              "date": "04-12-2024",
+              "narration": "BRN-Flexi/924049298063152/20-07-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 10000,
+              "balance": 101441.33
+            },
+            {
+              "date": "04-12-2024",
+              "narration": "BRN-FLEXI DEPOSIT INT TFR FROM 924049298063152",
+              "debit": 0,
+              "credit": 9,
+              "balance": 101450.33
+            },
+            {
+              "date": "30-12-2024",
+              "narration": "IMPS/P2A/4390318948020/BHAVISHA INDUSI ND/P2AMOB/910000000000923/4000",
+              "debit": 0,
+              "credit": 33000,
+              "balance": 134450.33
+            },
+            {
+              "date": "04-12-2024",
+              "narration": "NEFT/MB/AXOMB33989389552/N K Transvision/NKSB COOPERATIVE BA/",
+              "debit": 0,
+              "credit": 330,
+              "balance": 134120.33
+            },
+            {
+              "date": "10-12-2024",
+              "narration": "NEFT/MB/AXOMB33997531340/Bhanu hills bwing co op/ICICI BANK LIMITED/",
+              "debit": 0,
+              "credit": 30000,
+              "balance": 134120.33
+            },
+            {
+              "date": "10-12-2024",
+              "narration": "NEFT/BHADKAR ADLEE/BANK OF INDIA/",
+              "debit": 0,
+              "credit": 40000,
+              "balance": 101120.33
+            },
+            {
+              "date": "16-12-2024",
+              "narration": "NEFT/BKIDY243451040170/ANAND PRABHAKAR ADLEE/BANK OF INDIA/",
+              "debit": 0,
+              "credit": 40000,
+              "balance": 141120.33
+            },
+            {
+              "date": "16-12-2024",
+              "narration": "NEFT/BKIDY243451040170/ANAND PRABHAKAR ADLEE/BANK OF INDIA/",
+              "debit": 0,
+              "credit": 570,
+              "balance": 141690.33
+            },
+            {
+              "date": "16-12-2024",
+              "narration": "MOBI TPT/HARSHADDHABI/",
+              "debit": 0,
+              "credit": 20000,
+              "balance": 121690.33
+            },
+            {
+              "date": "17-12-2024",
+              "narration": "5340LICHO | LCC | 189959",
+              "debit": 29972,
+              "credit": 0,
+              "balance": 91718.33
+            },
+            {
+              "date": "17-12-2024",
+              "narration": "BRN-Flexi/924049300443077/11-08-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 10000,
+              "balance": 101718.33
+            },
+            {
+              "date": "17-12-2024",
+              "narration": "BRN-FLEXI DEPOSIT INT TFR FROM 924049300443077",
+              "debit": 0,
+              "credit": 6,
+              "balance": 101724.33
+            },
+            {
+              "date": "20-12-2024",
+              "narration": "NEFT/MB/AXOMB34720956591/Hardik Anil Shah/DCB BANK LIMITED/",
+              "debit": 10000,
+              "credit": 0,
+              "balance": 91724.33
+            },
+            {
+              "date": "20-12-2024",
+              "narration": "BRN-Flexi/924049300443077/11-08-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 10000,
+              "balance": 101724.33
+            },
+            {
+              "date": "20-12-2024",
+              "narration": "BRN-FLEXI DEPOSIT INT TFR FROM 924049300443077",
+              "debit": 0,
+              "credit": 8,
+              "balance": 101732.33
+            },
+            {
+              "date": "21-12-2024",
+              "narration": "BRN-Flexi/924049300443077/11-08-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 10000,
+              "balance": 56732.33
+            },
+            {
+              "date": "21-12-2024",
+              "narration": "BRN-Flexi/924049298063152/20-07-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 30000,
+              "balance": 86732.33
+            },
+            {
+              "date": "21-12-2024",
+              "narration": "BRN-Flexi/924049297453064/13-07-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 15000,
+              "balance": 101732.33
+            },
+            {
+              "date": "21-12-2024",
+              "narration": "BRN-FLEXI DEPOSIT INT TFR FROM 924049297453064",
+              "debit": 0,
+              "credit": 40,
+              "balance": 101772.33
+            },
+            {
+              "date": "21-12-2024",
+              "narration": "BRN-FLEXI DEPOSIT INT TFR FROM 924049298063152",
+              "debit": 0,
+              "credit": 66,
+              "balance": 101838.33
+            },
+            {
+              "date": "21-12-2024",
+              "narration": "BRN-FLEXI DEPOSIT INT TFR FROM 924049300443077",
+              "debit": 0,
+              "credit": 9,
+              "balance": 101847.33
+            },
+            {
+              "date": "26-12-2024",
+              "narration": "ACH-Dr/DSJADHAINDYESTPVT-02412141001007-UTIB000000",
+              "debit": 5000,
+              "credit": 0,
+              "balance": 96847.33
+            },
+            {
+              "date": "26-12-2024",
+              "narration": "BRN-Flexi/924049297453064/13-07-2026/ANIL RATILAL",
+              "debit": 0,
+              "credit": 5000,
+              "balance": 101847.33
+            },
+            {
+              "date": "26-12-2024",
+              "narration": "BRN-FLEXI DEPOSIT INT TFR FROM 924049297453064",
+              "debit": 0,
+              "credit": 15,
+              "balance": 101862.33
+            },
+            {
+              "date": "01-01-2025",
+              "narration": "SB:108010100043315.Int.Pd:01-10-2024 to 31-12-2024",
+              "debit": 0,
+              "credit": 1364,
+              "balance": 103226.33
+            }
+          ]
+        },
+        "salary_slips": {
+          "employee_name": "SAYUSH YADAV",
+          "employee_id": "107383",
+          "employer_name": "SSC GlobeOp",
+          "designation": "JUNIOR ASSOCIATE",
+          "employment_type": "salaried",
+          "month_1_date": "2025-02",
+          "month_1_gross": 36566,
+          "month_1_deductions": 2100,
+          "month_1_net": 34466,
+          "month_2_date": "2025-01",
+          "month_2_gross": 36566,
+          "month_2_deductions": 2000,
+          "month_2_net": 34566,
+          "month_3_date": "2024-12",
+          "month_3_gross": 36566,
+          "month_3_deductions": 2000,
+          "month_3_net": 34566,
+          "average_gross_salary": 36566,
+          "average_net_salary": 34532.67,
+          "average_deductions": 2033.33,
+          "basic_salary": 13218,
+          "hra": 6609,
+          "special_allowance": 12139,
+          "other_allowances": 4600,
+          "pf_deduction": 1800,
+          "professional_tax": 300,
+          "tds": 0,
+          "salary_consistency": 1,
+          "has_salary_growth": false,
+          "extraction_confidence": 0.97,
+          "extraction_notes": [
+            "Employee ID is numeric.",
+            "Gross salary (month_X_gross) is taken from the 'EARNINGS' column total (36566.00) which is consistently used to calculate Net Pay (Gross - Total Deductions), despite another 'GROSS EARNINGS' value (35966.00) appearing in the particulars column.",
+            "Other allowances combine Statutory Bonus (3600.00), Internet Allowance (600.00), and an inferred unlisted earning component of 400.00 to make the sum of listed earning components match the total gross earnings.",
+            "TDS not explicitly found, defaulted to 0.0.",
+            "Professional Tax varies monthly (300.00 in Feb, 200.00 in Jan/Dec); the value from the latest month (February 2025) is used for the singular 'professional_tax' field."
+          ]
+        }
+      },
+      "foir": {
+        "foir_percentage": 498.49,
+        "foir_status": "critical",
+        "monthly_gross_income": 36566,
+        "monthly_net_income": 34532.67,
+        "total_monthly_emi": 172142.86,
+        "available_monthly_income": -137610.19,
+        "emi_to_income_ratio": 4.9849,
+        "debt_service_coverage_ratio": 0.2
+      },
+      "cibil": {
+        "estimated_score": 702,
+        "estimated_band": "700-749",
+        "risk_level": "medium_low",
+        "payment_history_score": 0.9,
+        "credit_utilization_score": 0.5,
+        "income_stability_score": 0.5,
+        "credit_mix_score": 0.8,
+        "positive_factors": [
+          "No payment bounces or dishonors detected",
+          "2 active loan account(s)"
+        ],
+        "negative_factors": [
+          "Critical FOIR - high debt burden"
+        ],
+        "risk_indicators": [
+          "Limited salary history",
+          "FOIR: 498.49%"
+        ]
+      },
+      "quality": {
+        "overall_confidence": 96.67,
+        "data_sources_used": [
+          "ITR Documents",
+          "Bank Statement",
+          "Salary Slips"
+        ],
+        "missing_data": []
+      },
+      "errors": [],
+      "documents_processed": {
+        "salary_slips": true,
+        "bank_statement": true,
+        "itr_1": true,
+        "itr_2": true,
+        "form16": false
+      }
+    }
+  },
+  "financialDocuments": {
+    "salarySlips": {
+      "documentUrls": [
+        "https://res.cloudinary.com/ddnk1in8q/raw/upload/v1766384692/coborrower_financial_docs/mz8vgkyuxgmdk5oybtse.pdf"
+      ],
+      "cloudinaryPublicIds": [
+        "coborrower_financial_docs/mz8vgkyuxgmdk5oybtse.pdf"
+      ],
+      "uploadedAt": {
+        "$date": "2025-12-22T06:24:53.062Z"
+      },
+      "status": "completed"
+    },
+    "bankStatement": {
+      "documentUrls": [
+        "https://res.cloudinary.com/ddnk1in8q/raw/upload/v1766384694/coborrower_financial_docs/diehrhsib7yofseycvje.pdf"
+      ],
+      "cloudinaryPublicIds": [
+        "coborrower_financial_docs/diehrhsib7yofseycvje.pdf"
+      ],
+      "uploadedAt": {
+        "$date": "2025-12-22T06:24:53.062Z"
+      },
+      "status": "completed"
+    },
+    "itr1": {
+      "documentUrls": [
+        "https://res.cloudinary.com/ddnk1in8q/raw/upload/v1766384695/coborrower_financial_docs/kjrlqwvuevfcxg4eadcy.pdf"
+      ],
+      "cloudinaryPublicIds": [
+        "coborrower_financial_docs/kjrlqwvuevfcxg4eadcy.pdf"
+      ],
+      "uploadedAt": {
+        "$date": "2025-12-22T06:24:53.062Z"
+      },
+      "status": "completed"
+    },
+    "itr2": {
+      "documentUrls": [
+        "https://res.cloudinary.com/ddnk1in8q/raw/upload/v1766384696/coborrower_financial_docs/m5keeewg2r2qrz4dywcs.pdf"
+      ],
+      "cloudinaryPublicIds": [
+        "coborrower_financial_docs/m5keeewg2r2qrz4dywcs.pdf"
+      ],
+      "uploadedAt": {
+        "$date": "2025-12-22T06:24:53.062Z"
+      },
+      "status": "completed"
+    },
+    "form16": {
+      "documentUrls": [],
+      "status": "pending"
+    }
+  },
+  "financialSummary": {
+    "avgMonthlySalary": 0,
+    "avgMonthlyIncome": 0,
+    "estimatedAnnualIncome": 0,
+    "totalExistingEmi": 0,
+    "foir": 0,
+    "foirStatus": "unknown",
+    "cibilEstimate": 0,
+    "cibilRiskLevel": "unknown",
+    "incomeStability": "unknown",
+    "overallScore": 0,
+    "documentCompleteness": {
+      "hasKYC": true,
+      "hasSalarySlips": false,
+      "hasBankStatement": false,
+      "hasITR": false,
+      "hasForm16": false,
+      "completenessScore": 80
+    },
+    "verificationStatus": "verified",
+    "lastUpdated": {
+      "$date": "2025-12-22T06:24:53.075Z"
+    },
+    "nextAction": "application_complete"
+  }
+} this si the data i got from this docuemtns for my agent 

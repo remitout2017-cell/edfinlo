@@ -1,4 +1,5 @@
 // agents/studentDataAggregator.js
+
 const Student = require("../models/student/students");
 const AcademicRecords = require("../models/student/AcademicRecords");
 const TestScores = require("../models/student/TestScores");
@@ -38,19 +39,12 @@ const aggregateStudentData = async (studentId) => {
         phone: student.phoneNumber,
         kycStatus: student.kycStatus,
       },
-
       academics: formatAcademics(student.academicRecords),
-      
       testScores: formatTestScores(student.testScores),
-      
       workExperience: formatWorkExperience(student.workExperience),
-      
       admissionLetters: formatAdmissionLetters(student.admissionLetters),
-      
       studyPlan: student.studyPlan || {},
-      
       coBorrowers: formatCoBorrowers(coBorrowers),
-      
       financialSummary: calculateFinancialSummary(coBorrowers),
     };
 
@@ -81,12 +75,14 @@ function formatAcademics(records) {
       university: records.graduation?.university,
       year: records.graduation?.yearOfPassing,
     },
-    postGraduation: records.postGraduation?.degree ? {
-      percentage: records.postGraduation?.percentageOrCgpa,
-      degree: records.postGraduation?.degree,
-      university: records.postGraduation?.university,
-      year: records.postGraduation?.yearOfPassing,
-    } : null,
+    postGraduation: records.postGraduation?.degree
+      ? {
+          percentage: records.postGraduation?.percentageOrCgpa,
+          degree: records.postGraduation?.degree,
+          university: records.postGraduation?.university,
+          year: records.postGraduation?.yearOfPassing,
+        }
+      : null,
     gapYears: records.gapYears || 0,
   };
 }
@@ -104,11 +100,12 @@ function formatTestScores(scores) {
 }
 
 function formatWorkExperience(work) {
-  if (!work || !work.experiences?.length) return { status: "not_provided" };
+  if (!work || !work.experiences?.length)
+    return { status: "not_provided" };
   
   return {
     totalYears: work.totalYearsOfExperience || 0,
-    experiences: work.experiences.map(exp => ({
+    experiences: work.experiences.map((exp) => ({
       company: exp.companyName,
       position: exp.position,
       duration: `${exp.startDate} to ${exp.endDate || "Present"}`,
@@ -120,55 +117,104 @@ function formatWorkExperience(work) {
 function formatAdmissionLetters(letters) {
   if (!letters || !letters.length) return { status: "not_provided" };
   
-  return letters.map(letter => ({
+  return letters.map((letter) => ({
     university: letter.universityName,
     course: letter.courseName,
     country: letter.country,
     tuitionFee: letter.tuitionFee,
     intake: `${letter.intakeMonth} ${letter.intakeYear}`,
     status: letter.verificationStatus,
-    worldRank: letter.universityDetails?.worldRanking,
+    // ✅ FIXED: Handle both nested and direct worldRank
+    worldRank: letter.universityDetails?.worldRanking || letter.worldRanking || null,
   }));
 }
 
 function formatCoBorrowers(coBorrowers) {
   if (!coBorrowers?.length) return { status: "not_provided" };
   
-  return coBorrowers.map(cb => ({
+  return coBorrowers.map((cb) => ({
     name: cb.fullName || `${cb.firstName} ${cb.lastName}`,
     relation: cb.relationToStudent,
     kycStatus: cb.kycStatus,
     financial: cb.financialSummary || {},
     cibilEstimate: cb.financialSummary?.cibilEstimate,
+    avgMonthlyIncome: cb.financialSummary?.avgMonthlyIncome,
     avgMonthlySalary: cb.financialSummary?.avgMonthlySalary,
     foir: cb.financialSummary?.foir,
+    // ✅ ADD NEW FIELDS:
+    avgBankBalance: cb.financialSummary?.avgBankBalance,
+    minBankBalance: cb.financialSummary?.minBankBalance,
+    bounceCount: cb.financialSummary?.bounceCount,
   }));
 }
 
 function calculateFinancialSummary(coBorrowers) {
   if (!coBorrowers?.length) return { status: "not_provided" };
   
-  const verified = coBorrowers.filter(cb => cb.financialVerificationStatus === "verified");
-  
-  if (!verified.length) return { status: "pending_verification" };
-  
-  const totalMonthlyIncome = verified.reduce((sum, cb) => 
-    sum + (cb.financialSummary?.avgMonthlySalary || 0), 0
+  const verified = coBorrowers.filter(
+    (cb) => cb.financialVerificationStatus === "verified"
   );
   
-  const avgCibil = verified.reduce((sum, cb) => 
-    sum + (cb.financialSummary?.cibilEstimate || 0), 0
+  if (!verified.length) return { status: "pending_verification" };
+
+  // ✅ FIXED: Use avgMonthlyIncome instead of avgMonthlySalary (more accurate)
+  const totalMonthlyIncome = verified.reduce(
+    (sum, cb) => sum + (cb.financialSummary?.avgMonthlyIncome || 0),
+    0
+  );
+
+  const avgCibil = verified.reduce(
+    (sum, cb) => sum + (cb.financialSummary?.cibilEstimate || 0),
+    0
   ) / verified.length;
-  
-  const avgFoir = verified.reduce((sum, cb) => 
-    sum + (cb.financialSummary?.foir || 0), 0
+
+  const avgFoir = verified.reduce(
+    (sum, cb) => sum + (cb.financialSummary?.foir || 0),
+    0
   ) / verified.length;
-  
+
+  // ✅ ADD: Bank balance aggregation
+  const avgBankBalance = verified.reduce(
+    (sum, cb) => sum + (cb.financialSummary?.avgBankBalance || 0),
+    0
+  ) / verified.length;
+
+  // ✅ ADD: Minimum balance (take the lowest across all co-borrowers)
+  const minBankBalance = Math.min(
+    ...verified.map((cb) => cb.financialSummary?.minBankBalance || Infinity)
+  );
+
+  // ✅ ADD: Total bounce count (sum across all co-borrowers)
+  const totalBounces = verified.reduce(
+    (sum, cb) => sum + (cb.financialSummary?.bounceCount || 0),
+    0
+  );
+
+  // ✅ ADD: Total dishonor count
+  const totalDishonors = verified.reduce(
+    (sum, cb) => sum + (cb.financialSummary?.dishonorCount || 0),
+    0
+  );
+
+  // ✅ ADD: Total existing EMI
+  const totalExistingEmi = verified.reduce(
+    (sum, cb) => sum + (cb.financialSummary?.totalExistingEmi || 0),
+    0
+  );
+
   return {
-    totalMonthlyCombinedIncome: totalMonthlyIncome,
-    avgAnnualIncome: totalMonthlyIncome * 12,
+    totalMonthlyCombinedIncome: Math.round(totalMonthlyIncome),
+    avgAnnualIncome: Math.round(totalMonthlyIncome * 12),
     avgCibilScore: Math.round(avgCibil),
     avgFoir: Math.round(avgFoir),
+    
+    // ✅ ADD: New fields for NBFC matching
+    avgBankBalance: Math.round(avgBankBalance),
+    minBankBalance: minBankBalance === Infinity ? 0 : Math.round(minBankBalance),
+    totalBounceCount: totalBounces,
+    totalDishonorCount: totalDishonors,
+    totalExistingEmi: Math.round(totalExistingEmi),
+    
     verifiedCoBorrowers: verified.length,
   };
 }
