@@ -25,9 +25,9 @@ const adminRoutes = require("./routes/adminRoutes"); // add this
 const { initNotificationWorker } = require("./queues/notificationQueue");
 const loanRequestRoutes = require("./routes/loanRequestRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
-const kycRoutesV2 = require('./routesv2/kycRoutes'); // Version 2 (New)
-const academicRecordsRoutesV2 = require('./routesv2/academicRecordsRoutes'); // Version 2 (New)
-const loanAnalysisRoutesV2 = require('./routesv2/loanAnalysisRoutes'); // Version 2 (New)
+const kycRoutesV2 = require("./routesv2/kycRoutes"); // Version 2 (New)
+const academicRecordsRoutesV2 = require("./routesv2/academicRecordsRoutes"); // Version 2 (New)
+const loanAnalysisRoutesV2 = require("./routesv2/loanAnalysisRoutes"); // Version 2 (New)
 // const kycroutev2 = require("./routesv2/kycRoutes")
 const requiredConfig = {
   JWT_SECRET: config.jwt.secret,
@@ -108,7 +108,6 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
@@ -184,8 +183,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/v2/academic", academicRecordsRoutesV2);
 app.use("/api/v2/work-experience", workExpRoutesV2);
 
-
-app.use("/api/v2/kyc", kycRoutesV2)
+app.use("/api/v2/kyc", kycRoutesV2);
 // API documentation endpoint
 app.get("/api", (req, res) => {
   res.status(200).json({
@@ -217,7 +215,7 @@ connectDB().then(() => {
 });
 
 const PORT = config.port;
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`
 
 ╔═══════════════════════════════════════╗
