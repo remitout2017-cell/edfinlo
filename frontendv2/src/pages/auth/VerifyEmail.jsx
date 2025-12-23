@@ -1,50 +1,95 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { authAPI } from '../../services/api';
-import toast from 'react-hot-toast';
+// src/pages/auth/VerifyEmail.jsx
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const VerifyEmail = () => {
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyEmail } = useAuth();
-  const email = location.state?.email || '';
+  const email = location.state?.email || "";
 
   useEffect(() => {
     if (!email) {
-      navigate('/login');
+      navigate("/login");
     }
   }, [email, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (otp.length !== 4) {
-      toast.error('OTP must be 4 digits');
+
+    if (otp.length !== 6) {
+      toast.error("OTP must be 6 digits");
       return;
     }
 
     setLoading(true);
-    const result = await verifyEmail(email, otp);
-    
-    if (result.success) {
-      toast.success('Email verified! You can now login.');
-      navigate('/login');
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/verify-email",
+        {
+          email: email,
+          otp: otp,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(
+          response.data.message || "Email verified! You can now verify your phone number."
+        );
+        navigate("/verify-phone");
+      } else {
+        toast.error(response.data.message || "Verification failed");
+      }
+    } catch (error) {
+      console.error("Verification error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to verify email. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const handleResend = async () => {
     setResending(true);
+
     try {
-      await authAPI.resendEmailOTP(email);
-      toast.success('New OTP sent to your email');
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/resend-email-otp",
+        {
+          email: email,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message || "New OTP sent to your email");
+      } else {
+        toast.error(response.data.message || "Failed to resend OTP");
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to resend OTP');
+      console.error("Resend OTP error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to resend OTP. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setResending(false);
     }
@@ -58,24 +103,28 @@ const VerifyEmail = () => {
             Verify Your Email
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            We've sent a 4-digit OTP to <span className="font-semibold">{email}</span>
+            We've sent a 6-digit OTP to{" "}
+            <span className="font-semibold">{email}</span>
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="otp"
+              className="block text-sm font-medium text-gray-700"
+            >
               Enter OTP
             </label>
             <input
               id="otp"
               name="otp"
               type="text"
-              maxLength="4"
+              maxLength="6"
               required
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-center text-2xl tracking-widest focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0000"
+              placeholder="000000"
             />
           </div>
 
@@ -85,7 +134,7 @@ const VerifyEmail = () => {
               disabled={loading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {loading ? 'Verifying...' : 'Verify Email'}
+              {loading ? "Verifying..." : "Verify Email"}
             </button>
           </div>
 
@@ -96,7 +145,7 @@ const VerifyEmail = () => {
               disabled={resending}
               className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50"
             >
-              {resending ? 'Sending...' : 'Resend OTP'}
+              {resending ? "Sending..." : "Resend OTP"}
             </button>
           </div>
         </form>

@@ -16,7 +16,11 @@ const academicRoutes = require("./routes/students/academic.routes");
 const workExperienceRoutes = require("./routes/students/workexperience.routes"); // ✅ ADD THIS
 const testScoresRoutes = require("./routes/students/testscores.routes"); // ✅ NEW
 const coBorrowerRoutes = require("./routes/students/coborrower.routes");
-const { otpLimiter } = require("./middleware/rateLimit");
+const {
+  otpLimiter,
+  authLimiter,
+  apiLimiter,
+} = require("./middleware/rateLimit");
 
 const admissionRoutes = require("./routes/students/admission.routes");
 const {
@@ -66,32 +70,39 @@ if (config.env === "development") {
 }
 
 // ✅ ROUTES FIRST (must come before notFound/errorHandler)
-app.use("/api/auth", otpLimiter, require("./routes/students/auth.routes"));
-app.use("/api/user", otpLimiter, require("./routes/students/userRoutes"));
+// Auth routes use authLimiter (20 requests/15 min)
+app.use("/api/auth", authLimiter, require("./routes/students/auth.routes"));
+
+// User routes use apiLimiter (100 requests/15 min)
+app.use("/api/user", apiLimiter, require("./routes/students/userRoutes"));
 app.use(
   "/api/user/educationplanet",
-  otpLimiter,
+  apiLimiter,
   require("./routes/students/studentEducationPlanRoutes")
 );
-app.use("/api/user/kyc", otpLimiter, require("./routes/students/kyc.routes"));
-app.use("/api/user/academics", otpLimiter, academicRoutes);
-app.use("/api/user/admission", otpLimiter, admissionRoutes);
-app.use("/api/user/workexperience", otpLimiter, workExperienceRoutes); // ✅ ADD THIS
-app.use("/api/user/testscores", otpLimiter, testScoresRoutes); // ✅ NEW TEST SCORES ROUTE
-app.use("/api/coborrower", otpLimiter, coBorrowerRoutes);
+app.use("/api/user/kyc", apiLimiter, require("./routes/students/kyc.routes"));
+app.use("/api/user/academics", apiLimiter, academicRoutes);
+app.use("/api/user/admission", apiLimiter, admissionRoutes);
+app.use("/api/user/workexperience", apiLimiter, workExperienceRoutes);
+app.use("/api/user/testscores", apiLimiter, testScoresRoutes);
+app.use("/api/coborrower", apiLimiter, coBorrowerRoutes);
+
+// NBFC auth uses authLimiter
 app.use(
   "/api/nbfc/auth",
-  otpLimiter,
+  authLimiter,
   require("./routes/nbfc/nbfc.auth.routes")
 );
 app.use(
   "/api/nbfc",
-  otpLimiter,
+  apiLimiter,
   require("./routes/nbfc/nbfc.questionnaire.routes")
 );
+
+// Consultant auth uses authLimiter
 app.use(
   "/api/consultant/auth",
-  otpLimiter,
+  authLimiter,
   require("./routes/consultant/consultant.auth.routes")
 );
 app.use(
@@ -100,14 +111,14 @@ app.use(
 );
 app.use(
   "/api/student/loan-matching",
-  otpLimiter,
+  apiLimiter,
   require("./routes/students/loanMatching.routes")
 );
 
 // NBFC loan requests
 app.use(
   "/api/nbfc/loan-requests",
-  otpLimiter,
+  apiLimiter,
   require("./routes/nbfc/loanRequest.routes")
 );
 

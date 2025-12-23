@@ -1,8 +1,8 @@
 // src/pages/auth/Register.jsx
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
+import axios from "axios";
 import ConsultantRegister from "./ConsultantRegister";
 import {
   Mail,
@@ -38,7 +38,6 @@ const Register = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -58,19 +57,63 @@ const Register = () => {
     }
 
     setLoading(true);
-    const result = await register({
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      password: formData.password,
-      phoneNumber: formData.phoneNumber,
-      inviteToken: formData.inviteToken || undefined,
-    });
 
-    if (result.success) {
-      navigate("/verify-email", { state: { email: formData.email } });
+    try {
+      // Determine endpoint based on invite token
+      const endpoint = formData.inviteToken
+        ? "http://localhost:5000/api/auth/register-from-invite"
+        : "http://localhost:5000/api/auth/register";
+
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        phoneNumber: formData.phoneNumber || undefined,
+      };
+
+      // Add token if registering from invite
+      if (formData.inviteToken) {
+        payload.token = formData.inviteToken;
+      }
+
+      const response = await axios.post(endpoint, payload, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      // Check response structure from backend [file:10]
+      if (response.data.success) {
+        toast.success(
+          response.data.message ||
+            "Registration successful! Please verify your email."
+        );
+
+        // Store token if you want to auto-login
+        if (response.data.data?.token) {
+          localStorage.setItem("token", response.data.data.token);
+          localStorage.setItem(
+            "user",
+            JSON.stringify(response.data.data.student)
+          );
+        }
+
+        // Navigate to verify email page
+        navigate("/verify-email", { state: { email: formData.email } });
+      } else {
+        toast.error(response.data.message || "Registration failed");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Registration failed. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -130,7 +173,7 @@ const Register = () => {
             <div className="flex items-center gap-2 text-xs text-emerald-100 bg-slate-900/70 border border-emerald-400/50 rounded-2xl px-4 py-3">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
               <span>
-                You’ve been invited by a consultant. Continue sign-up with{" "}
+                You've been invited by a consultant. Continue sign-up with{" "}
                 <span className="font-semibold">{inviteEmail}</span>
               </span>
             </div>
@@ -178,7 +221,7 @@ const Register = () => {
                   Create student account
                 </h2>
                 <p className="text-xs text-slate-300/80">
-                  Use your primary email; you’ll verify it in the next step.
+                  Use your primary email; you'll verify it in the next step.
                 </p>
               </div>
 

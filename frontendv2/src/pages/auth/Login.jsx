@@ -1,7 +1,8 @@
 // src/pages/auth/Login.jsx - COMPLETE WITH ADMIN SUPPORT
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import axios from "axios";
+import toast from "react-hot-toast";
 import {
   Mail,
   Lock,
@@ -21,7 +22,6 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -33,27 +33,117 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const result = await login(
-        formData.email,
-        formData.password,
-        formData.userType
+      // Determine endpoint based on user type
+      let endpoint = "";
+      switch (formData.userType) {
+        case "student":
+          endpoint = "http://localhost:5000/api/auth/login";
+          break;
+        case "consultant":
+          endpoint = "http://localhost:5000/api/consultant/auth/login";
+          break;
+        case "admin":
+          endpoint = "http://localhost:5000/api/admin/auth/login";
+          break;
+        default:
+          endpoint = "http://localhost:5000/api/auth/login";
+      }
+
+      const response = await axios.post(
+        endpoint,
+        {
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
 
-      if (result.success) {
-        // Success - redirect handled by AuthContext
-      } else if (result.data?.requiresVerification) {
-        if (result.data.verificationType === "email") {
-          navigate("/verify-email", { state: { email: formData.email } });
-        } else if (result.data.verificationType === "phone") {
-          navigate("/verify-phone");
+      if (response.data.success) {
+        toast.success(response.data.message || "Login successful!");
+
+        // Store token and user data in localStorage
+        if (response.data.data?.token) {
+          localStorage.setItem("token", response.data.data.token);
+
+          // Store user data based on user type
+          if (formData.userType === "student") {
+            localStorage.setItem(
+              "user",
+              JSON.stringify(response.data.data.student)
+            );
+            localStorage.setItem("userType", "student");
+          } else if (formData.userType === "consultant") {
+            localStorage.setItem(
+              "user",
+              JSON.stringify(response.data.data.consultant)
+            );
+            localStorage.setItem("userType", "consultant");
+          } else if (formData.userType === "admin") {
+            localStorage.setItem(
+              "user",
+              JSON.stringify(response.data.data.admin)
+            );
+            localStorage.setItem("userType", "admin");
+          }
+
+          // Check verification status for students
+          if (formData.userType === "student") {
+            const student = response.data.data.student;
+
+            // Check if email or phone verification is needed
+            if (!student.isEmailVerified) {
+              toast.error("Please verify your email first");
+              navigate("/verify-email", { state: { email: formData.email } });
+              return;
+            }
+
+            if (student.phoneNumber && !student.isPhoneVerified) {
+              toast.error("Please verify your phone number");
+              navigate("/verify-phone");
+              return;
+            }
+          }
+
+          // Navigate based on user type - use window.location for full reload
+          // This ensures AuthContext re-reads the token from localStorage
+          switch (formData.userType) {
+            case "student":
+              window.location.href = "/student";
+              break;
+            case "consultant":
+              window.location.href = "/consultant/dashboard";
+              break;
+            case "admin":
+              window.location.href = "/admin/dashboard";
+              break;
+            default:
+              window.location.href = "/dashboard";
+          }
+        } else {
+          toast.error("Login response invalid");
         }
+      } else {
+        toast.error(response.data.message || "Login failed");
       }
     } catch (error) {
-      // Error handled by AuthContext toast
+      console.error("Login error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Login failed. Please check your credentials.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return <span className="loading loading-infinity loading-lg"></span>;
+  }
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white">
