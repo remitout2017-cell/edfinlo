@@ -13,6 +13,10 @@ const {
   getAnalysisHistory,
 } = require("../../controllers/students/loanMatching.controller");
 
+const {
+  getDocumentCompleteness,
+} = require("../../controllers/students/documentCompleteness.controller");
+
 // All routes require student auth
 router.use(auth);
 router.use(authorize("student"));
@@ -45,6 +49,13 @@ router.get("/my-requests", getMyLoanRequests);
  * @access Private (Student only)
  */
 router.post("/accept-offer/:requestId", acceptNBFCOffer);
+
+/**
+ * @route GET /api/loan-analysis/completeness
+ * @desc Get document completeness status for student dashboard
+ * @access Private (Student only)
+ */
+router.get("/completeness", getDocumentCompleteness);
 
 /**
  * @route GET /api/student/loan-matching/history

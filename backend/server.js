@@ -115,6 +115,13 @@ app.use(
   require("./routes/students/loanMatching.routes")
 );
 
+// Loan analysis routes (alias for frontend compatibility)
+app.use(
+  "/api/loan-analysis",
+  apiLimiter,
+  require("./routes/students/loanMatching.routes")
+);
+
 // NBFC loan requests
 app.use(
   "/api/nbfc/loan-requests",
