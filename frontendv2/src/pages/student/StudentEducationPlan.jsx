@@ -18,7 +18,7 @@ import {
   Image,
 } from "lucide-react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
-import StepperExample from "../../components/common/stepper";
+
 import { useAuth } from "../../context/AuthContext";
 import {
   studentEducationPlanAPI,
@@ -249,9 +249,8 @@ const StudentEducationPlan = () => {
     <div className="space-y-1">
       <p className="text-sm text-gray-600">{label}</p>
       <div
-        className={`flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg ${
-          url ? "cursor-pointer hover:bg-gray-50" : "bg-gray-50"
-        }`}
+        className={`flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg ${url ? "cursor-pointer hover:bg-gray-50" : "bg-gray-50"
+          }`}
         onClick={() => url && openPreview(url, label)}
       >
         <div className="flex items-center gap-2">
@@ -300,7 +299,7 @@ const StudentEducationPlan = () => {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-center flex-col min-h-screen">
-        <StepperExample currentStep={1} />
+
 
         <div className="w-full p-6">
           <div className="flex flex-col lg:flex-row gap-6">

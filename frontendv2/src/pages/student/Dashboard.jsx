@@ -141,11 +141,10 @@ const StudentDashboard = () => {
                     <span className="text-sm text-gray-600">
                       Status:{" "}
                       <span
-                        className={`font-medium ${
-                          documentStatus === "verified"
-                            ? "text-green-600"
-                            : "text-orange-500"
-                        }`}
+                        className={`font-medium ${documentStatus === "verified"
+                          ? "text-green-600"
+                          : "text-orange-500"
+                          }`}
                       >
                         {documentStatus === "verified" ? "Verified" : "Pending"}
                       </span>
@@ -267,12 +266,6 @@ const StudentDashboard = () => {
                   <h3 className="text-lg font-semibold text-gray-800">
                     My Profile
                   </h3>
-                  <Link
-                    to="/student/profile"
-                    className="px-3 py-1 border border-gray-300 text-sm text-gray-600 rounded-md hover:bg-gray-50"
-                  >
-                    Edit
-                  </Link>
                 </div>
 
                 <div className="space-y-3">
@@ -337,9 +330,8 @@ const StudentDashboard = () => {
                             stroke="#f97316"
                             strokeWidth="4"
                             fill="none"
-                            strokeDasharray={`${
-                              (completeness.percentage || 0) * 1.76
-                            } 176`}
+                            strokeDasharray={`${(completeness.percentage || 0) * 1.76
+                              } 176`}
                             strokeLinecap="round"
                           />
                         </svg>
@@ -356,17 +348,12 @@ const StudentDashboard = () => {
 
                     {/* Documents Count */}
                     <div className="flex flex-col items-center">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-400">
-                          {String(completeness.completedFields || 0).padStart(
-                            2,
-                            "0"
-                          )}
-                        </p>
-                        <p className="text-sm text-gray-400">
+                      <p className="text-2xl font-bold text-gray-400">
+                        {String(completeness.completedFields || 0)}
+                        <span className="text-lg text-gray-400 font-normal">
                           /{completeness.totalFields || 13}
-                        </p>
-                      </div>
+                        </span>
+                      </p>
                       <p className="text-xs text-gray-500 mt-2">
                         Documents Uploaded
                       </p>
