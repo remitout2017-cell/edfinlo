@@ -5,27 +5,30 @@ from typing import Optional
 
 
 class Class12Extractor(BaseExtractor):
-    """Extract 12th marksheet data"""
+    """Extract 12th marksheet data with native JSON mode"""
 
     PROMPT = """
 Extract Class 12 marksheet information. This can be from ANY Indian board:
 - CBSE, ICSE/ISC, State Boards, IB, Cambridge, NIOS, etc.
 
-Extract:
-1. **Board name** - Exact full name as written
-2. **Year of passing**
-3. **Stream** - Science/Commerce/Arts/Humanities (if mentioned)
-4. **Roll number**
-5. **School name**
+Extract the following fields accurately:
 
-6. **Academic Performance** - Extract everything:
-   - Overall percentage
-   - Individual subject marks (if overall not given)
-   - CGPA (with scale - 10-point/4-point)
-   - Grade (A1, A, Distinction, First Class, I-DIST, etc.)
-   - Division (if mentioned)
+1. **board_name** (string, required): Exact full board name as written on marksheet
+2. **year_of_passing** (integer, required): Year student passed 12th standard
+3. **stream** (string, optional): Science/Commerce/Arts/Humanities (if mentioned)
+4. **school_name** (string, optional): Full school/institution name
 
-Board name is critical - write it exactly as shown!
+5. **Academic Performance** - Extract ALL available information:
+   - **percentage** (float, optional): Overall percentage if shown
+   - **cgpa** (float, optional): CGPA if shown
+   - **grade** (string, optional): Any grade (A1, A, Distinction, First Class, I-DIST, etc.)
+
+IMPORTANT INSTRUCTIONS:
+- Extract EXACTLY what you see on the marksheet
+- If a field is not visible, set it to null
+- For percentage: If individual subject marks shown but no overall, calculate average
+- Board name must be complete and accurate - critical for grade conversion
+- Extract ALL types of grades/marks you see
 """
 
     def extract(self, image_path: str) -> Optional[Class12Marksheet]:
