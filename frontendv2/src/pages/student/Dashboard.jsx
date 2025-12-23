@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useUserData } from "../../context/UserDataContext";
-import { kycAPI, loanAnalysisAPI, loanRequestAPI } from "../../services/api";
+import { kycAPI, loanRequestAPI } from "../../services/api";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import { User, Phone, Mail, MapPin, Upload, FileText } from "lucide-react";
 
@@ -18,6 +18,7 @@ const StudentDashboard = () => {
     lastName,
     email,
     phoneNumber,
+    completeness,
   } = useUserData();
 
   const [loading, setLoading] = useState(true);
@@ -28,11 +29,6 @@ const StudentDashboard = () => {
     rejected: 0,
   });
   const [documentStatus, setDocumentStatus] = useState("pending");
-  const [completeness, setCompleteness] = useState({
-    percentage: 0,
-    totalDocs: 0,
-    uploadedDocs: 0,
-  });
 
   useEffect(() => {
     // Refresh user data from API when dashboard loads
@@ -42,10 +38,9 @@ const StudentDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [loanRes, kycRes, completenessRes] = await Promise.allSettled([
+      const [loanRes, kycRes] = await Promise.allSettled([
         loanRequestAPI.getStudentRequests(),
         kycAPI.getKYCDetails(),
-        loanAnalysisAPI.getCompleteness(),
       ]);
 
       // Process loan requests
@@ -60,20 +55,9 @@ const StudentDashboard = () => {
         setLoanStats({ received, onHold, rejected });
       }
 
-      // Process KYC status
       if (kycRes.status === "fulfilled") {
         const kycData = kycRes.value.data;
         setDocumentStatus(kycData.kycStatus || "pending");
-      }
-
-      // Process completeness
-      if (completenessRes.status === "fulfilled") {
-        const data = completenessRes.value.data.data || {};
-        setCompleteness({
-          percentage: data.percentage || 0,
-          totalDocs: data.totalFields || 13,
-          uploadedDocs: data.completedFields || 0,
-        });
       }
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
@@ -354,14 +338,14 @@ const StudentDashboard = () => {
                             strokeWidth="4"
                             fill="none"
                             strokeDasharray={`${
-                              completeness.percentage * 1.76
+                              (completeness.percentage || 0) * 1.76
                             } 176`}
                             strokeLinecap="round"
                           />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
                           <span className="text-sm font-bold text-orange-500">
-                            {completeness.percentage}%
+                            {completeness.percentage || 0}%
                           </span>
                         </div>
                       </div>
@@ -374,10 +358,13 @@ const StudentDashboard = () => {
                     <div className="flex flex-col items-center">
                       <div className="text-center">
                         <p className="text-2xl font-bold text-gray-400">
-                          {String(completeness.uploadedDocs).padStart(2, "0")}
+                          {String(completeness.completedFields || 0).padStart(
+                            2,
+                            "0"
+                          )}
                         </p>
                         <p className="text-sm text-gray-400">
-                          /{completeness.totalDocs}
+                          /{completeness.totalFields || 13}
                         </p>
                       </div>
                       <p className="text-xs text-gray-500 mt-2">

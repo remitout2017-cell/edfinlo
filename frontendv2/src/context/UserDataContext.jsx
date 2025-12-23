@@ -35,6 +35,16 @@ export const UserDataProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Document completeness state
+  const [completeness, setCompleteness] = useState({
+    percentage: 0,
+    completedFields: 0,
+    totalFields: 13,
+    sections: {},
+    nextAction: "",
+    readyForAnalysis: false,
+  });
+
   // Check if user is authenticated (has token)
   const isAuthenticated = !!localStorage.getItem("token");
   const userType = localStorage.getItem("userType") || "student";
@@ -103,10 +113,43 @@ export const UserDataProvider = ({ children }) => {
     }
   }, [userType]);
 
+  // Fetch document completeness
+  const fetchCompleteness = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token || userType !== "student") return null;
+
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/loan-analysis/completeness`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        const data = response.data.data;
+        setCompleteness(data);
+        console.log("✅ Completeness data fetched");
+        return data;
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch completeness:", err);
+    }
+    return null;
+  }, [userType]);
+
   // Refresh user data (can be called manually from any component)
   const refreshUserData = useCallback(async () => {
-    return await fetchUserData();
-  }, [fetchUserData]);
+    const userData = await fetchUserData();
+    // Also refresh completeness when user data is refreshed
+    if (userType === "student") {
+      await fetchCompleteness();
+    }
+    return userData;
+  }, [fetchUserData, fetchCompleteness, userType]);
 
   // Update user data locally (for optimistic updates)
   const updateUserData = useCallback((updates) => {
@@ -149,6 +192,10 @@ export const UserDataProvider = ({ children }) => {
     refreshUserData,
     updateUserData,
     clearUserData,
+    fetchCompleteness,
+
+    // Document completeness
+    completeness,
 
     // Computed properties for easy access
     firstName: userData?.firstName || "",
