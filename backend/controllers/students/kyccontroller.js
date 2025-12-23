@@ -22,6 +22,21 @@ function safePublicId(userId, docKey) {
   return `student_${userId}/${docKey}_${Date.now()}_${rnd}`;
 }
 
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+  // Handle DD/MM/YYYY format
+  const parts = dateStr.split("/");
+  if (parts.length === 3) {
+    const [day, month, year] = parts.map(Number);
+    // Month is 0-indexed in JS Date
+    const date = new Date(year, month - 1, day);
+    if (!isNaN(date.getTime())) return date;
+  }
+  // Fallback to standard parsing
+  const date = new Date(dateStr);
+  return isNaN(date.getTime()) ? null : date;
+}
+
 async function callPythonKycServer(files) {
   const form = new FormData();
 
@@ -112,6 +127,7 @@ exports.submitKyc = asyncHandler(async (req, res) => {
 
   // 1) Call python first (uses local multer files) [web:56]
   const kycResp = await callPythonKycServer(files);
+  console.log("🐍 Python KYC Response:", JSON.stringify(kycResp, null, 2));
 
   const verified = !!kycResp.verified;
   const reasons = Array.isArray(kycResp.reasons) ? kycResp.reasons : [];
@@ -224,11 +240,14 @@ exports.submitKyc = asyncHandler(async (req, res) => {
     aadhaarName: kycResp?.kycData?.aadhaarName || null,
     aadhaarGender: kycResp?.kycData?.aadhaarGender || null,
     aadhaarAddress: kycResp?.kycData?.aadhaarAddress || null,
+    aadhaarDOB: parseDate(kycResp?.kycData?.aadhaarDOB),
 
     panName: kycResp?.kycData?.panName || null,
     panFatherName: kycResp?.kycData?.panFatherName || null,
+    panDOB: parseDate(kycResp?.kycData?.panDOB),
 
     passportName: kycResp?.kycData?.passportName || null,
+    passportDOB: parseDate(kycResp?.kycData?.passportDOB),
 
     verificationLevel: verified ? "verified" : "not_verified",
     verificationReason: reasons.join(", "),
@@ -262,7 +281,11 @@ exports.getMyKyc = asyncHandler(async (req, res) => {
   const student = await Student.findById(userId).select(
     "kycStatus kycVerifiedAt kycRejectedAt " +
       "+kycData.aadhaarNumber +kycData.panNumber +kycData.passportNumber " +
-      "+kycData.aadhaarFrontUrl +kycData.aadhaarBackUrl +kycData.panCardUrl +kycData.passportUrl"
+      "+kycData.aadhaarFrontUrl +kycData.aadhaarBackUrl +kycData.panCardUrl +kycData.passportUrl " +
+      "+kycData.aadhaarName +kycData.aadhaarGender +kycData.aadhaarAddress +kycData.aadhaarDOB " +
+      "+kycData.panName +kycData.panFatherName +kycData.panDOB " +
+      "+kycData.passportName +kycData.passportDOB " +
+      "+kycData.verificationLevel +kycData.verificationReason +kycData.lastVerifiedAt"
   );
 
   if (!student) throw new AppError("Student not found", 404);
@@ -275,14 +298,53 @@ exports.getMyKyc = asyncHandler(async (req, res) => {
     kycRejectedAt: student.kycRejectedAt,
     kycData: student.kycData
       ? {
+          // Decrypted sensitive data
           aadhaarNumber: decryptText(student.kycData.aadhaarNumber, aad),
           panNumber: decryptText(student.kycData.panNumber, aad),
           passportNumber: decryptText(student.kycData.passportNumber, aad),
+          // Document URLs
           aadhaarFrontUrl: student.kycData.aadhaarFrontUrl,
           aadhaarBackUrl: student.kycData.aadhaarBackUrl,
           panCardUrl: student.kycData.panCardUrl,
           passportUrl: student.kycData.passportUrl,
+
+
+          
+          // Extracted Aadhaar data
+          aadhaarName: student.kycData.aadhaarName,
+          aadhaarGender: student.kycData.aadhaarGender,
+          aadhaarAddress: student.kycData.aadhaarAddress,
+          aadhaarDOB: student.kycData.aadhaarDOB,
+          // Extracted PAN data
+          panName: student.kycData.panName,
+          panFatherName: student.kycData.panFatherName,
+          panDOB: student.kycData.panDOB,
+          // Extracted Passport data
+          passportName: student.kycData.passportName,
+          passportDOB: student.kycData.passportDOB,
+          // Verification metadata
+          verificationLevel: student.kycData.verificationLevel,
+          verificationReason: student.kycData.verificationReason,
+          lastVerifiedAt: student.kycData.lastVerifiedAt,
         }
       : null,
   });
+});
+
+exports.deleteKYC = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  const student = await Student.findById(userId).select(
+    "+kycData.aadhaarFrontPublicId +kycData.aadhaarBackPublicId +kycData.panFrontPublicId +kycData.passportPublicId " +
+      "+kycData.aadhaarFrontResourceType +kycData.aadhaarBackResourceType +kycData.panFrontResourceType +kycData.passportResourceType " +
+      "+kycData.aadhaarFrontType +kycData.aadhaarBackType +kycData.panFrontType +kycData.passportType"
+  );
+
+  if (!student) throw new AppError("Student not found", 404);
+
+  if (student.kycData) {
+    await purgePreviousKyc(student);
+    await student.save();
+  }
+
+  res.status(200).json({ success: true, message: "KYC reset successfully" });
 });

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   FileText,
   CreditCard,
@@ -9,41 +10,38 @@ import {
 } from "lucide-react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import StepperExample from "../../components/common/stepper";
-import { kycAPI } from "../../services/api";
+import { useUserData } from "../../context/UserDataContext";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 
+const API_BASE_URL = "http://localhost:5000";
+
 const KYC = () => {
-  const [kyc, setKyc] = useState(null);
+  // Get KYC data from context
+  const { kyc, fetchKyc, refreshUserData } = useUserData();
+  const kycData = kyc;
+  const k = kycData?.kycData || {};
+
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
   const [files, setFiles] = useState({
-    frontAadhar: null,
-    backAadhar: null,
-    frontPan: null,
-    backPan: null,
-    passportPhoto: null,
+    aadhaar_front: null,
+    aadhaar_back: null,
+    pan_front: null,
+    passport: null,
   });
 
   useEffect(() => {
-    fetchKyc();
+    loadKycData();
   }, []);
 
-  const fetchKyc = async () => {
+  const loadKycData = async () => {
     setLoading(true);
     try {
-      const res = await kycAPI.getKYCDetails();
-      setKyc(res.data.kyc || null);
+      await fetchKyc();
     } catch (error) {
-      if (error.response?.status !== 404) {
-        console.error("Failed to fetch KYC:", error);
-        toast.error(
-          error.response?.data?.message || "Failed to fetch KYC details"
-        );
-      } else {
-        setKyc(null);
-      }
+      console.error("Failed to fetch KYC:", error);
     } finally {
       setLoading(false);
     }
@@ -71,32 +69,55 @@ const KYC = () => {
   const handleUpload = async (e) => {
     e.preventDefault();
 
-    if (!files.frontAadhar || !files.frontPan) {
-      toast.error("Aadhaar front and PAN front are required");
+    // Validate required files
+    if (!files.aadhaar_front || !files.aadhaar_back || !files.pan_front) {
+      toast.error("Aadhaar front, Aadhaar back, and PAN front are required");
       return;
     }
 
     setUploading(true);
     try {
+      const token = localStorage.getItem("token");
       const formData = new FormData();
 
-      if (files.frontAadhar) formData.append("frontAadhar", files.frontAadhar);
-      if (files.backAadhar) formData.append("backAadhar", files.backAadhar);
-      if (files.frontPan) formData.append("frontPan", files.frontPan);
-      if (files.backPan) formData.append("backPan", files.backPan);
-      if (files.passportPhoto)
-        formData.append("passportPhoto", files.passportPhoto);
+      // Use field names that match the backend
+      formData.append("aadhaar_front", files.aadhaar_front);
+      formData.append("aadhaar_back", files.aadhaar_back);
+      formData.append("pan_front", files.pan_front);
+      if (files.passport) {
+        formData.append("passport", files.passport);
+      }
 
-      await kycAPI.uploadDocuments(formData);
-      toast.success("KYC documents uploaded successfully");
+      const response = await axios.post(
+        `${API_BASE_URL}/api/user/kyc/upload`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (response.data.verified) {
+        toast.success("KYC verified successfully!");
+      } else {
+        toast.error(
+          `KYC verification failed: ${
+            response.data.reasons?.join(", ") || "Unknown reason"
+          }`
+        );
+      }
+
       setFiles({
-        frontAadhar: null,
-        backAadhar: null,
-        frontPan: null,
-        backPan: null,
-        passportPhoto: null,
+        aadhaar_front: null,
+        aadhaar_back: null,
+        pan_front: null,
+        passport: null,
       });
-      await fetchKyc();
+
+      // Refresh KYC data from context
+      await refreshUserData();
     } catch (error) {
       console.error("KYC upload failed:", error);
       toast.error(
@@ -117,9 +138,12 @@ const KYC = () => {
     }
 
     try {
-      await kycAPI.deleteKYC();
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_BASE_URL}/api/user/kyc/kyc/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success("KYC deleted successfully");
-      setKyc(null);
+      await refreshUserData();
     } catch (error) {
       console.error("Delete KYC failed:", error);
       toast.error(error.response?.data?.message || "Failed to delete KYC");
@@ -137,7 +161,6 @@ const KYC = () => {
   }
 
   const isVerified = kyc?.kycStatus === "verified";
-  const k = kyc?.kycData || {};
 
   return (
     <DashboardLayout>
@@ -170,8 +193,8 @@ const KYC = () => {
                     </h3>
                     <p className="text-sm text-emerald-700 mt-1">
                       Verified on{" "}
-                      {kyc.kycVerifiedAt
-                        ? new Date(kyc.kycVerifiedAt).toLocaleDateString()
+                      {kycData.kycVerifiedAt
+                        ? new Date(kycData.kycVerifiedAt).toLocaleDateString()
                         : "N/A"}
                     </p>
                     {k.verificationReason && (
@@ -320,11 +343,16 @@ const KYC = () => {
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">
                   Extracted KYC Details
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-3">
+
+                {/* Aadhaar Section */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-purple-700 mb-3">
+                    Aadhaar Details
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 rounded-lg p-4">
                     <div>
                       <p className="text-xs text-gray-500 uppercase mb-1">
-                        Aadhaar Name
+                        Name
                       </p>
                       <p className="text-sm font-medium text-gray-800">
                         {k.aadhaarName || "N/A"}
@@ -332,19 +360,40 @@ const KYC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 uppercase mb-1">
-                        Aadhaar DOB
+                        Aadhaar Number
                       </p>
                       <p className="text-sm font-medium text-gray-800">
-                        {k.aadhaarDOB
-                          ? new Date(k.aadhaarDOB).toLocaleDateString()
-                          : "N/A"}
+                        {k.aadhaarNumber || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Gender
+                      </p>
+                      <p className="text-sm font-medium text-gray-800">
+                        {k.aadhaarGender || "N/A"}
+                      </p>
+                    </div>
+                    <div className="md:col-span-3">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Address
+                      </p>
+                      <p className="text-sm font-medium text-gray-800">
+                        {k.aadhaarAddress || "N/A"}
                       </p>
                     </div>
                   </div>
-                  <div className="space-y-3">
+                </div>
+
+                {/* PAN Section */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-purple-700 mb-3">
+                    PAN Card Details
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 rounded-lg p-4">
                     <div>
                       <p className="text-xs text-gray-500 uppercase mb-1">
-                        PAN Name
+                        Name
                       </p>
                       <p className="text-sm font-medium text-gray-800">
                         {k.panName || "N/A"}
@@ -352,48 +401,61 @@ const KYC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 uppercase mb-1">
-                        PAN DOB
+                        PAN Number
                       </p>
                       <p className="text-sm font-medium text-gray-800">
-                        {k.panDOB
-                          ? new Date(k.panDOB).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase mb-1">
-                        Passport Name
-                      </p>
-                      <p className="text-sm font-medium text-gray-800">
-                        {k.passportName || "N/A"}
+                        {k.panNumber || "N/A"}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 uppercase mb-1">
-                        Passport DOB
+                        Father's Name
                       </p>
                       <p className="text-sm font-medium text-gray-800">
-                        {k.passportDOB
-                          ? new Date(k.passportDOB).toLocaleDateString()
-                          : "N/A"}
+                        {k.panFatherName || "N/A"}
                       </p>
                     </div>
                   </div>
                 </div>
+
+                {/* Passport Section */}
+                {(k.passportName || k.passportNumber || k.passportUrl) && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-semibold text-purple-700 mb-3">
+                      Passport Details
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 rounded-lg p-4">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase mb-1">
+                          Name
+                        </p>
+                        <p className="text-sm font-medium text-gray-800">
+                          {k.passportName || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase mb-1">
+                          Passport Number
+                        </p>
+                        <p className="text-sm font-medium text-gray-800">
+                          {k.passportNumber || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
             /* Upload Form View */
             <form onSubmit={handleUpload} className="space-y-6">
               {/* Status Message */}
-              {kyc?.kycStatus && (
+              {kycData?.kycStatus && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
                   <AlertCircle className="text-amber-600 mt-0.5" size={20} />
                   <div>
                     <h3 className="text-sm font-semibold text-amber-900">
-                      Current Status: {kyc.kycStatus}
+                      Current Status: {kycData.kycStatus}
                     </h3>
                     <p className="text-xs text-amber-700 mt-1">
                       Please upload your documents to proceed with verification
@@ -417,14 +479,14 @@ const KYC = () => {
                       <input
                         type="file"
                         accept="image/*,application/pdf"
-                        onChange={(e) => handleFileChange(e, "frontAadhar")}
+                        onChange={(e) => handleFileChange(e, "aadhaar_front")}
                         className="hidden"
                       />
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Upload size={16} />
                         <span>
-                          {files.frontAadhar
-                            ? files.frontAadhar.name
+                          {files.aadhaar_front
+                            ? files.aadhaar_front.name
                             : "Click to upload"}
                         </span>
                       </div>
@@ -440,19 +502,19 @@ const KYC = () => {
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 pl-11 hover:border-purple-400 transition">
                     <label className="cursor-pointer block">
                       <p className="text-sm font-medium text-gray-700 mb-2">
-                        Aadhaar Back (Optional)
+                        Aadhaar Back <span className="text-red-500">*</span>
                       </p>
                       <input
                         type="file"
                         accept="image/*,application/pdf"
-                        onChange={(e) => handleFileChange(e, "backAadhar")}
+                        onChange={(e) => handleFileChange(e, "aadhaar_back")}
                         className="hidden"
                       />
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Upload size={16} />
                         <span>
-                          {files.backAadhar
-                            ? files.backAadhar.name
+                          {files.aadhaar_back
+                            ? files.aadhaar_back.name
                             : "Click to upload"}
                         </span>
                       </div>
@@ -468,47 +530,19 @@ const KYC = () => {
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 pl-11 hover:border-purple-400 transition">
                     <label className="cursor-pointer block">
                       <p className="text-sm font-medium text-gray-700 mb-2">
-                        PAN Front <span className="text-red-500">*</span>
+                        PAN Card <span className="text-red-500">*</span>
                       </p>
                       <input
                         type="file"
                         accept="image/*,application/pdf"
-                        onChange={(e) => handleFileChange(e, "frontPan")}
+                        onChange={(e) => handleFileChange(e, "pan_front")}
                         className="hidden"
                       />
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Upload size={16} />
                         <span>
-                          {files.frontPan
-                            ? files.frontPan.name
-                            : "Click to upload"}
-                        </span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                {/* PAN Back */}
-                <div className="relative">
-                  <div className="absolute left-3 top-4 text-gray-400">
-                    <CreditCard size={20} />
-                  </div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 pl-11 hover:border-purple-400 transition">
-                    <label className="cursor-pointer block">
-                      <p className="text-sm font-medium text-gray-700 mb-2">
-                        PAN Back (Optional)
-                      </p>
-                      <input
-                        type="file"
-                        accept="image/*,application/pdf"
-                        onChange={(e) => handleFileChange(e, "backPan")}
-                        className="hidden"
-                      />
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Upload size={16} />
-                        <span>
-                          {files.backPan
-                            ? files.backPan.name
+                          {files.pan_front
+                            ? files.pan_front.name
                             : "Click to upload"}
                         </span>
                       </div>
@@ -517,26 +551,26 @@ const KYC = () => {
                 </div>
 
                 {/* Passport Photo */}
-                <div className="relative md:col-span-2">
+                <div className="relative">
                   <div className="absolute left-3 top-4 text-gray-400">
                     <Camera size={20} />
                   </div>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 pl-11 hover:border-purple-400 transition">
                     <label className="cursor-pointer block">
                       <p className="text-sm font-medium text-gray-700 mb-2">
-                        Passport Photo (Optional)
+                        Passport (Optional)
                       </p>
                       <input
                         type="file"
                         accept="image/*,application/pdf"
-                        onChange={(e) => handleFileChange(e, "passportPhoto")}
+                        onChange={(e) => handleFileChange(e, "passport")}
                         className="hidden"
                       />
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Upload size={16} />
                         <span>
-                          {files.passportPhoto
-                            ? files.passportPhoto.name
+                          {files.passport
+                            ? files.passport.name
                             : "Click to upload"}
                         </span>
                       </div>

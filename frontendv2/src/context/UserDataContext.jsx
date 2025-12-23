@@ -45,6 +45,14 @@ export const UserDataProvider = ({ children }) => {
     readyForAnalysis: false,
   });
 
+  // KYC state
+  const [kyc, setKyc] = useState({
+    kycStatus: null,
+    kycData: null,
+    kycVerifiedAt: null,
+    kycRejectedAt: null,
+  });
+
   // Check if user is authenticated (has token)
   const isAuthenticated = !!localStorage.getItem("token");
   const userType = localStorage.getItem("userType") || "student";
@@ -141,15 +149,47 @@ export const UserDataProvider = ({ children }) => {
     return null;
   }, [userType]);
 
+  // Fetch KYC data
+  const fetchKyc = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token || userType !== "student") return null;
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/user/kyc/kyc/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = response.data;
+      console.log("data====",data);
+
+      setKyc({
+        kycStatus: data.kycStatus || null,
+        kycData: data.kycData || null,
+        kycVerifiedAt: data.kycVerifiedAt || null,
+        kycRejectedAt: data.kycRejectedAt || null,
+      });
+      console.log("✅ KYC data fetched", data.kycStatus);
+      return data;
+    } catch (err) {
+      if (err.response?.status !== 404) {
+        console.error("❌ Failed to fetch KYC:", err);
+      }
+    }
+    return null;
+  }, [userType]);
+
   // Refresh user data (can be called manually from any component)
   const refreshUserData = useCallback(async () => {
     const userData = await fetchUserData();
-    // Also refresh completeness when user data is refreshed
+    // Also refresh completeness and KYC when user data is refreshed
     if (userType === "student") {
-      await fetchCompleteness();
+      await Promise.all([fetchCompleteness(), fetchKyc()]);
     }
     return userData;
-  }, [fetchUserData, fetchCompleteness, userType]);
+  }, [fetchUserData, fetchCompleteness, fetchKyc, userType]);
 
   // Update user data locally (for optimistic updates)
   const updateUserData = useCallback((updates) => {
@@ -193,9 +233,13 @@ export const UserDataProvider = ({ children }) => {
     updateUserData,
     clearUserData,
     fetchCompleteness,
+    fetchKyc,
 
     // Document completeness
     completeness,
+
+    // KYC data
+    kyc,
 
     // Computed properties for easy access
     firstName: userData?.firstName || "",
