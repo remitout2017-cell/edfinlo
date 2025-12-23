@@ -249,9 +249,8 @@ const StudentEducationPlan = () => {
     <div className="space-y-1">
       <p className="text-sm text-gray-600">{label}</p>
       <div
-        className={`flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg ${
-          url ? "cursor-pointer hover:bg-gray-50" : "bg-gray-50"
-        }`}
+        className={`flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg ${url ? "cursor-pointer hover:bg-gray-50" : "bg-gray-50"
+          }`}
         onClick={() => url && openPreview(url, label)}
       >
         <div className="flex items-center gap-2">
