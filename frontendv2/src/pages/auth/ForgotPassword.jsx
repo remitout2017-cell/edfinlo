@@ -1,102 +1,109 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { authAPI } from '../../services/api';
-import toast from 'react-hot-toast';
+// src/pages/auth/ForgotPassword.jsx
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { authAPI } from "../../services/api";
+import { Mail, ArrowRight, ArrowLeft } from "lucide-react";
 
 const ForgotPassword = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
+    if (!email.trim()) {
+      toast.error("Email is required");
+      return;
+    }
+
+    setLoading(true);
     try {
-      await authAPI.forgotPassword(email);
-      setSubmitted(true);
-      toast.success('Password reset link sent to your email');
+      const response = await authAPI.forgotPassword(email.toLowerCase());
+
+      if (response.data?.success) {
+        toast.success(response.data.message || "OTP sent to your email");
+        // Navigate to reset password page with email as state
+        navigate("/reset-password", { state: { email: email.toLowerCase() } });
+      } else {
+        toast.error(response.data?.message || "Failed to send OTP");
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to send reset link');
+      const message =
+        error.response?.data?.message || "Failed to send OTP. Please try again.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Forgot Password
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email to receive a password reset link
-          </p>
-        </div>
-
-        {submitted ? (
-          <div className="bg-green-50 border border-green-200 rounded-md p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">Email Sent!</h3>
-                <div className="mt-2 text-sm text-green-700">
-                  <p>
-                    We've sent a password reset link to <strong>{email}</strong>.
-                    Please check your inbox and follow the instructions.
-                  </p>
-                </div>
-                <div className="mt-4">
-                  <Link
-                    to="/login"
-                    className="text-sm font-medium text-green-800 hover:text-green-700"
-                  >
-                    Back to login →
-                  </Link>
-                </div>
-              </div>
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 px-4">
+      <div className="w-full max-w-md space-y-6">
+        {/* Card */}
+        <div className="bg-slate-900/80 border border-slate-700 rounded-2xl p-6 sm:p-8 space-y-6">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-semibold text-white tracking-tight">
+              Forgot Password?
+            </h1>
+            <p className="text-sm text-slate-300/80">
+              Enter your email and we'll send you a 6-digit OTP to reset your
+              password.
+            </p>
           </div>
-        ) : (
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-slate-200">
                 Email address
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="your@email.com"
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoFocus
+                  className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  placeholder="you@example.com"
+                />
+              </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {loading ? 'Sending...' : 'Send Reset Link'}
-              </button>
-            </div>
-
-            <div className="text-center">
-              <Link to="/login" className="text-sm text-blue-600 hover:text-blue-500">
-                Back to login
-              </Link>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 hover:from-emerald-400 hover:to-sky-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full border-2 border-slate-900 border-b-transparent animate-spin" />
+                  Sending OTP...
+                </span>
+              ) : (
+                <>
+                  Send OTP
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
           </form>
-        )}
+
+          {/* Back to login */}
+          <div className="text-center">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1 text-xs text-slate-300/80 hover:text-emerald-300"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              Back to login
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

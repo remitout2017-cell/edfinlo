@@ -57,8 +57,8 @@ export const authAPI = {
   resendPhoneOTP: (phoneNumber) =>
     api.post("/auth/resend-phone-otp", { phoneNumber }),
   forgotPassword: (email) => api.post("/auth/forgot-password", { email }),
-  resetPassword: (token, newPassword) =>
-    api.post("/auth/reset-password", { token, newPassword }),
+  resetPassword: (email, otp, newPassword) =>
+    api.post("/auth/reset-password", { email, otp, newPassword }),
   consultantRegister: (data) => api.post("/consultant/register", data),
 };
 

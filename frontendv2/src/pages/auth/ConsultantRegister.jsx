@@ -136,209 +136,216 @@ const ConsultantRegister = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-lg bg-slate-900/80 border border-slate-800 rounded-2xl shadow-xl p-6 sm:p-8 space-y-6 text-white">
-        <div className="text-center space-y-1">
-          <h2 className="text-xl font-semibold tracking-tight">
-            Register as consultant
-          </h2>
-          <p className="text-xs text-slate-300/80">
-            Onboard students, manage profiles and track loans from one
-            dashboard.
-          </p>
+    <form onSubmit={handleSubmit} className="space-y-5 mt-2">
+      <div className="text-center space-y-1">
+        <h2 className="text-xl font-semibold tracking-tight text-white">
+          Create consultant account
+        </h2>
+        <p className="text-xs text-slate-300/80">
+          Onboard students, manage profiles and track loans from one
+          dashboard.
+        </p>
+      </div>
+      {/* Personal */}
+      <div className="space-y-1.5">
+        <label className="block text-xs font-medium text-slate-200">
+          Full name
+        </label>
+        <div className="relative">
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+            placeholder="Your full name"
+          />
+        </div>
+      </div>
+
+      {/* Email */}
+      <div className="space-y-1.5">
+        <label className="block text-xs font-medium text-slate-200">
+          Work email
+        </label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            readOnly={!!inviteEmail} // lock when coming from invite
+            className={`block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 ${inviteEmail ? "opacity-80 cursor-not-allowed" : ""
+              }`}
+            placeholder="you@company.com"
+          />
+        </div>
+      </div>
+
+      {/* Phone */}
+      <div className="space-y-1.5">
+        <label className="block text-xs font-medium text-slate-200">
+          Phone (optional)
+        </label>
+        <div className="relative">
+          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="tel"
+            name="phoneNumber"
+            value={formData.phoneNumber}
+            onChange={handleChange}
+            className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+            placeholder="+91 98765 43210"
+          />
+        </div>
+      </div>
+
+      {/* Company + Designation */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-slate-200">
+            Company / firm
+          </label>
+          <div className="relative">
+            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              name="companyName"
+              value={formData.companyName}
+              onChange={handleChange}
+              required
+              className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              placeholder="Consultancy name"
+            />
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 mt-2">
-          {/* Personal */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-slate-200">
-              Full name
-            </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-                placeholder="Your full name"
-              />
-            </div>
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-slate-200">
+            Designation
+          </label>
+          <div className="relative">
+            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              name="designation"
+              value={formData.designation}
+              onChange={handleChange}
+              required
+              className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              placeholder="Founder / Counselor"
+            />
           </div>
-
-          {/* Email */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-slate-200">
-              Work email
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                readOnly={!!inviteEmail} // lock when coming from invite
-                className={`block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 ${
-                  inviteEmail ? "opacity-80 cursor-not-allowed" : ""
-                }`}
-                placeholder="you@company.com"
-              />
-            </div>
-          </div>
-
-          {/* Phone */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-slate-200">
-              Phone (optional)
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="tel"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-                placeholder="+91 98765 43210"
-              />
-            </div>
-          </div>
-
-          {/* Company + Designation */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-200">
-                Company / firm
-              </label>
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  name="companyName"
-                  value={formData.companyName}
-                  onChange={handleChange}
-                  required
-                  className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-                  placeholder="Consultancy name"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-200">
-                Designation
-              </label>
-              <div className="relative">
-                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  name="designation"
-                  value={formData.designation}
-                  onChange={handleChange}
-                  required
-                  className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-                  placeholder="Founder / Counselor"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Experience */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-slate-200">
-              Experience (years)
-            </label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="number"
-                name="experienceYears"
-                value={formData.experienceYears}
-                onChange={handleChange}
-                min={0}
-                max={50}
-                required
-                className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-                placeholder="5"
-              />
-            </div>
-          </div>
-
-          {/* Passwords */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-200">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3 pr-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-                  placeholder="At least 8 characters"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-200">
-                Confirm password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-                  placeholder="Re-enter password"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-sky-500/30 hover:from-sky-400 hover:to-indigo-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>
-                <span className="inline-flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full border-2 border-slate-900 border-b-transparent animate-spin" />
-                  Creating consultant account...
-                </span>
-              </>
-            ) : (
-              <>
-                Create consultant account
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-        </form>
+        </div>
       </div>
-    </div>
+
+      {/* Experience */}
+      <div className="space-y-1.5">
+        <label className="block text-xs font-medium text-slate-200">
+          Experience (years)
+        </label>
+        <div className="relative">
+          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="number"
+            name="experienceYears"
+            value={formData.experienceYears}
+            onChange={handleChange}
+            min={0}
+            max={50}
+            required
+            className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+            placeholder="5"
+          />
+        </div>
+      </div>
+
+      {/* Passwords */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-slate-200">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3 pr-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              placeholder="At least 8 characters"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-slate-200">
+            Confirm password
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              placeholder="Re-enter password"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Submit */}
+      <button
+        type="submit"
+        disabled={loading}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-sky-500/30 hover:from-sky-400 hover:to-indigo-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        {loading ? (
+          <>
+            <span className="inline-flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full border-2 border-slate-900 border-b-transparent animate-spin" />
+              Creating consultant account...
+            </span>
+          </>
+        ) : (
+          <>
+            Create consultant account
+            <ArrowRight className="h-4 w-4" />
+          </>
+        )}
+      </button>
+
+      {/* Bottom links */}
+      <div className="space-y-2 text-center text-xs text-slate-300/90 pt-1">
+        <div>
+          Already registered?{" "}
+          <a
+            href="/login?mode=consultant"
+            className="font-semibold text-sky-300 hover:text-sky-200"
+          >
+            Log in
+          </a>
+        </div>
+      </div>
+    </form>
   );
 };
 
