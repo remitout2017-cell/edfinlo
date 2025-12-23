@@ -18,7 +18,7 @@ import {
   Image,
 } from "lucide-react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
-import StepperExample from "../../components/common/stepper";
+
 import { useAuth } from "../../context/AuthContext";
 import {
   studentEducationPlanAPI,
@@ -299,7 +299,7 @@ const StudentEducationPlan = () => {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-center flex-col min-h-screen">
-        <StepperExample currentStep={1} />
+
 
         <div className="w-full p-6">
           <div className="flex flex-col lg:flex-row gap-6">
