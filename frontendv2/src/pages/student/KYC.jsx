@@ -556,7 +556,7 @@ const KYC = () => {
 
               {/* Navigation Buttons */}
               <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-                <button
+                {/* <button
                   type="button"
                   onClick={fetchKyc}
                   className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
@@ -574,7 +574,7 @@ const KYC = () => {
                       d="M15 19l-7-7 7-7"
                     />
                   </svg>
-                </button>
+                </button> */}
 
                 <button
                   type="submit"
@@ -594,7 +594,7 @@ const KYC = () => {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M9 5l7 7-7 7"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
                       />
                     </svg>
                   )}

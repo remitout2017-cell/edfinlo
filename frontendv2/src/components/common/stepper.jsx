@@ -32,90 +32,103 @@ const Stepper = ({ currentStep = 1, steps = [] }) => {
   };
 
   return (
-    <div className="w-full">
-      {/* ----------------- DESKTOP VIEW (Titles) ----------------- */}
-      <div className="hidden md:flex items-center justify-start filter drop-shadow-lg w-full">
-        {stepsList.map((step, index) => (
-          <div
-            key={step.id}
-            className="flex-1 min-w-0 relative"
-            style={{
-              marginLeft: index === 0 ? "0" : `-${DESKTOP_ARROW}px`,
-              zIndex: stepsList.length - index,
-            }}
-          >
-            <div
-              className={`
-                relative h-14 flex items-center justify-center
-                transition-all duration-300
-                ${getStepStyles(step)}
-              `}
-              style={{
-                clipPath:
-                  index === 0
-                    ? `polygon(0% 0%, calc(100% - ${DESKTOP_ARROW}px) 0%, 100% 50%, calc(100% - ${DESKTOP_ARROW}px) 100%, 0% 100%)`
-                    : `polygon(0% 0%, calc(100% - ${DESKTOP_ARROW}px) 0%, 100% 50%, calc(100% - ${DESKTOP_ARROW}px) 100%, 0% 100%, ${DESKTOP_ARROW}px 50%)`,
-
-                paddingLeft:
-                  index === 0 ? "1rem" : `calc(1rem + ${DESKTOP_ARROW}px)`,
-                paddingRight: "1rem",
-              }}
-            >
-              {/* Shine Effect */}
-              <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
-
-              <span className="text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
-                {step.title}
-              </span>
-            </div>
-          </div>
-        ))}
+    <div className="w-full bg-gradient-to-b from-purple-400 via-purple-600 to-purple-900 shadow-2xl overflow-hidden relative">
+      {/* Decorative Background Pattern */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-72 h-72 bg-purple-300/30 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 right-1/4 w-48 h-48 bg-pink-300/20 rounded-full blur-2xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-950/50 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-indigo-900/40 rounded-full blur-3xl translate-x-1/4"></div>
+        {/* Diagonal stripe overlay */}
+        <div className="absolute inset-0 opacity-5 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.1)_10px,rgba(255,255,255,0.1)_20px)]"></div>
       </div>
 
-      {/* ----------------- MOBILE VIEW (Numbers Only) ----------------- */}
-      <div className="flex md:hidden items-center justify-between filter drop-shadow-md w-full overflow-x-auto pb-2">
-        {stepsList.map((step, index) => (
-          <div
-            key={step.id}
-            className="relative flex-shrink-0"
-            style={{
-              width: `calc((100% / ${stepsList.length}) + ${MOBILE_ARROW}px)`,
-              marginLeft: index === 0 ? "0" : `-${MOBILE_ARROW}px`,
-              zIndex: stepsList.length - index,
-            }}
-          >
-            <div
-              className={`
-                relative h-10 flex items-center justify-center
-                transition-all duration-300
-                ${getStepStyles(step)}
-              `}
-              style={{
-                clipPath:
-                  index === 0
-                    ? `polygon(0% 0%, calc(100% - ${MOBILE_ARROW}px) 0%, 100% 50%, calc(100% - ${MOBILE_ARROW}px) 100%, 0% 100%)`
-                    : `polygon(0% 0%, calc(100% - ${MOBILE_ARROW}px) 0%, 100% 50%, calc(100% - ${MOBILE_ARROW}px) 100%, 0% 100%, ${MOBILE_ARROW}px 50%)`,
+      {/* Content Container */}
+      <div className="relative px-3 sm:px-4 md:px-6 lg:px-10 xl:px-12 pt-4 sm:pt-5 md:pt-6 lg:pt-8">
+        {/* Header Section */}
+        <div className="mb-3 sm:mb-4 md:mb-5 lg:mb-6">
+          <h2 className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 md:mb-2">
+            Let's Get you Registered
+          </h2>
+          <p className="text-purple-100 text-xs sm:text-sm md:text-base">
+            Let us know you better to find you the best offers and services!
+          </p>
+        </div>
 
-                paddingLeft: index === 0 ? "0" : `${MOBILE_ARROW}px`,
+        {/* ----------------- DESKTOP/TABLET VIEW (Titles) ----------------- */}
+        <div className="hidden sm:flexb items-center justify-start filter drop-shadow-lg w-full">
+          {stepsList.map((step, index) => (
+            <div
+              key={step.id}
+              className="flex-1 min-w-0 relative"
+              style={{
+                marginLeft: index === 0 ? "0" : `-${DESKTOP_ARROW}px`,
+                zIndex: stepsList.length - index,
               }}
             >
-              {/* Shine Effect */}
-              <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+              <div
+                className={`
+                  relative h-10 sm:h-11 md:h-12 lg:h-14 flex items-center justify-center
+                  transition-all duration-300
+                  ${getStepStyles(step)}
+                `}
+                style={{
+                  clipPath:
+                    index === 0
+                      ? `polygon(0% 0%, calc(100% - ${DESKTOP_ARROW}px) 0%, 100% 50%, calc(100% - ${DESKTOP_ARROW}px) 100%, 0% 100%)`
+                      : `polygon(0% 0%, calc(100% - ${DESKTOP_ARROW}px) 0%, 100% 50%, calc(100% - ${DESKTOP_ARROW}px) 100%, 0% 100%, ${DESKTOP_ARROW}px 50%)`,
 
-              <span className="text-xs font-bold">{step.label}</span>
+                  paddingLeft:
+                    index === 0 ? "1rem" : `calc(1rem + ${DESKTOP_ARROW}px)`,
+                  paddingRight: "1rem",
+                }}
+              >
+                {/* Shine Effect */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+
+                <span className="text-xs sm:text-xs md:text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
+                  {step.title}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      {/* Mobile Current Step Title */}
-      <div className="md:hidden mt-4 text-center">
-        <span className="text-sm font-medium text-gray-400">
-          Step {currentStep}:{" "}
-          <span className="text-orange-400 font-bold">
-            {stepsList[currentStep - 1]?.title}
-          </span>
-        </span>
+        {/* ----------------- MOBILE VIEW (Numbers Only) ----------------- */}
+        <div className="flex sm:hidden items-center justify-between filter drop-shadow-md w-full overflow-x-auto">
+          {stepsList.map((step, index) => (
+            <div
+              key={step.id}
+              className="relative flex-shrink-0"
+              style={{
+                width: `calc((100% / ${stepsList.length}) + ${MOBILE_ARROW}px)`,
+                marginLeft: index === 0 ? "0" : `-${MOBILE_ARROW}px`,
+                zIndex: stepsList.length - index,
+              }}
+            >
+              <div
+                className={`
+                  relative h-8 flex items-center justify-center
+                  transition-all duration-300
+                  ${getStepStyles(step)}
+                `}
+                style={{
+                  clipPath:
+                    index === 0
+                      ? `polygon(0% 0%, calc(100% - ${MOBILE_ARROW}px) 0%, 100% 50%, calc(100% - ${MOBILE_ARROW}px) 100%, 0% 100%)`
+                      : `polygon(0% 0%, calc(100% - ${MOBILE_ARROW}px) 0%, 100% 50%, calc(100% - ${MOBILE_ARROW}px) 100%, 0% 100%, ${MOBILE_ARROW}px 50%)`,
+
+                  paddingLeft: index === 0 ? "0" : `${MOBILE_ARROW}px`,
+                }}
+              >
+                {/* Shine Effect */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+
+                <span className="text-xs font-bold">{step.label}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

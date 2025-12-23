@@ -1,0 +1,27 @@
+{
+  "name": "student-api-testing",
+  "version": "1.0.0",
+  "description": "Complete automated testing for Student Loan Application APIs",
+  "main": "student-complete-flow.js",
+  "scripts": {
+    "test": "node student-complete-flow.js",
+    "student": "node student-complete-flow.js",
+    "help": "cat STUDENT_FLOW_GUIDE.md"
+  },
+  "keywords": [
+    "testing",
+    "automation",
+    "api",
+    "axios"
+  ],
+  "author": "Aryan Madkar",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "form-data": "^4.0.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
