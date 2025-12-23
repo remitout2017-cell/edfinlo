@@ -16,12 +16,20 @@ import {
 } from "lucide-react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import StepperExample from "../../components/common/stepper";
-import { admissionAPI } from "../../services/api";
+import axios from "axios";
+import { useUserData } from "../../context/UserDataContext";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { formatDate } from "../../utils/helpers";
 
+const API_BASE_URL = "http://localhost:5000";
+
 const Admission = () => {
+  const {
+    admissionData: contextAdmission,
+    setAdmissionData: setContextAdmission,
+    fetchAdmission: fetchFromContext,
+  } = useUserData();
   const [admissionData, setAdmissionData] = useState(null); // full document from backend
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -30,8 +38,14 @@ const Admission = () => {
   const fetchAdmission = async () => {
     setLoading(true);
     try {
-      const res = await admissionAPI.getAdmission();
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_BASE_URL}/api/user/admission/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setAdmissionData(res.data?.data || null);
+      setContextAdmission(res.data?.data || null);
     } catch (error) {
       if (error.response?.status !== 404) {
         console.error("Failed to fetch admission letter:", error);
@@ -78,13 +92,24 @@ const Admission = () => {
 
     setUploading(true);
     try {
+      const token = localStorage.getItem("token");
       const formData = new FormData();
-      formData.append("admissionLetter", file);
+      formData.append("admissionletters", file); // ✅ FIXED: backend expects 'admissionletters'
 
-      const res = await admissionAPI.upload(formData);
+      const res = await axios.post(
+        `${API_BASE_URL}/api/user/admission/submit`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
       if (res.data?.success) {
         toast.success(res.data.message || "Admission letter uploaded");
+        setContextAdmission(res.data.data);
       } else {
         toast.success("Admission letter processed");
       }
@@ -108,9 +133,15 @@ const Admission = () => {
       return;
     }
     try {
-      await admissionAPI.delete();
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_BASE_URL}/api/user/admission/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       toast.success("Admission letter deleted");
       setAdmissionData(null);
+      setContextAdmission(null);
     } catch (error) {
       console.error("Delete failed:", error);
       toast.error(

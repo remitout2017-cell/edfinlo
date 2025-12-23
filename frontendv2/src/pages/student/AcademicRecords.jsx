@@ -6,271 +6,132 @@ import {
   CheckCircle,
   AlertCircle,
   Trash2,
+  FileText,
+  Loader2,
+  X,
 } from "lucide-react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import StepperExample from "../../components/common/stepper";
-import { academicAPI } from "../../services/api";
+import axios from "axios";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { useUserData } from "../../context/UserDataContext";
+
+const API_BASE_URL = "http://localhost:5000";
 
 const AcademicRecords = () => {
-  const [academicData, setAcademicData] = useState(null);
+  const { academicData, setAcademicData, fetchAcademicRecords } = useUserData();
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
-  const [uploading10, setUploading10] = useState(false);
-  const [uploading12, setUploading12] = useState(false);
-  const [uploadingGrad, setUploadingGrad] = useState(false);
-
+  //  File states for upload all
   const [class10File, setClass10File] = useState(null);
   const [class12File, setClass12File] = useState(null);
-  const [class12Stream, setClass12Stream] = useState("");
+  const [graduationFile, setGraduationFile] = useState(null);
 
-  const [gradForm, setGradForm] = useState({
-    educationType: "",
-    courseName: "",
-    specialization: "",
-    duration: "",
-  });
-  const [gradFiles, setGradFiles] = useState([]);
+  // PDF viewer modal state
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [currentPdfUrl, setCurrentPdfUrl] = useState("");
+  const [currentPdfTitle, setCurrentPdfTitle] = useState("");
 
-  const fetchRecords = async () => {
-    setLoading(true);
-    try {
-      const res = await academicAPI.getRecords();
-      const record = res.data?.data || res.data?.academicRecord || null;
-      setAcademicData(record);
-    } catch (error) {
-      if (error.response?.status === 404) {
-        setAcademicData(null);
-      } else {
-        console.error("Failed to fetch academic records:", error);
-        toast.error(
-          error.response?.data?.message || "Failed to fetch academic records"
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load academic records on mount
   useEffect(() => {
-    fetchRecords();
-  }, []);
+    const loadRecords = async () => {
+      setLoading(true);
+      await fetchAcademicRecords();
+      setLoading(false);
+    };
+    loadRecords();
+  }, [fetchAcademicRecords]);
 
-  const hasClass10 =
-    academicData?.class10?.marksheets &&
-    academicData.class10.marksheets.length > 0;
-
-  const hasClass12 =
-    academicData?.class12?.marksheets &&
-    academicData.class12.marksheets.length > 0;
-
-  const higherEducationList = academicData?.higherEducation || [];
-
-  // ------------ Class 10 ------------
-  const handleUploadClass10 = async (e) => {
-    e.preventDefault();
-    if (!class10File) {
-      toast.error("Please select a Class 10 marksheet file");
-      return;
-    }
-
-    if (
-      hasClass10 &&
-      !window.confirm(
-        "You have already uploaded Class 10 marksheet. This will REPLACE the existing one. Continue?"
-      )
-    ) {
-      return;
-    }
-
-    setUploading10(true);
-    try {
-      const formData = new FormData();
-      formData.append("document", class10File);
-
-      const res = await academicAPI.uploadClass10(formData);
-      const updatedClass10 = res.data?.data?.class10;
-
-      if (!updatedClass10) {
-        throw new Error("Invalid response for Class 10 upload");
-      }
-
-      setAcademicData((prev) => ({
-        ...(prev || {}),
-        class10: updatedClass10,
-      }));
-
-      setClass10File(null);
-      toast.success("Class 10 marksheet uploaded successfully");
-    } catch (error) {
-      console.error("Class 10 upload failed:", error);
-      toast.error(
-        error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to upload Class 10 marksheet"
-      );
-    } finally {
-      setUploading10(false);
-    }
+  // Open PDF viewer
+  const openPdfViewer = (url, title) => {
+    setCurrentPdfUrl(url);
+    setCurrentPdfTitle(title);
+    setPdfViewerOpen(true);
   };
 
-  // ------------ Class 12 ------------
-  const handleUploadClass12 = async (e) => {
-    e.preventDefault();
-    if (!class12File) {
-      toast.error("Please select a Class 12 marksheet file");
-      return;
-    }
-    if (!class12Stream) {
-      toast.error("Please select your Class 12 stream");
-      return;
-    }
-
-    if (
-      hasClass12 &&
-      !window.confirm(
-        "You have already uploaded Class 12 marksheet. This will REPLACE the existing one. Continue?"
-      )
-    ) {
-      return;
-    }
-
-    setUploading12(true);
-    try {
-      const formData = new FormData();
-      formData.append("document", class12File);
-      formData.append("stream", class12Stream);
-
-      const res = await academicAPI.uploadClass12(formData);
-      const updatedClass12 = res.data?.data?.class12;
-
-      if (!updatedClass12) {
-        throw new Error("Invalid response for Class 12 upload");
-      }
-
-      setAcademicData((prev) => ({
-        ...(prev || {}),
-        class12: updatedClass12,
-      }));
-
-      setClass12File(null);
-      toast.success("Class 12 marksheet uploaded successfully");
-    } catch (error) {
-      console.error("Class 12 upload failed:", error);
-      toast.error(
-        error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to upload Class 12 marksheet"
-      );
-    } finally {
-      setUploading12(false);
-    }
-  };
-
-  // ------------ Graduation / Higher Ed ------------
-  const handleGraduationChange = (e) => {
-    const { name, value } = e.target;
-    setGradForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleGraduationFilesChange = (e) => {
-    setGradFiles(Array.from(e.target.files || []));
-  };
-
-  const handleUploadGraduation = async (e) => {
+  // Handle upload all 3 documents at once
+  const handleUploadAll = async (e) => {
     e.preventDefault();
 
-    if (!gradForm.educationType) {
-      toast.error("Please select education type");
-      return;
-    }
-    if (!gradForm.courseName.trim()) {
-      toast.error("Course name is required");
-      return;
-    }
-    if (!gradFiles.length) {
-      toast.error("Please select at least one marksheet");
+    const hasAnyFile = class10File || class12File || graduationFile;
+    if (!hasAnyFile) {
+      toast.error("Please select at least one document to upload");
       return;
     }
 
-    setUploadingGrad(true);
+    setUploading(true);
     try {
+      const token = localStorage.getItem("token");
       const formData = new FormData();
-      formData.append("educationType", gradForm.educationType);
-      formData.append("courseName", gradForm.courseName.trim());
-      if (gradForm.specialization.trim()) {
-        formData.append("specialization", gradForm.specialization.trim());
+
+      if (class10File) formData.append("pdf_10th", class10File);
+      if (class12File) formData.append("pdf_12th", class12File);
+      if (graduationFile) formData.append("pdf_graduation", graduationFile);
+
+      const res = await axios.post(
+        `${API_BASE_URL}/api/user/academics/extract/complete`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (res.data?.success) {
+        toast.success("Documents uploaded and processed successfully!");
+
+        // Clear file selections
+        setClass10File(null);
+        setClass12File(null);
+        setGraduationFile(null);
+
+        // Refresh data
+        await fetchAcademicRecords();
       }
-      if (gradForm.duration.trim()) {
-        formData.append("duration", gradForm.duration.trim());
-      }
-
-      gradFiles.forEach((file) => {
-        formData.append("documents", file);
-      });
-
-      const res = await academicAPI.uploadGraduation(formData);
-      const newEdu = res.data?.data?.higherEducation;
-
-      if (!newEdu) {
-        throw new Error("Invalid response for graduation upload");
-      }
-
-      setAcademicData((prev) => {
-        const prevList = prev?.higherEducation || [];
-        const filtered = prevList.filter(
-          (edu) =>
-            !(
-              edu.educationType === newEdu.educationType &&
-              (edu.courseName || "").toLowerCase() ===
-                (newEdu.courseName || "").toLowerCase()
-            )
-        );
-        return {
-          ...(prev || {}),
-          higherEducation: [...filtered, newEdu],
-        };
-      });
-
-      setGradForm({
-        educationType: "",
-        courseName: "",
-        specialization: "",
-        duration: "",
-      });
-      setGradFiles([]);
-      toast.success("Graduation / higher-education documents uploaded");
     } catch (error) {
-      console.error("Graduation upload failed:", error);
+      console.error("Upload failed:", error);
       toast.error(
-        error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Failed to upload graduation documents"
+        error.response?.data?.message || "Failed to upload documents"
       );
     } finally {
-      setUploadingGrad(false);
+      setUploading(false);
     }
   };
 
-  const handleDeleteHigherEducation = async (educationId) => {
+  // Handle delete individual section
+  const handleDelete = async (recordType) => {
+    const labels = {
+      class10: "Class 10",
+      class12: "Class 12",
+      graduation: "Graduation",
+    };
+
     if (
       !window.confirm(
-        "This will delete the selected higher-education record and its documents. Continue?"
+        `Are you sure you want to delete your ${labels[recordType]} record?`
       )
     ) {
       return;
     }
 
     try {
-      await academicAPI.deleteHigherEducation(educationId);
-      toast.success("Higher-education record deleted");
-      await fetchRecords();
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_BASE_URL}/api/user/academics/${recordType}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      toast.success(`${labels[recordType]} record deleted successfully`);
+      await fetchAcademicRecords();
     } catch (error) {
-      console.error("Delete higher-education failed:", error);
       toast.error(
         error.response?.data?.message ||
-          "Failed to delete higher-education record"
+          `Failed to delete ${labels[recordType]} record`
       );
     }
   };
@@ -278,560 +139,427 @@ const AcademicRecords = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64 text-gray-600">
-          Loading academic records...
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="animate-spin h-12 w-12 text-purple-600" />
         </div>
       </DashboardLayout>
     );
   }
 
-  const class10Marksheet = hasClass10
-    ? academicData.class10.marksheets[0]
-    : null;
-  const class12Marksheet = hasClass12
-    ? academicData.class12.marksheets[0]
-    : null;
-
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-center flex-col min-h-screen ">
+      <div className="flex items-center justify-center flex-col min-h-screen">
         <StepperExample currentStep={3} />
 
-        <div className="w-full max-w-4xl mt-4 bg-white rounded-2xl shadow-lg p-8">
+        <div className="w-full max-w-6xl mt-4 bg-white rounded-2xl shadow-lg p-8">
           {/* Header */}
           <div className="mb-6">
             <h2 className="text-2xl font-semibold text-gray-800 mb-2">
               Academic Records
             </h2>
             <p className="text-gray-600">
-              Upload your 10th, 12th and higher-education documents for
-              verification
+              Upload your 10th, 12th and graduation documents for verification
             </p>
           </div>
 
-          <div className="space-y-6">
-            {/* Class 10 Section */}
-            <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <BookOpen className="text-purple-600" size={24} />
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Class 10
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Upload your Class 10 marksheet
-                    </p>
-                  </div>
-                </div>
-                {hasClass10 ? (
-                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 border border-emerald-200">
-                    <CheckCircle size={14} className="mr-1" />
-                    Uploaded
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-200">
-                    <AlertCircle size={14} className="mr-1" />
-                    Pending
-                  </span>
-                )}
-              </div>
+          {/* Upload Section */}
+          <form onSubmit={handleUploadAll} className="mb-8">
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Upload size={20} className="text-purple-600" />
+                Upload Documents
+              </h3>
 
-              {hasClass10 && class10Marksheet ? (
-                <div className="grid md:grid-cols-2 gap-6 mb-4">
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">
-                        Board / University
-                      </p>
-                      <p className="font-medium text-gray-800">
-                        {class10Marksheet.boardUniversity || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">
-                        Institution
-                      </p>
-                      <p className="font-medium text-gray-800">
-                        {class10Marksheet.institutionName || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">
-                        Year of Passing
-                      </p>
-                      <p className="font-medium text-gray-800">
-                        {class10Marksheet.yearOfPassing || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">
-                        Percentage / CGPA
-                      </p>
-                      <p className="font-medium text-gray-800">
-                        {class10Marksheet.percentage ??
-                          class10Marksheet.cgpa ??
-                          "N/A"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 mb-3">
-                      Uploaded Document
-                    </p>
-                    <div className="flex gap-3 flex-wrap">
-                      {academicData.class10.marksheets.map((m) => (
-                        <div key={m._id}>
-                          <img
-                            src={m.documentUrl}
-                            alt="Class 10 Marksheet"
-                            className="w-32 h-40 object-cover rounded-lg border border-gray-300"
-                          />
-                          <a
-                            href={m.documentUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-2 block text-center text-xs text-purple-600 hover:text-purple-700 font-medium"
-                          >
-                            View Full
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              <form onSubmit={handleUploadClass10} className="space-y-4">
-                <div className="relative">
-                  <div className="absolute left-3 top-4 text-gray-400">
-                    <Upload size={20} />
-                  </div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 pl-11 hover:border-purple-400 transition">
-                    <label className="cursor-pointer block">
+              <div className="grid md:grid-cols-3 gap-4 mb-6">
+                {/* Class 10 Upload */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white hover:border-purple-400 transition">
+                  <label className="cursor-pointer block">
+                    <div className="flex flex-col items-center">
+                      <BookOpen className="text-purple-600 mb-2" size={32} />
                       <p className="text-sm font-medium text-gray-700 mb-2">
-                        {hasClass10
-                          ? "Re-upload Class 10 Marksheet"
-                          : "Upload Class 10 Marksheet"}
+                        Class 10 Marksheet
                       </p>
                       <input
                         type="file"
-                        accept="image/*,application/pdf"
-                        onChange={(e) =>
-                          setClass10File(e.target.files[0] || null)
-                        }
+                        accept=".pdf,image/*"
+                        onChange={(e) => setClass10File(e.target.files[0])}
                         className="hidden"
                       />
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <span>
-                          {class10File ? class10File.name : "Click to upload"}
-                        </span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={uploading10}
-                  className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium"
-                >
-                  {uploading10
-                    ? hasClass10
-                      ? "Re-uploading..."
-                      : "Uploading..."
-                    : hasClass10
-                    ? "Re-upload Class 10"
-                    : "Upload Class 10"}
-                </button>
-              </form>
-            </div>
-
-            {/* Class 12 Section */}
-            <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <BookOpen className="text-purple-600" size={24} />
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Class 12
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Upload your Class 12 marksheet with stream
-                    </p>
-                  </div>
-                </div>
-                {hasClass12 ? (
-                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 border border-emerald-200">
-                    <CheckCircle size={14} className="mr-1" />
-                    Uploaded
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-200">
-                    <AlertCircle size={14} className="mr-1" />
-                    Pending
-                  </span>
-                )}
-              </div>
-
-              {hasClass12 && class12Marksheet ? (
-                <div className="grid md:grid-cols-2 gap-6 mb-4">
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">
-                        Board / University
-                      </p>
-                      <p className="font-medium text-gray-800">
-                        {class12Marksheet.boardUniversity || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">
-                        Institution
-                      </p>
-                      <p className="font-medium text-gray-800">
-                        {class12Marksheet.institutionName || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">Stream</p>
-                      <p className="font-medium text-gray-800">
-                        {academicData.class12.stream || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">
-                        Year of Passing
-                      </p>
-                      <p className="font-medium text-gray-800">
-                        {class12Marksheet.yearOfPassing || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase">
-                        Percentage / CGPA
-                      </p>
-                      <p className="font-medium text-gray-800">
-                        {class12Marksheet.percentage ??
-                          class12Marksheet.cgpa ??
-                          "N/A"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 mb-3">
-                      Uploaded Document
-                    </p>
-                    <div className="flex gap-3 flex-wrap">
-                      {academicData.class12.marksheets.map((m) => (
-                        <div key={m._id}>
-                          <img
-                            src={m.documentUrl}
-                            alt="Class 12 Marksheet"
-                            className="w-32 h-40 object-cover rounded-lg border border-gray-300"
-                          />
-                          <a
-                            href={m.documentUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-2 block text-center text-xs text-purple-600 hover:text-purple-700 font-medium"
-                          >
-                            View Full
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              <form onSubmit={handleUploadClass12} className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      <BookOpen size={20} />
-                    </div>
-                    <select
-                      value={class12Stream}
-                      onChange={(e) => setClass12Stream(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition appearance-none bg-white"
-                    >
-                      <option value="">Select Stream</option>
-                      <option value="Science">Science</option>
-                      <option value="Commerce">Commerce</option>
-                      <option value="Arts">Arts</option>
-                    </select>
-                  </div>
-
-                  <div className="relative">
-                    <div className="absolute left-3 top-4 text-gray-400">
-                      <Upload size={20} />
-                    </div>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 pl-11 hover:border-purple-400 transition">
-                      <label className="cursor-pointer block">
-                        <p className="text-sm font-medium text-gray-700 mb-2">
-                          {hasClass12
-                            ? "Re-upload Marksheet"
-                            : "Upload Marksheet"}
+                      {class10File ? (
+                        <p className="text-xs text-green-600 text-center">
+                          ✓ {class10File.name}
                         </p>
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) =>
-                            setClass12File(e.target.files[0] || null)
-                          }
-                          className="hidden"
-                        />
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <span>
-                            {class12File ? class12File.name : "Click to upload"}
-                          </span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={uploading12}
-                  className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium"
-                >
-                  {uploading12
-                    ? hasClass12
-                      ? "Re-uploading..."
-                      : "Uploading..."
-                    : hasClass12
-                    ? "Re-upload Class 12"
-                    : "Upload Class 12"}
-                </button>
-              </form>
-            </div>
-
-            {/* Higher Education Section */}
-            <div className="border border-gray-200 rounded-xl p-6 bg-gray-50">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <GraduationCap className="text-purple-600" size={24} />
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Graduation & Higher Education
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Add diploma, bachelor, master or other records
-                    </p>
-                  </div>
-                </div>
-                {higherEducationList.length > 0 ? (
-                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 border border-emerald-200">
-                    {higherEducationList.length} course
-                    {higherEducationList.length > 1 ? "s" : ""}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200">
-                    No courses added
-                  </span>
-                )}
-              </div>
-
-              {/* Existing Higher Education Records */}
-              {higherEducationList.length > 0 && (
-                <div className="space-y-3 mb-6">
-                  {higherEducationList.map((edu) => (
-                    <div
-                      key={edu._id}
-                      className="border border-gray-300 rounded-lg p-4 bg-white"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {edu.courseName}
-                          </p>
-                          <p className="text-xs text-gray-600 mt-1">
-                            {edu.educationType}
-                            {edu.specialization && ` · ${edu.specialization}`}
-                            {edu.duration && ` · ${edu.duration}`}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteHigherEducation(edu._id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-
-                      {edu.marksheets?.length > 0 && (
-                        <div className="flex gap-3 flex-wrap">
-                          {edu.marksheets.map((m) => (
-                            <div key={m._id}>
-                              <img
-                                src={m.documentUrl}
-                                alt={`${edu.courseName} Marksheet`}
-                                className="w-28 h-36 object-cover rounded-lg border border-gray-300"
-                              />
-                              <a
-                                href={m.documentUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="mt-1 block text-center text-xs text-purple-600 hover:text-purple-700 font-medium"
-                              >
-                                View
-                              </a>
-                            </div>
-                          ))}
-                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500">Click to upload</p>
                       )}
                     </div>
-                  ))}
+                  </label>
+                </div>
+
+                {/* Class 12 Upload */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white hover:border-purple-400 transition">
+                  <label className="cursor-pointer block">
+                    <div className="flex flex-col items-center">
+                      <BookOpen className="text-purple-600 mb-2" size={32} />
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        Class 12 Marksheet
+                      </p>
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        onChange={(e) => setClass12File(e.target.files[0])}
+                        className="hidden"
+                      />
+                      {class12File ? (
+                        <p className="text-xs text-green-600 text-center">
+                          ✓ {class12File.name}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500">Click to upload</p>
+                      )}
+                    </div>
+                  </label>
+                </div>
+
+                {/* Graduation Upload */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white hover:border-purple-400 transition">
+                  <label className="cursor-pointer block">
+                    <div className="flex flex-col items-center">
+                      <GraduationCap
+                        className="text-purple-600 mb-2"
+                        size={32}
+                      />
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        Graduation Marksheet
+                      </p>
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        onChange={(e) => setGraduationFile(e.target.files[0])}
+                        className="hidden"
+                      />
+                      {graduationFile ? (
+                        <p className="text-xs text-green-600 text-center">
+                          ✓ {graduationFile.name}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500">Click to upload</p>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={uploading}
+                className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-60 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Processing Documents...
+                  </>
+                ) : (
+                  <>
+                    <Upload size={20} />
+                    Upload & Extract Data
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+
+          {/* Display Sections */}
+          {!academicData && !loading && (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <AlertCircle className="mx-auto text-gray-400 mb-3" size={48} />
+              <p className="text-gray-600">
+                No academic records uploaded yet. Upload your documents above to
+                get started.
+              </p>
+            </div>
+          )}
+
+          {academicData && (
+            <div className="space-y-6">
+              {/* Class 10 Section */}
+              {academicData.class10 && (
+                <div className="border border-gray-200 rounded-xl p-6 bg-gradient-to-br from-blue-50 to-cyan-50">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 p-3 rounded-lg">
+                        <BookOpen className="text-blue-600" size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          Class 10
+                        </h3>
+                        <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 mt-1">
+                          <CheckCircle size={12} className="mr-1" />
+                          Verified
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete("class10")}
+                      className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-4 mb-4">
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Board
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.class10.boardName || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Year of Passing
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.class10.yearOfPassing || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Percentage / CGPA
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.class10.percentage ||
+                          academicData.class10.cgpa ||
+                          "N/A"}
+                        {academicData.class10.percentage && "%"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {academicData.class10.documentUrl && (
+                    <button
+                      onClick={() =>
+                        openPdfViewer(
+                          academicData.class10.documentUrl,
+                          "Class 10 Marksheet"
+                        )
+                      }
+                      className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      <FileText size={16} />
+                      View Document
+                    </button>
+                  )}
                 </div>
               )}
 
-              {/* Add New Higher Education Form */}
-              <form
-                onSubmit={handleUploadGraduation}
-                className="space-y-4 pt-4 border-t border-gray-200"
-              >
-                <h4 className="text-sm font-semibold text-gray-800">
-                  Add New Course
-                </h4>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      <GraduationCap size={20} />
-                    </div>
-                    <select
-                      name="educationType"
-                      value={gradForm.educationType}
-                      onChange={handleGraduationChange}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition appearance-none bg-white"
-                    >
-                      <option value="">Education Type</option>
-                      <option value="diploma">Diploma</option>
-                      <option value="bachelor">Bachelor</option>
-                      <option value="master">Master</option>
-                      <option value="phd">PhD</option>
-                      <option value="postgraduate_diploma">
-                        Postgraduate Diploma
-                      </option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-
-                  <input
-                    type="text"
-                    name="courseName"
-                    value={gradForm.courseName}
-                    onChange={handleGraduationChange}
-                    placeholder="Course Name (e.g., B.Tech in CS)"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
-                  />
-
-                  <input
-                    type="text"
-                    name="specialization"
-                    value={gradForm.specialization}
-                    onChange={handleGraduationChange}
-                    placeholder="Specialization (optional)"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
-                  />
-
-                  <input
-                    type="text"
-                    name="duration"
-                    value={gradForm.duration}
-                    onChange={handleGraduationChange}
-                    placeholder="Duration (e.g., 4 years)"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
-                  />
-                </div>
-
-                <div className="relative">
-                  <div className="absolute left-3 top-4 text-gray-400">
-                    <Upload size={20} />
-                  </div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 pl-11 hover:border-purple-400 transition">
-                    <label className="cursor-pointer block">
-                      <p className="text-sm font-medium text-gray-700 mb-2">
-                        Upload Marksheets (multiple files allowed)
-                      </p>
-                      <input
-                        type="file"
-                        accept="image/*,application/pdf"
-                        multiple
-                        onChange={handleGraduationFilesChange}
-                        className="hidden"
-                      />
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <span>
-                          {gradFiles.length > 0
-                            ? `${gradFiles.length} file(s) selected`
-                            : "Click to upload"}
+              {/* Class 12 Section */}
+              {academicData.class12 && (
+                <div className="border border-gray-200 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-pink-50">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-purple-100 p-3 rounded-lg">
+                        <BookOpen className="text-purple-600" size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          Class 12
+                        </h3>
+                        <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 mt-1">
+                          <CheckCircle size={12} className="mr-1" />
+                          Verified
                         </span>
                       </div>
-                    </label>
+                    </div>
+                    <button
+                      onClick={() => handleDelete("class12")}
+                      className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition"
+                    >
+                      <Trash2 size={20} />
+                    </button>
                   </div>
+
+                  <div className="grid md:grid-cols-4 gap-4 mb-4">
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Board
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.class12.boardName || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Stream
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.class12.stream || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Year of Passing
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.class12.yearOfPassing || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Percentage / CGPA
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.class12.percentage ||
+                          academicData.class12.cgpa ||
+                          "N/A"}
+                        {academicData.class12.percentage && "%"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {academicData.class12.documentUrl && (
+                    <button
+                      onClick={() =>
+                        openPdfViewer(
+                          academicData.class12.documentUrl,
+                          "Class 12 Marksheet"
+                        )
+                      }
+                      className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 text-sm font-medium"
+                    >
+                      <FileText size={16} />
+                      View Document
+                    </button>
+                  )}
                 </div>
+              )}
 
-                <button
-                  type="submit"
-                  disabled={uploadingGrad}
-                  className="px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium"
-                >
-                  {uploadingGrad ? "Uploading..." : "Upload Course"}
-                </button>
-              </form>
+              {/* Graduation Section */}
+              {academicData.graduation && (
+                <div className="border border-gray-200 rounded-xl p-6 bg-gradient-to-br from-green-50 to-emerald-50">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-green-100 p-3 rounded-lg">
+                        <GraduationCap className="text-green-600" size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          Graduation
+                        </h3>
+                        <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 mt-1">
+                          <CheckCircle size={12} className="mr-1" />
+                          Verified
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete("graduation")}
+                      className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+
+                  <div className="grid md:grid-cols-4 gap-4 mb-4">
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Degree
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.graduation.degree || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Institution
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.graduation.institutionName || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Year of Passing
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.graduation.yearOfPassing || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase mb-1">
+                        Final CGPA
+                      </p>
+                      <p className="font-semibold text-gray-800">
+                        {academicData.graduation.finalCgpa || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {academicData.graduation.documentUrl && (
+                    <button
+                      onClick={() =>
+                        openPdfViewer(
+                          academicData.graduation.documentUrl,
+                          "Graduation Marksheet"
+                        )
+                      }
+                      className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 text-sm font-medium"
+                    >
+                      <FileText size={16} />
+                      View Document
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
+          )}
 
-            {/* Navigation Buttons */}
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-              <Link to="/student/kyc">
-                <button
-                  type="button"
-                  onClick={fetchRecords}
-                  className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-6 mt-6 border-t border-gray-200">
+            <Link to="/student/kyc">
+              <button
+                type="button"
+                className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
+              >
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className="w-5 h-5 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                </button>
-              </Link>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+            </Link>
 
-              <Link to="/student/work-experience">
-                <button
-                  type="button"
-                  className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
+            <Link to="/student/test-scores">
+              <button
+                type="button"
+                className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
+              >
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              </Link>
-            </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </Link>
           </div>
         </div>
 
@@ -841,6 +569,53 @@ const AcademicRecords = () => {
           <button className="hover:text-gray-700 transition">Help</button>
         </div>
       </div>
+
+      {/* PDF Viewer Modal */}
+      {pdfViewerOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-5xl h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">{currentPdfTitle}</h3>
+              <button
+                onClick={() => setPdfViewerOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* PDF Viewer */}
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={`https://docs.google.com/viewer?url=${encodeURIComponent(
+                  currentPdfUrl
+                )}&embedded=true`}
+                className="w-full h-full"
+                title={currentPdfTitle}
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t flex justify-between">
+              <a
+                href={currentPdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                Open in New Tab
+              </a>
+              <button
+                onClick={() => setPdfViewerOpen(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

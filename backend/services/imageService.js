@@ -1,5 +1,4 @@
 // services/imageService.js - FIXED VERSION
-
 const cloudinary = require("cloudinary").v2;
 
 // Configure Cloudinary (make sure this is in your config or here)
@@ -13,7 +12,7 @@ cloudinary.config({
  * Upload file to Cloudinary
  * @param {string} filePath - Local file path
  * @param {object} options - Cloudinary upload options
- * @returns {Promise<object>} Upload result with secure_url, public_id, etc.
+ * @returns {Promise} Upload result with secure_url, public_id, etc.
  */
 async function uploadToCloudinary(filePath, options = {}) {
   try {
@@ -25,7 +24,7 @@ async function uploadToCloudinary(filePath, options = {}) {
       ...options,
       // Ensure these are set correctly
       resource_type: options.resource_type || "raw", // For PDFs
-      type: options.type || "authenticated", // For authenticated access
+      type: options.type || "upload", // ✅ Changed default to "upload" for public access
     });
 
     console.log(
@@ -50,7 +49,6 @@ async function uploadToCloudinary(filePath, options = {}) {
     }
 
     console.log(`✅ [Cloudinary] Upload successful: ${result.secure_url}`);
-
     return result; // Return the FULL result object
   } catch (error) {
     console.error(`❌ [Cloudinary] Upload failed:`, error);
@@ -61,16 +59,16 @@ async function uploadToCloudinary(filePath, options = {}) {
 /**
  * Delete file from Cloudinary
  * @param {object} options - { publicId, resourceType, type }
- * @returns {Promise<object>} Delete result
+ * @returns {Promise} Delete result
  */
 async function deleteFromCloudinary({
   publicId,
   resourceType = "raw",
-  type = "authenticated",
+  type = "upload", // ✅ Changed default to upload
 }) {
   try {
     console.log(`\n🗑️ [Cloudinary] Deleting: ${publicId}`);
-    console.log(`   Resource type: ${resourceType}, Type: ${type}`);
+    console.log(`  Resource type: ${resourceType}, Type: ${type}`);
 
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType,
@@ -107,7 +105,6 @@ function generateAuthenticatedUrl(publicId, options = {}) {
       sign_url: true,
       secure: true,
     });
-
     return url;
   } catch (error) {
     console.error(`❌ [Cloudinary] URL generation failed:`, error);

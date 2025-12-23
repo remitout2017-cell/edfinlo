@@ -47,6 +47,7 @@ import ConsultantStudentDetail from "./pages/consultant/StudentDetail";
 import ConsultantProfile from "./pages/consultant/Profile";
 import ConsultantSupport from "./pages/consultant/Support";
 import Studyeducationplan from "./pages/student/StudentEducationPlan";
+import TestScores from "./pages/student/TestScores";
 
 // ==================== COMMON PAGES ====================
 import Unauthorized from "./pages/Unauthorized";
@@ -95,6 +96,7 @@ function App() {
                   path="/student"
                   element={<Navigate to="/student/dashboard" replace />}
                 />
+                <Route path="/student/test-scores" element={<TestScores />} />
                 <Route
                   path="/student/dashboard"
                   element={<StudentDashboard />}

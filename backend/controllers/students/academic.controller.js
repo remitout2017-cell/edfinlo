@@ -1,13 +1,10 @@
 // controllers/students/academic.controller.js - CLOUDINARY DEBUG VERSION
-
 const axios = require("axios");
 const FormData = require("form-data");
 const fs = require("fs");
-
 const AcademicRecords = require("../../models/student/AcademicRecords");
 const Student = require("../../models/student/students");
 const { asyncHandler, AppError } = require("../../middleware/errorMiddleware");
-
 const {
   uploadToCloudinary,
   deleteFromCloudinary,
@@ -17,30 +14,29 @@ const AGENT_SERVER_URL =
   process.env.AGENT_SERVER_URL || "http://localhost:8000";
 
 // ========== HELPERS ==========
-
 async function uploadAcademicDocument(filePath, userId, docType) {
   console.log(`\n📤 [UPLOAD START] ${docType}`);
-  console.log(`   File path: ${filePath}`);
-  console.log(`   File exists: ${fs.existsSync(filePath)}`);
+  console.log(`  File path: ${filePath}`);
+  console.log(`  File exists: ${fs.existsSync(filePath)}`);
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found: ${filePath}`);
   }
 
-  const publicId = `students/${userId}/academic/${docType}_${Date.now()}`;
-
-  console.log(`   Cloudinary public_id: ${publicId}`);
-  console.log(`   Calling uploadToCloudinary...`);
+  // ✅ FIX: Don't duplicate the folder path in public_id
+  const publicId = `${docType}_${Date.now()}`;
+  console.log(`  Cloudinary public_id: ${publicId}`);
+  console.log(`  Calling uploadToCloudinary...`);
 
   try {
     const result = await uploadToCloudinary(filePath, {
       folder: `students/${userId}/academic`,
       resource_type: "raw",
-      type: "authenticated",
+      type: "upload", // ✅ Changed from "authenticated" to "upload" for public access
       public_id: publicId,
     });
 
-    console.log(`   Raw Cloudinary result:`, JSON.stringify(result, null, 2));
+    console.log(`  Raw Cloudinary result:`, JSON.stringify(result, null, 2));
 
     // ✅ CRITICAL FIX: Check what uploadToCloudinary actually returns
     if (!result) {
@@ -52,13 +48,13 @@ async function uploadAcademicDocument(filePath, userId, docType) {
       url: result.secure_url || result.url,
       publicId: result.public_id || publicId,
       resourceType: result.resource_type || "raw",
-      type: "authenticated",
+      type: "upload", // ✅ Changed to upload
     };
 
-    console.log(`   Mapped result:`, JSON.stringify(uploadResult, null, 2));
+    console.log(`  Mapped result:`, JSON.stringify(uploadResult, null, 2));
 
     if (!uploadResult.url) {
-      console.error(`   ❌ ERROR: No URL in result!`);
+      console.error(`  ❌ ERROR: No URL in result!`);
       throw new Error(
         `Cloudinary upload failed for ${docType} - no URL returned`
       );
@@ -76,12 +72,11 @@ async function uploadAcademicDocument(filePath, userId, docType) {
 
 async function deleteAcademicDocument(publicId, resourceType = "raw") {
   if (!publicId) return;
-
   try {
     await deleteFromCloudinary({
       publicId,
       resourceType,
-      type: "authenticated",
+      type: "upload", // ✅ FIXED: Changed from "authenticated" to "upload"
     });
     console.log(`🗑️ Deleted from Cloudinary: ${publicId}`);
   } catch (error) {
@@ -96,10 +91,12 @@ async function callAgentServer(endpoint, files) {
     console.log("📤 Adding pdf_10th to form data");
     form.append("pdf_10th", fs.createReadStream(files.pdf_10th[0].path));
   }
+
   if (files.pdf_12th?.[0]) {
     console.log("📤 Adding pdf_12th to form data");
     form.append("pdf_12th", fs.createReadStream(files.pdf_12th[0].path));
   }
+
   if (files.pdf_graduation?.[0]) {
     console.log("📤 Adding pdf_graduation to form data");
     form.append(
@@ -116,7 +113,6 @@ async function callAgentServer(endpoint, files) {
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
     });
-
     console.log("✅ Agent server response received");
     return response.data;
   } catch (error) {
@@ -170,32 +166,26 @@ function mapClass10FromAgent(d, uploadResult) {
     yearOfPassing: d.year_of_passing,
     rollNumber: d.roll_number,
     schoolName: d.school_name,
-
     percentage: d.percentage,
     cgpa: d.cgpa,
     cgpaScale: d.cgpa_scale,
     grade: d.grade,
     division: d.division,
-
     universalGrade: d.universal_grade,
     normalizedPercentage: d.normalized_percentage,
-
     conversionInfo: d.conversion_info
       ? {
           method: d.conversion_info.conversion_method,
           original: d.conversion_info.original_grade,
         }
       : undefined,
-
     documentUrl: uploadResult.url,
     documentPublicId: uploadResult.publicId,
     documentResourceType: uploadResult.resourceType,
     documentType: uploadResult.type,
-
     extractionStatus: "success",
     extractionConfidence: 0.95,
     extractedAt: new Date(),
-
     extractedData: d,
   };
 }
@@ -217,21 +207,17 @@ function mapClass12FromAgent(d, uploadResult) {
     yearOfPassing: d.year_of_passing,
     stream: d.stream,
     schoolName: d.school_name,
-
     percentage: d.percentage,
     cgpa: d.cgpa,
     grade: d.grade,
     convertedGrade: d.converted_grade,
-
     documentUrl: uploadResult.url,
     documentPublicId: uploadResult.publicId,
     documentResourceType: uploadResult.resourceType,
     documentType: uploadResult.type,
-
     extractionStatus: "success",
     extractionConfidence: 0.95,
     extractedAt: new Date(),
-
     extractedData: d,
   };
 }
@@ -254,7 +240,6 @@ function mapGraduationFromAgent(d, uploadResult) {
     specialization: d.specialization,
     yearOfPassing: d.year_of_passing,
     durationYears: d.duration_years,
-
     semesters: (d.semesters || []).map((sem) => ({
       semesterYear: sem.semester_year,
       yearOfCompletion: sem.year_of_completion,
@@ -262,20 +247,16 @@ function mapGraduationFromAgent(d, uploadResult) {
       cgpa: sem.cgpa,
       grade: sem.grade,
     })),
-
     finalPercentage: d.final_percentage,
     finalCgpa: d.final_cgpa,
     convertedGrade: d.converted_grade,
-
     documentUrl: uploadResult.url,
     documentPublicId: uploadResult.publicId,
     documentResourceType: uploadResult.resourceType,
     documentType: uploadResult.type,
-
     extractionStatus: "success",
     extractionConfidence: 0.95,
     extractedAt: new Date(),
-
     extractedData: d,
   };
 }
@@ -306,12 +287,10 @@ function mapProcessingStatus(pythonStatus) {
     partial: "completed",
     failed: "failed",
   };
-
   return statusMap[pythonStatus] || "completed";
 }
 
 // ========== CONTROLLERS ==========
-
 exports.extractClass10 = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   console.log(`\n📋 Starting Class 10 extraction for user: ${userId}`);
@@ -334,6 +313,7 @@ exports.extractClass10 = asyncHandler(async (req, res) => {
     );
 
     let academicRecord = await AcademicRecords.findOne({ user: userId });
+
     if (!academicRecord) {
       console.log("📝 Creating new academic record");
       academicRecord = new AcademicRecords({ user: userId });
@@ -351,6 +331,7 @@ exports.extractClass10 = asyncHandler(async (req, res) => {
       agentResponse.data,
       uploadResult
     );
+
     academicRecord.processingStatus = "completed";
     academicRecord.aiProcessingMetadata = {
       sessionId: agentResponse.session_id,
@@ -406,6 +387,7 @@ exports.extractClass12 = asyncHandler(async (req, res) => {
     );
 
     let academicRecord = await AcademicRecords.findOne({ user: userId });
+
     if (!academicRecord) {
       console.log("📝 Creating new academic record");
       academicRecord = new AcademicRecords({ user: userId });
@@ -423,6 +405,7 @@ exports.extractClass12 = asyncHandler(async (req, res) => {
       agentResponse.data,
       uploadResult
     );
+
     academicRecord.processingStatus = "completed";
     academicRecord.aiProcessingMetadata = {
       sessionId: agentResponse.session_id,
@@ -494,7 +477,6 @@ exports.extractComplete = asyncHandler(async (req, res) => {
 
     // Step 2: Upload documents to Cloudinary
     console.log("\n📤 STEP 2: Uploading to Cloudinary...");
-
     const uploads = {};
 
     if (req.files.pdf_10th && extractedData.class_10) {
@@ -530,8 +512,8 @@ exports.extractComplete = asyncHandler(async (req, res) => {
 
     // Step 3: Database operations
     console.log("\n💾 STEP 3: Saving to database...");
-
     let academicRecord = await AcademicRecords.findOne({ user: userId });
+
     if (!academicRecord) {
       console.log("📝 Creating new academic record");
       academicRecord = new AcademicRecords({ user: userId });
@@ -539,6 +521,7 @@ exports.extractComplete = asyncHandler(async (req, res) => {
 
     // Delete old documents
     const deletePromises = [];
+
     if (uploads.class10 && academicRecord.class10?.documentPublicId) {
       deletePromises.push(
         deleteAcademicDocument(
@@ -547,6 +530,7 @@ exports.extractComplete = asyncHandler(async (req, res) => {
         )
       );
     }
+
     if (uploads.class12 && academicRecord.class12?.documentPublicId) {
       deletePromises.push(
         deleteAcademicDocument(
@@ -555,6 +539,7 @@ exports.extractComplete = asyncHandler(async (req, res) => {
         )
       );
     }
+
     if (uploads.graduation && academicRecord.graduation?.documentPublicId) {
       deletePromises.push(
         deleteAcademicDocument(
@@ -624,9 +609,7 @@ exports.extractComplete = asyncHandler(async (req, res) => {
 
     console.log(`\n${"=".repeat(70)}`);
     console.log(`✅ COMPLETE EXTRACTION SUCCESSFUL`);
-    console.log(
-      `   Processing time: ${agentResponse.processing_time_seconds}s`
-    );
+    console.log(`  Processing time: ${agentResponse.processing_time_seconds}s`);
     console.log(`${"=".repeat(70)}\n`);
 
     return res.status(200).json({
@@ -681,6 +664,7 @@ exports.deleteAcademicRecord = asyncHandler(async (req, res) => {
   }
 
   const academicRecord = await AcademicRecords.findOne({ user: userId });
+
   if (!academicRecord) {
     throw new AppError("No academic records found", 404);
   }
@@ -708,6 +692,7 @@ exports.healthCheck = asyncHandler(async (req, res) => {
     const response = await axios.get(`${AGENT_SERVER_URL}/health`, {
       timeout: 5000,
     });
+
     return res.status(200).json({
       success: true,
       message: "Python agent server is reachable",

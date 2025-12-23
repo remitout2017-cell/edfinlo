@@ -10,7 +10,6 @@ import axios from "axios";
 
 const UserDataContext = createContext(null);
 
-// Base URL for API calls
 const API_BASE_URL = "http://localhost:5000";
 
 export const useUserData = () => {
@@ -22,7 +21,6 @@ export const useUserData = () => {
 };
 
 export const UserDataProvider = ({ children }) => {
-  // Initialize from localStorage
   const [userData, setUserData] = useState(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -53,14 +51,21 @@ export const UserDataProvider = ({ children }) => {
     kycRejectedAt: null,
   });
 
-  // Check if user is authenticated (has token)
+  // Academic records state
+  const [academicData, setAcademicData] = useState(null);
+
+  // ✅ NEW: Test scores state
+  const [testScoresData, setTestScoresData] = useState(null);
+
+  // ✅ NEW: Admission data state
+  const [admissionData, setAdmissionData] = useState(null);
+
   const isAuthenticated = !!localStorage.getItem("token");
   const userType = localStorage.getItem("userType") || "student";
 
   // Fetch fresh user data from API
   const fetchUserData = useCallback(async () => {
     const token = localStorage.getItem("token");
-
     if (!token) {
       setUserData(null);
       return null;
@@ -68,11 +73,8 @@ export const UserDataProvider = ({ children }) => {
 
     setLoading(true);
     setError(null);
-
     try {
-      // Determine endpoint based on user type
       let endpoint = `${API_BASE_URL}/api/auth/me`;
-
       if (userType === "consultant") {
         endpoint = `${API_BASE_URL}/api/consultant/auth/me`;
       } else if (userType === "admin") {
@@ -88,13 +90,8 @@ export const UserDataProvider = ({ children }) => {
 
       if (response.data.success) {
         const freshUserData = response.data.data;
-
-        // Update state
         setUserData(freshUserData);
-
-        // Update localStorage with fresh data
         localStorage.setItem("user", JSON.stringify(freshUserData));
-
         console.log("✅ User data refreshed from API");
         return freshUserData;
       } else {
@@ -106,7 +103,6 @@ export const UserDataProvider = ({ children }) => {
         err.response?.data?.message || err.message || "Failed to load user data"
       );
 
-      // If 401/403, token might be invalid - clear auth
       if (err.response?.status === 401 || err.response?.status === 403) {
         console.warn("⚠️ Token invalid, clearing auth...");
         localStorage.removeItem("token");
@@ -114,7 +110,6 @@ export const UserDataProvider = ({ children }) => {
         localStorage.removeItem("userType");
         setUserData(null);
       }
-
       return null;
     } finally {
       setLoading(false);
@@ -163,8 +158,6 @@ export const UserDataProvider = ({ children }) => {
       });
 
       const data = response.data;
-      console.log("data====",data);
-
       setKyc({
         kycStatus: data.kycStatus || null,
         kycData: data.kycData || null,
@@ -177,21 +170,128 @@ export const UserDataProvider = ({ children }) => {
       if (err.response?.status !== 404) {
         console.error("❌ Failed to fetch KYC:", err);
       }
+      return null;
     }
-    return null;
   }, [userType]);
 
-  // Refresh user data (can be called manually from any component)
+  // Fetch academic records
+  const fetchAcademicRecords = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token || userType !== "student") return null;
+
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/user/academics/records`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        const data = response.data.data;
+        setAcademicData(data);
+        console.log("✅ Academic records fetched");
+        return data;
+      }
+    } catch (err) {
+      if (err.response?.status !== 404) {
+        console.error("❌ Failed to fetch academic records:", err);
+      } else {
+        setAcademicData(null);
+      }
+      return null;
+    }
+  }, [userType]);
+
+  // ✅ NEW: Fetch test scores
+  const fetchTestScores = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token || userType !== "student") return null;
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/user/testscores`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data.success) {
+        const data = response.data.data;
+        setTestScoresData(data);
+        console.log("✅ Test scores fetched");
+        return data;
+      }
+    } catch (err) {
+      if (err.response?.status !== 404) {
+        console.error("❌ Failed to fetch test scores:", err);
+      } else {
+        setTestScoresData(null);
+      }
+      return null;
+    }
+  }, [userType]);
+
+  // ✅ NEW: Fetch admission data
+  const fetchAdmission = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token || userType !== "student") return null;
+
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/user/admission/me`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        const data = response.data.data;
+        setAdmissionData(data);
+        console.log("✅ Admission data fetched");
+        return data;
+      }
+    } catch (err) {
+      if (err.response?.status !== 404) {
+        console.error("❌ Failed to fetch admission:", err);
+      } else {
+        setAdmissionData(null);
+      }
+      return null;
+    }
+  }, [userType]);
+
+  // Refresh all user data
   const refreshUserData = useCallback(async () => {
     const userData = await fetchUserData();
-    // Also refresh completeness and KYC when user data is refreshed
+
     if (userType === "student") {
-      await Promise.all([fetchCompleteness(), fetchKyc()]);
+      await Promise.all([
+        fetchCompleteness(),
+        fetchKyc(),
+        fetchAcademicRecords(),
+        fetchTestScores(),
+        fetchAdmission(),
+      ]);
     }
     return userData;
-  }, [fetchUserData, fetchCompleteness, fetchKyc, userType]);
+  }, [
+    fetchUserData,
+    fetchCompleteness,
+    fetchKyc,
+    fetchAcademicRecords,
+    fetchTestScores,
+    fetchAdmission,
+    userType,
+  ]);
 
-  // Update user data locally (for optimistic updates)
+  // Update user data locally
   const updateUserData = useCallback((updates) => {
     setUserData((prev) => {
       const updated = { ...prev, ...updates };
@@ -200,16 +300,19 @@ export const UserDataProvider = ({ children }) => {
     });
   }, []);
 
-  // Clear user data (for logout)
+  // Clear user data
   const clearUserData = useCallback(() => {
     setUserData(null);
     setError(null);
+    setAcademicData(null);
+    setTestScoresData(null);
+    setAdmissionData(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     localStorage.removeItem("userType");
   }, []);
 
-  // Fetch fresh data when component mounts (if authenticated)
+  // Fetch fresh data when component mounts
   useEffect(() => {
     if (isAuthenticated && !userData) {
       fetchUserData();
@@ -220,9 +323,7 @@ export const UserDataProvider = ({ children }) => {
   const value = {
     // User data
     userData,
-    user: userData, // Alias for convenience
-
-    // Loading and error states
+    user: userData,
     loading,
     error,
     isAuthenticated,
@@ -234,14 +335,21 @@ export const UserDataProvider = ({ children }) => {
     clearUserData,
     fetchCompleteness,
     fetchKyc,
+    fetchAcademicRecords,
+    fetchTestScores,
+    fetchAdmission,
+    setAcademicData,
+    setTestScoresData,
+    setAdmissionData,
 
-    // Document completeness
+    // State data
     completeness,
-
-    // KYC data
     kyc,
+    academicData,
+    testScoresData,
+    admissionData,
 
-    // Computed properties for easy access
+    // Computed properties
     firstName: userData?.firstName || "",
     lastName: userData?.lastName || "",
     fullName: userData
@@ -250,15 +358,6 @@ export const UserDataProvider = ({ children }) => {
     email: userData?.email || "",
     phoneNumber: userData?.phoneNumber || "",
     role: userData?.role || userType,
-
-    // Student-specific data
-    kycStatus: userData?.kycStatus || null,
-    academicRecords: userData?.academicRecords || [],
-    testScores: userData?.testScores || [],
-    workExperience: userData?.workExperience || [],
-    coBorrowers: userData?.coBorrowers || [],
-    admissionLetters: userData?.admissionLetters || [],
-    consultant: userData?.consultant || null,
 
     // Verification status
     isEmailVerified: userData?.isEmailVerified || false,
