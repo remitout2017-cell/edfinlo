@@ -1,9 +1,17 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { useAuth } from "./AuthContext";
-import { userAPI, nbfcAPI } from "../services/api"; // adjust paths/names if needed
-import toast from "react-hot-toast";
+// src/context/UserDataContext.jsx
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
+import axios from "axios";
 
 const UserDataContext = createContext(null);
+
+// Base URL for API calls
+const API_BASE_URL = "http://localhost:5000";
 
 export const useUserData = () => {
   const ctx = useContext(UserDataContext);
@@ -14,62 +22,156 @@ export const useUserData = () => {
 };
 
 export const UserDataProvider = ({ children }) => {
-  const { user: authUser, loading: authLoading, isAuthenticated } = useAuth();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  // Initialize from localStorage
+  const [userData, setUserData] = useState(() => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  });
 
-  const loadProfile = async () => {
-    if (!isAuthenticated || !authUser) {
-      setProfile(null);
-      return;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Check if user is authenticated (has token)
+  const isAuthenticated = !!localStorage.getItem("token");
+  const userType = localStorage.getItem("userType") || "student";
+
+  // Fetch fresh user data from API
+  const fetchUserData = useCallback(async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setUserData(null);
+      return null;
     }
 
-    const role = authUser.role?.toLowerCase();
     setLoading(true);
+    setError(null);
 
     try {
-      // STUDENT: /api/users/profile -> { success, data: { user } }
-      if (role === "student") {
-        const res = await userAPI.getProfile();
-        setProfile(res.data.data.user);
-        return;
+      // Determine endpoint based on user type
+      let endpoint = `${API_BASE_URL}/api/auth/me`;
+
+      if (userType === "consultant") {
+        endpoint = `${API_BASE_URL}/api/consultant/auth/me`;
+      } else if (userType === "admin") {
+        endpoint = `${API_BASE_URL}/api/admin/auth/me`;
       }
 
-      // NBFC: /api/nbfc/profile -> { success, nbfc }
-      if (role === "nbfc") {
-        const res = await nbfcAPI.getProfile();
-        setProfile(res.data.nbfc);
-        return;
+      const response = await axios.get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data.success) {
+        const freshUserData = response.data.data;
+
+        // Update state
+        setUserData(freshUserData);
+
+        // Update localStorage with fresh data
+        localStorage.setItem("user", JSON.stringify(freshUserData));
+
+        console.log("✅ User data refreshed from API");
+        return freshUserData;
+      } else {
+        throw new Error(response.data.message || "Failed to fetch user data");
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch user data:", err);
+      setError(
+        err.response?.data?.message || err.message || "Failed to load user data"
+      );
+
+      // If 401/403, token might be invalid - clear auth
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        console.warn("⚠️ Token invalid, clearing auth...");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("userType");
+        setUserData(null);
       }
 
-      // ADMIN / CONSULTANT: no profile endpoint; use authUser
-      setProfile(authUser);
-    } catch (error) {
-      console.error("Failed to load user profile:", error);
-      toast.error(error.response?.data?.message || "Failed to load profile");
-      // Fallback to authUser so app still works
-      setProfile(authUser);
+      return null;
     } finally {
       setLoading(false);
     }
-  };
+  }, [userType]);
 
+  // Refresh user data (can be called manually from any component)
+  const refreshUserData = useCallback(async () => {
+    return await fetchUserData();
+  }, [fetchUserData]);
+
+  // Update user data locally (for optimistic updates)
+  const updateUserData = useCallback((updates) => {
+    setUserData((prev) => {
+      const updated = { ...prev, ...updates };
+      localStorage.setItem("user", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // Clear user data (for logout)
+  const clearUserData = useCallback(() => {
+    setUserData(null);
+    setError(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userType");
+  }, []);
+
+  // Fetch fresh data when component mounts (if authenticated)
   useEffect(() => {
-    if (!authLoading) {
-      loadProfile();
+    if (isAuthenticated && !userData) {
+      fetchUserData();
     }
-  }, [authLoading, authUser?.role]);
+  }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (profile) {
-      console.log("Profile loaded:", profile);
-    }
-  }, [profile]);
-
+  // Context value
   const value = {
-    profile, // normalized user object for any role
-    profileLoading: loading,
-    refreshProfile: loadProfile,
+    // User data
+    userData,
+    user: userData, // Alias for convenience
+
+    // Loading and error states
+    loading,
+    error,
+    isAuthenticated,
+    userType,
+
+    // Actions
+    refreshUserData,
+    updateUserData,
+    clearUserData,
+
+    // Computed properties for easy access
+    firstName: userData?.firstName || "",
+    lastName: userData?.lastName || "",
+    fullName: userData
+      ? `${userData.firstName || ""} ${userData.lastName || ""}`.trim()
+      : "",
+    email: userData?.email || "",
+    phoneNumber: userData?.phoneNumber || "",
+    role: userData?.role || userType,
+
+    // Student-specific data
+    kycStatus: userData?.kycStatus || null,
+    academicRecords: userData?.academicRecords || [],
+    testScores: userData?.testScores || [],
+    workExperience: userData?.workExperience || [],
+    coBorrowers: userData?.coBorrowers || [],
+    admissionLetters: userData?.admissionLetters || [],
+    consultant: userData?.consultant || null,
+
+    // Verification status
+    isEmailVerified: userData?.isEmailVerified || false,
+    isPhoneVerified: userData?.isPhoneVerified || false,
   };
 
   return (
@@ -78,3 +180,5 @@ export const UserDataProvider = ({ children }) => {
     </UserDataContext.Provider>
   );
 };
+
+export default UserDataContext;

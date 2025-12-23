@@ -3,29 +3,23 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import {
-  kycAPI,
-  academicAPI,
-  loanAnalysisAPI,
-  loanRequestAPI,
-  userAPI,
-} from "../../services/api";
+import { useUserData } from "../../context/UserDataContext";
+import { kycAPI, loanAnalysisAPI, loanRequestAPI } from "../../services/api";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
-import {
-  User,
-  Phone,
-  Mail,
-  MapPin,
-  Upload,
-  Eye,
-  Check,
-  X,
-  FileText,
-} from "lucide-react";
+import { User, Phone, Mail, MapPin, Upload, FileText } from "lucide-react";
 
 const StudentDashboard = () => {
-  const { user: authUser } = useAuth();
+  // Get user data from context
+  const {
+    userData,
+    loading: userLoading,
+    refreshUserData,
+    firstName,
+    lastName,
+    email,
+    phoneNumber,
+  } = useUserData();
+
   const [loading, setLoading] = useState(true);
   const [loanProposals, setLoanProposals] = useState([]);
   const [loanStats, setLoanStats] = useState({
@@ -34,26 +28,25 @@ const StudentDashboard = () => {
     rejected: 0,
   });
   const [documentStatus, setDocumentStatus] = useState("pending");
-  const [profile, setProfile] = useState(null);
-  const [completeness, setCompleteness] = useState({ percentage: 0, totalDocs: 0, uploadedDocs: 0 });
+  const [completeness, setCompleteness] = useState({
+    percentage: 0,
+    totalDocs: 0,
+    uploadedDocs: 0,
+  });
 
   useEffect(() => {
+    // Refresh user data from API when dashboard loads
+    refreshUserData();
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const [loanRes, kycRes, completenessRes, profileRes] = await Promise.allSettled([
+      const [loanRes, kycRes, completenessRes] = await Promise.allSettled([
         loanRequestAPI.getStudentRequests(),
         kycAPI.getKYCDetails(),
         loanAnalysisAPI.getCompleteness(),
-        userAPI.getProfile(),
       ]);
-      console.log(loanRes);
-      console.log(kycRes);
-      console.log(completenessRes);
-      console.log(profileRes);
-      
 
       // Process loan requests
       if (loanRes.status === "fulfilled") {
@@ -61,9 +54,9 @@ const StudentDashboard = () => {
         setLoanProposals(requests);
 
         // Calculate stats
-        const received = requests.filter(r => r.status === "approved").length;
-        const onHold = requests.filter(r => r.status === "pending").length;
-        const rejected = requests.filter(r => r.status === "rejected").length;
+        const received = requests.filter((r) => r.status === "approved").length;
+        const onHold = requests.filter((r) => r.status === "pending").length;
+        const rejected = requests.filter((r) => r.status === "rejected").length;
         setLoanStats({ received, onHold, rejected });
       }
 
@@ -82,11 +75,6 @@ const StudentDashboard = () => {
           uploadedDocs: data.completedFields || 0,
         });
       }
-
-      // Process profile
-      if (profileRes.status === "fulfilled") {
-        setProfile(profileRes.value.data.data?.user || null);
-      }
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
     } finally {
@@ -103,7 +91,7 @@ const StudentDashboard = () => {
     return styles[status] || styles.pending;
   };
 
-  if (loading) {
+  if (loading || userLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -113,7 +101,7 @@ const StudentDashboard = () => {
     );
   }
 
-  const displayUser = profile || authUser;
+  // Use user data from context directly
 
   return (
     <DashboardLayout>
@@ -122,13 +110,17 @@ const StudentDashboard = () => {
           {/* Left Column - Track Progress + Loan Proposals */}
           <div className="flex-1 space-y-6">
             {/* Track Progress Header */}
-            <h2 className="text-2xl font-semibold text-orange-500">Track Progress</h2>
+            <h2 className="text-2xl font-semibold text-orange-500">
+              Track Progress
+            </h2>
 
             {/* Status Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Loan Status Card */}
               <div className="bg-white rounded-lg border border-gray-200 p-5">
-                <h3 className="text-sm font-semibold text-gray-800 mb-4">Loan Status</h3>
+                <h3 className="text-sm font-semibold text-gray-800 mb-4">
+                  Loan Status
+                </h3>
                 <div className="flex items-center justify-between">
                   <div className="text-center">
                     <p className="text-2xl font-bold text-orange-500">
@@ -156,13 +148,21 @@ const StudentDashboard = () => {
 
               {/* Document Status Card */}
               <div className="bg-white rounded-lg border border-gray-200 p-5">
-                <h3 className="text-sm font-semibold text-gray-800 mb-4">Document Status</h3>
+                <h3 className="text-sm font-semibold text-gray-800 mb-4">
+                  Document Status
+                </h3>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <FileText className="w-8 h-8 text-gray-400" />
                     <span className="text-sm text-gray-600">
                       Status:{" "}
-                      <span className={`font-medium ${documentStatus === "verified" ? "text-green-600" : "text-orange-500"}`}>
+                      <span
+                        className={`font-medium ${
+                          documentStatus === "verified"
+                            ? "text-green-600"
+                            : "text-orange-500"
+                        }`}
+                      >
                         {documentStatus === "verified" ? "Verified" : "Pending"}
                       </span>
                     </span>
@@ -181,7 +181,9 @@ const StudentDashboard = () => {
             {/* Loan Proposals Section */}
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-orange-500">Loan Proposals</h3>
+                <h3 className="text-lg font-semibold text-orange-500">
+                  Loan Proposals
+                </h3>
                 <span className="text-sm text-gray-500">
                   {String(loanProposals.length).padStart(2, "0")}
                 </span>
@@ -216,7 +218,9 @@ const StudentDashboard = () => {
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">Status:</span>
+                            <span className="text-sm text-gray-500">
+                              Status:
+                            </span>
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusBadge(
                                 proposal.status
@@ -257,17 +261,17 @@ const StudentDashboard = () => {
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {/* Profile Photo */}
               <div className="h-48 bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
-                {displayUser?.profilePicture ? (
+                {userData?.profilePicture ? (
                   <img
-                    src={displayUser.profilePicture}
+                    src={userData.profilePicture}
                     alt="Profile"
                     className="w-32 h-32 rounded-lg object-cover border-4 border-white shadow-lg"
                   />
                 ) : (
                   <div className="w-32 h-32 rounded-lg bg-white flex items-center justify-center border-4 border-white shadow-lg">
                     <span className="text-4xl font-bold text-teal-500">
-                      {displayUser?.firstName?.[0] || "U"}
-                      {displayUser?.lastName?.[0] || ""}
+                      {firstName?.[0] || "U"}
+                      {lastName?.[0] || ""}
                     </span>
                   </div>
                 )}
@@ -276,7 +280,9 @@ const StudentDashboard = () => {
               {/* Profile Details */}
               <div className="p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">My Profile</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    My Profile
+                  </h3>
                   <Link
                     to="/student/profile"
                     className="px-3 py-1 border border-gray-300 text-sm text-gray-600 rounded-md hover:bg-gray-50"
@@ -289,42 +295,44 @@ const StudentDashboard = () => {
                   <p className="text-xs text-gray-500">
                     Unique ID:{" "}
                     <span className="font-medium text-gray-800">
-                      {displayUser?._id?.slice(-10).toUpperCase() || "N/A"}
+                      {userData?._id?.slice(-10).toUpperCase() || "N/A"}
                     </span>
                   </p>
 
                   <div className="flex items-center gap-3 text-sm">
                     <User className="w-4 h-4 text-gray-400" />
                     <span className="text-gray-700">
-                      {displayUser?.firstName} {displayUser?.lastName}
+                      {firstName} {lastName}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-3 text-sm">
                     <Phone className="w-4 h-4 text-gray-400" />
                     <span className="text-gray-700">
-                      {displayUser?.phoneNumber || "Not provided"}
+                      {phoneNumber || "Not provided"}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-3 text-sm">
                     <Mail className="w-4 h-4 text-gray-400" />
                     <span className="text-gray-700 break-all">
-                      {displayUser?.email || "Not provided"}
+                      {email || "Not provided"}
                     </span>
                   </div>
 
                   <div className="flex items-start gap-3 text-sm">
                     <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
                     <span className="text-gray-700">
-                      {displayUser?.address || "Address not provided"}
+                      {userData?.address || "Address not provided"}
                     </span>
                   </div>
                 </div>
 
                 {/* Profile Status */}
                 <div className="mt-6 pt-4 border-t border-gray-100">
-                  <h4 className="text-sm font-medium text-gray-800 mb-4">Profile Status</h4>
+                  <h4 className="text-sm font-medium text-gray-800 mb-4">
+                    Profile Status
+                  </h4>
                   <div className="flex items-center justify-between">
                     {/* Circular Progress */}
                     <div className="flex flex-col items-center">
@@ -345,7 +353,9 @@ const StudentDashboard = () => {
                             stroke="#f97316"
                             strokeWidth="4"
                             fill="none"
-                            strokeDasharray={`${completeness.percentage * 1.76} 176`}
+                            strokeDasharray={`${
+                              completeness.percentage * 1.76
+                            } 176`}
                             strokeLinecap="round"
                           />
                         </svg>
@@ -355,7 +365,9 @@ const StudentDashboard = () => {
                           </span>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">Profile Complete</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Profile Complete
+                      </p>
                     </div>
 
                     {/* Documents Count */}
@@ -364,9 +376,13 @@ const StudentDashboard = () => {
                         <p className="text-2xl font-bold text-gray-400">
                           {String(completeness.uploadedDocs).padStart(2, "0")}
                         </p>
-                        <p className="text-sm text-gray-400">/{completeness.totalDocs}</p>
+                        <p className="text-sm text-gray-400">
+                          /{completeness.totalDocs}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">Documents Uploaded</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Documents Uploaded
+                      </p>
                     </div>
                   </div>
                 </div>

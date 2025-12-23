@@ -1,18 +1,17 @@
 // src/layouts/ConsultantLayout.jsx
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import NotificationBell from '../common/NotificationBell';
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   LayoutDashboard,
   User,
-  FileText, 
+  FileText,
   LogOut,
   Menu,
   X,
   Shield,
-  Headphones
-} from 'lucide-react';
+  Headphones,
+} from "lucide-react";
 
 const ConsultantLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -21,13 +20,18 @@ const ConsultantLayout = ({ children }) => {
   const navigate = useNavigate();
 
   const navigation = [
-    { name: 'Dashboard', href: '/consultant/dashboard', icon: LayoutDashboard },
-    { name: 'Profile', href: '/consultant/profile', icon: User },
-    { name: 'Student Applications Status', href: '/consultant/students', icon: FileText },
-    { name: 'Support', href: '/consultant/support', icon: Headphones },
+    { name: "Dashboard", href: "/consultant/dashboard", icon: LayoutDashboard },
+    { name: "Profile", href: "/consultant/profile", icon: User },
+    {
+      name: "Student Applications Status",
+      href: "/consultant/students",
+      icon: FileText,
+    },
+    { name: "Support", href: "/consultant/support", icon: Headphones },
   ];
 
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-indigo-50">
@@ -40,11 +44,15 @@ const ConsultantLayout = ({ children }) => {
       )}
 
       {/* Sidebar */}
-      <aside className={`
+      <aside
+        className={`
         fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out
-        border-r border-gray-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        border-r border-gray-200 lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }
         backdrop-blur-xl bg-white/95
-      `}>
+      `}
+      >
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-20 px-6 bg-gradient-to-r from-green-600 to-blue-600">
           <div className="flex items-center gap-3">
@@ -52,8 +60,12 @@ const ConsultantLayout = ({ children }) => {
               <Shield className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white truncate">Consultant Portal</h1>
-              <p className="text-xs text-white/90 font-medium truncate">{user?.companyName || 'Your Company'}</p>
+              <h1 className="text-xl font-bold text-white truncate">
+                Consultant Portal
+              </h1>
+              <p className="text-xs text-white/90 font-medium truncate">
+                {user?.companyName || "Your Company"}
+              </p>
             </div>
           </div>
           <button
@@ -74,13 +86,18 @@ const ConsultantLayout = ({ children }) => {
                 to={item.href}
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 font-medium text-sm
-                  ${isActive(item.href)
-                    ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-lg shadow-green-500/25'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md hover:-translate-x-1'
+                  ${
+                    isActive(item.href)
+                      ? "bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-lg shadow-green-500/25"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-md hover:-translate-x-1"
                   }
                 `}
               >
-                <Icon className={`h-5 w-5 flex-shrink-0 ${isActive(item.href) ? 'text-white' : 'text-gray-500'}`} />
+                <Icon
+                  className={`h-5 w-5 flex-shrink-0 ${
+                    isActive(item.href) ? "text-white" : "text-gray-500"
+                  }`}
+                />
                 <span className="truncate">{item.name}</span>
               </Link>
             );
@@ -91,12 +108,18 @@ const ConsultantLayout = ({ children }) => {
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-gray-50 to-transparent border-t border-gray-200">
           <div className="flex items-center gap-4 mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200">
             <div className="h-12 w-12 rounded-2xl bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center text-white font-semibold text-lg shadow-lg">
-              {user?.name?.charAt(0)?.toUpperCase() || 'C'}
+              {user?.name?.charAt(0)?.toUpperCase() || "C"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user?.name || 'Consultant'}</p>
-              <p className="text-xs text-gray-600 truncate">{user?.designation || 'Senior Consultant'}</p>
-              <p className="text-xs text-gray-500">{user?.experienceYears || 0}+ years exp.</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {user?.name || "Consultant"}
+              </p>
+              <p className="text-xs text-gray-600 truncate">
+                {user?.designation || "Senior Consultant"}
+              </p>
+              <p className="text-xs text-gray-500">
+                {user?.experienceYears || 0}+ years exp.
+              </p>
             </div>
           </div>
           <button
@@ -125,16 +148,15 @@ const ConsultantLayout = ({ children }) => {
             {/* Page title */}
             <div className="flex-1 min-w-0 hidden md:block ml-8">
               <h2 className="text-xl font-bold text-gray-900 capitalize truncate">
-                {navigation.find(item => isActive(item.href))?.name || 'Dashboard'}
+                {navigation.find((item) => isActive(item.href))?.name ||
+                  "Dashboard"}
               </h2>
             </div>
 
             {/* Right side */}
             <div className="flex items-center gap-4">
-              <NotificationBell />
-              <div className="w-px h-6 bg-gray-200 hidden sm:block" />
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate("/")}
                 className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white/80 backdrop-blur-sm rounded-2xl hover:bg-gray-50 shadow-sm hover:shadow-md transition-all border border-gray-200 hover:border-gray-300"
               >
                 <span>← Go to Home</span>
@@ -144,9 +166,7 @@ const ConsultantLayout = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="p-6 lg:p-8 xl:p-10">
-          {children}
-        </main>
+        <main className="p-6 lg:p-8 xl:p-10">{children}</main>
       </div>
     </div>
   );

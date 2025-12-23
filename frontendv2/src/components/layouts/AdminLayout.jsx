@@ -1,8 +1,7 @@
 // src/layouts/AdminLayout.jsx
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import NotificationBell from '../common/NotificationBell';
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   LayoutDashboard,
   Users,
@@ -12,37 +11,41 @@ import {
   Menu,
   X,
   Shield,
-  Home
-} from 'lucide-react';
+  Home,
+} from "lucide-react";
 
 const AdminLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
+  const isSuperAdmin = user?.role?.toLowerCase() === "superadmin";
 
   const navigation = [
     {
-      name: 'Dashboard',
-      href: '/admin/dashboard',
-      icon: LayoutDashboard
+      name: "Dashboard",
+      href: "/admin/dashboard",
+      icon: LayoutDashboard,
     },
     {
-      name: 'Students',
-      href: '/admin/students',
-      icon: Users
+      name: "Students",
+      href: "/admin/students",
+      icon: Users,
     },
     {
-      name: 'NBFCs',
-      href: '/admin/nbfcs',
-      icon: Building2
+      name: "NBFCs",
+      href: "/admin/nbfcs",
+      icon: Building2,
     },
-    ...(isSuperAdmin ? [{
-      name: 'Sub-Admins',
-      href: '/admin/sub-admins',
-      icon: Settings
-    }] : []),
+    ...(isSuperAdmin
+      ? [
+          {
+            name: "Sub-Admins",
+            href: "/admin/sub-admins",
+            icon: Settings,
+          },
+        ]
+      : []),
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -61,7 +64,9 @@ const AdminLayout = ({ children }) => {
       <aside
         className={`
           fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 transform transition-transform duration-300 ease-in-out
-          lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0 ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }
         `}
       >
         {/* Sidebar Header */}
@@ -71,7 +76,7 @@ const AdminLayout = ({ children }) => {
             <div>
               <h1 className="text-lg font-bold text-white">Admin Panel</h1>
               <p className="text-xs text-gray-400">
-                {isSuperAdmin ? 'Super Admin' : 'Sub Admin'}
+                {isSuperAdmin ? "Super Admin" : "Sub Admin"}
               </p>
             </div>
           </div>
@@ -93,9 +98,10 @@ const AdminLayout = ({ children }) => {
                 to={item.href}
                 className={`
                   flex items-center gap-3 px-3 py-3 rounded-lg transition-colors
-                  ${isActive(item.href)
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  ${
+                    isActive(item.href)
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-300 hover:bg-gray-800 hover:text-white"
                   }
                 `}
               >
@@ -110,15 +116,13 @@ const AdminLayout = ({ children }) => {
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-800 border-t border-gray-700">
           <div className="flex items-center gap-3 mb-3">
             <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-              {user?.name?.charAt(0).toUpperCase() || 'A'}
+              {user?.name?.charAt(0).toUpperCase() || "A"}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">
-                {user?.name || 'Admin'}
+                {user?.name || "Admin"}
               </p>
-              <p className="text-xs text-gray-400 truncate">
-                {user?.email}
-              </p>
+              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
             </div>
           </div>
           <button
@@ -147,7 +151,8 @@ const AdminLayout = ({ children }) => {
             {/* Page title - hidden on mobile, shown on desktop */}
             <div className="hidden lg:block">
               <h2 className="text-xl font-semibold text-gray-800">
-                {navigation.find(item => isActive(item.href))?.name || 'Admin Panel'}
+                {navigation.find((item) => isActive(item.href))?.name ||
+                  "Admin Panel"}
               </h2>
             </div>
 
@@ -161,16 +166,12 @@ const AdminLayout = ({ children }) => {
                 <Home className="h-4 w-4" />
                 <span>Home</span>
               </Link>
-
-              <NotificationBell />
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="p-4 sm:p-6 lg:p-8">
-          {children}
-        </main>
+        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );

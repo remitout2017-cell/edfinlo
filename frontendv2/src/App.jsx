@@ -2,7 +2,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
-import { NotificationProvider } from "./context/NotificationContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PublicRoute } from "./components/PublicRoute";
 import { UserDataProvider } from "./context/UserDataContext";
@@ -48,6 +47,7 @@ import ConsultantStudentDetail from "./pages/consultant/StudentDetail";
 import ConsultantProfile from "./pages/consultant/Profile";
 import ConsultantSupport from "./pages/consultant/Support";
 import Studyeducationplan from "./pages/student/StudentEducationPlan";
+
 // ==================== COMMON PAGES ====================
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
@@ -57,164 +57,152 @@ function App() {
     <div>
       <BrowserRouter>
         <AuthProvider>
-          <NotificationProvider>
-            <UserDataProvider>
-              <Toaster position="top-right" />
-              <Routes>
-                {/* ==================== PUBLIC ROUTES ==================== */}
-                <Route path="/" element={<Home />} />
+          <UserDataProvider>
+            <Toaster position="top-right" />
+            <Routes>
+              {/* ==================== PUBLIC ROUTES ==================== */}
+              <Route path="/" element={<Home />} />
 
-                {/* Auth Routes */}
+              {/* Auth Routes */}
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <Login />
+                  </PublicRoute>
+                }
+              />
+              <Route path="/register/invite" element={<RegisterFromInvite />} />
+              <Route
+                path="/register"
+                element={
+                  <PublicRoute>
+                    <Register />
+                  </PublicRoute>
+                }
+              />
+
+              {/* Verification Routes */}
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/verify-phone" element={<VerifyPhone />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
+
+              {/* ==================== STUDENT ROUTES ==================== */}
+              <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
                 <Route
-                  path="/login"
-                  element={
-                    <PublicRoute>
-                      <Login />
-                    </PublicRoute>
-                  }
+                  path="/student"
+                  element={<Navigate to="/student/dashboard" replace />}
                 />
                 <Route
-                  path="/register/invite"
-                  element={<RegisterFromInvite />}
+                  path="/student/dashboard"
+                  element={<StudentDashboard />}
                 />
                 <Route
-                  path="/register"
-                  element={
-                    <PublicRoute>
-                      <Register />
-                    </PublicRoute>
-                  }
+                  path="/student/education-plan"
+                  element={<Studyeducationplan />}
                 />
-
-                {/* Verification Routes */}
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route path="/verify-phone" element={<VerifyPhone />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/unauthorized" element={<Unauthorized />} />
-
-                {/* ==================== STUDENT ROUTES ==================== */}
-                <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
-                  <Route
-                    path="/student"
-                    element={<Navigate to="/student/dashboard" replace />}
-                  />
-                  <Route
-                    path="/student/dashboard"
-                    element={<StudentDashboard />}
-                  />
-                  <Route
-                    path="/student/education-plan"
-                    element={<Studyeducationplan />}
-                  />
-                  <Route path="/student/kyc" element={<StudentKYC />} />
-                  <Route
-                    path="/student/academic-records"
-                    element={<StudentAcademicRecords />}
-                  />
-                  <Route
-                    path="/student/work-experience"
-                    element={<StudentWorkExperience />}
-                  />
-                  <Route
-                    path="/student/co-borrower"
-                    element={<StudentCoBorrower />}
-                  />
-                  <Route
-                    path="/student/admission"
-                    element={<StudentAdmission />}
-                  />
-                  <Route
-                    path="/student/loan-request"
-                    element={<StudentLoanRequest />}
-                  />
-                  <Route
-                    path="/student/loan-analysis"
-                    element={<StudentLoanAnalysis />}
-                  />
-                  <Route path="/student/profile" element={<StudentProfile />} />
-                </Route>
-
-                {/* ==================== CONSULTANT ROUTES ==================== */}
+                <Route path="/student/kyc" element={<StudentKYC />} />
                 <Route
-                  element={<ProtectedRoute allowedRoles={["consultant"]} />}
-                >
-                  <Route
-                    path="/consultant"
-                    element={<Navigate to="/consultant/dashboard" replace />}
-                  />
-                  <Route
-                    path="/consultant/dashboard"
-                    element={<ConsultantDashboard />}
-                  />
-                  <Route
-                    path="/consultant/students"
-                    element={<ConsultantStudents />}
-                  />
-                  <Route
-                    path="/consultant/students/:id"
-                    element={<ConsultantStudentDetail />}
-                  />
-                  <Route
-                    path="/consultant/invite"
-                    element={<ConsultantInvite />}
-                  />
-                  <Route
-                    path="/consultant/profiles"
-                    element={<ConsultantProfiles />}
-                  />
-                  <Route
-                    path="/consultant/loan-requests"
-                    element={<ConsultantLoanRequests />}
-                  />
-                  <Route
-                    path="/consultant/admissions"
-                    element={<ConsultantAdmissions />}
-                  />
-                  <Route
-                    path="/consultant/loan-analysis"
-                    element={<ConsultantLoanAnalysis />}
-                  />
-                  <Route
-                    path="/consultant/profile"
-                    element={<ConsultantProfile />}
-                  />
-                  <Route
-                    path="/consultant/support"
-                    element={<ConsultantSupport />}
-                  />
-                </Route>
-
-                {/* ==================== ADMIN ROUTES ==================== */}
+                  path="/student/academic-records"
+                  element={<StudentAcademicRecords />}
+                />
                 <Route
-                  element={
-                    <ProtectedRoute allowedRoles={["superadmin", "subadmin"]} />
-                  }
-                >
-                  <Route
-                    path="/admin"
-                    element={<Navigate to="/admin/dashboard" replace />}
-                  />
-                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                  <Route path="/admin/students" element={<AdminStudents />} />
-                  <Route path="/admin/nbfcs" element={<AdminNBFCs />} />
-                </Route>
-
-                {/* ==================== SUPERADMIN ONLY ==================== */}
+                  path="/student/work-experience"
+                  element={<StudentWorkExperience />}
+                />
                 <Route
-                  element={<ProtectedRoute allowedRoles={["superadmin"]} />}
-                >
-                  <Route
-                    path="/admin/sub-admins"
-                    element={<AdminSubAdmins />}
-                  />
-                </Route>
+                  path="/student/co-borrower"
+                  element={<StudentCoBorrower />}
+                />
+                <Route
+                  path="/student/admission"
+                  element={<StudentAdmission />}
+                />
+                <Route
+                  path="/student/loan-request"
+                  element={<StudentLoanRequest />}
+                />
+                <Route
+                  path="/student/loan-analysis"
+                  element={<StudentLoanAnalysis />}
+                />
+                <Route path="/student/profile" element={<StudentProfile />} />
+              </Route>
 
-                {/* ==================== 404 ==================== */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </UserDataProvider>
-          </NotificationProvider>
+              {/* ==================== CONSULTANT ROUTES ==================== */}
+              <Route element={<ProtectedRoute allowedRoles={["consultant"]} />}>
+                <Route
+                  path="/consultant"
+                  element={<Navigate to="/consultant/dashboard" replace />}
+                />
+                <Route
+                  path="/consultant/dashboard"
+                  element={<ConsultantDashboard />}
+                />
+                <Route
+                  path="/consultant/students"
+                  element={<ConsultantStudents />}
+                />
+                <Route
+                  path="/consultant/students/:id"
+                  element={<ConsultantStudentDetail />}
+                />
+                <Route
+                  path="/consultant/invite"
+                  element={<ConsultantInvite />}
+                />
+                <Route
+                  path="/consultant/profiles"
+                  element={<ConsultantProfiles />}
+                />
+                <Route
+                  path="/consultant/loan-requests"
+                  element={<ConsultantLoanRequests />}
+                />
+                <Route
+                  path="/consultant/admissions"
+                  element={<ConsultantAdmissions />}
+                />
+                <Route
+                  path="/consultant/loan-analysis"
+                  element={<ConsultantLoanAnalysis />}
+                />
+                <Route
+                  path="/consultant/profile"
+                  element={<ConsultantProfile />}
+                />
+                <Route
+                  path="/consultant/support"
+                  element={<ConsultantSupport />}
+                />
+              </Route>
+
+              {/* ==================== ADMIN ROUTES ==================== */}
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={["superadmin", "subadmin"]} />
+                }
+              >
+                <Route
+                  path="/admin"
+                  element={<Navigate to="/admin/dashboard" replace />}
+                />
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/students" element={<AdminStudents />} />
+                <Route path="/admin/nbfcs" element={<AdminNBFCs />} />
+              </Route>
+
+              {/* ==================== SUPERADMIN ONLY ==================== */}
+              <Route element={<ProtectedRoute allowedRoles={["superadmin"]} />}>
+                <Route path="/admin/sub-admins" element={<AdminSubAdmins />} />
+              </Route>
+
+              {/* ==================== 404 ==================== */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </UserDataProvider>
         </AuthProvider>
       </BrowserRouter>
     </div>

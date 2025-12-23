@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import NotificationBell from "../../components/common/NotificationBell";
 import { ChevronDown, Menu, X, Home } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
@@ -79,8 +78,9 @@ const DashboardLayout = ({ children }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         <div className="h-full flex flex-col">
           {/* Close button */}
@@ -102,10 +102,11 @@ const DashboardLayout = ({ children }) => {
                   <Link
                     to={item.href}
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${isActive(item.href)
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive(item.href)
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
                   >
                     <span>{item.name}</span>
                   </Link>
@@ -172,8 +173,6 @@ const DashboardLayout = ({ children }) => {
                 <Home className="w-4 h-4" />
                 <span>Home</span>
               </Link>
-
-              <NotificationBell />
 
               {/* User Profile Dropdown */}
               <div className="relative">
