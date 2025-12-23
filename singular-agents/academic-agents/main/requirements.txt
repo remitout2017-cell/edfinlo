@@ -13,7 +13,7 @@ langchain-google-genai
 langchain-openai
 langchain-groq
 pydantic
-
+uvicorn
 # Google AI
 google-generativeai
 

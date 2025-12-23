@@ -5,7 +5,7 @@ from typing import List, Optional
 
 
 class GraduationExtractor(BaseExtractor):
-    """Extract graduation marksheets (multiple semesters)"""
+    """Extract graduation marksheets with native JSON mode"""
 
     PROMPT = """
 Extract graduation/bachelor's degree marksheet information from this image.
@@ -15,22 +15,33 @@ This may be:
 2. A consolidated marksheet with all semesters
 3. A final degree certificate
 
-Extract:
-- Institution/University name
-- Degree name (B.Tech, B.Sc, B.Com, etc.)
-- Specialization/Branch
-- Year of passing
-- Duration in years
+Extract the following fields accurately:
 
-For each semester/year visible:
-- Semester/Year number
-- Year of completion
-- Marks (percentage/CGPA/SGPA/grade - extract whatever is available)
+**Basic Information:**
+- **institution_name** (string, required): University/College name
+- **degree** (string, required): Degree name (B.Tech, B.Sc, B.Com, etc.)
+- **specialization** (string, optional): Branch/Specialization
+- **year_of_passing** (integer, required): Final year of passing
+- **duration_years** (integer, optional): Duration in years
 
-If this is a final consolidated marksheet, extract ALL semesters visible.
-If this is only one semester, extract just that semester.
+**Semester Information (array of semesters):**
+For each semester/year visible, extract:
+- **semester_year** (string, required): Identifier like "Semester 1", "Year 1", "Semester - I"
+- **year_of_completion** (integer, optional): Year this semester was completed
+- **percentage** (float, optional): Percentage marks for this semester
+- **cgpa** (float, optional): CGPA/SGPA for this semester
+- **grade** (string, optional): Grade obtained for this semester
 
-Be very smart and thorough - extract ALL semester data you can see.
+**Final Results:**
+- **final_percentage** (float, optional): Final overall percentage
+- **final_cgpa** (float, optional): Final cumulative CGPA
+
+IMPORTANT INSTRUCTIONS:
+- Extract ALL semester data visible on this page
+- If consolidated marksheet, extract all semesters shown
+- If single semester, extract just that semester
+- Be very thorough - don't miss any semester information
+- If a field is not visible, set it to null
 """
 
     def extract(self, image_path: str) -> Optional[GraduationMarksheet]:
@@ -42,7 +53,7 @@ Be very smart and thorough - extract ALL semester data you can see.
             image_path=image_path,
             schema=GraduationMarksheet,
             prompt=self.PROMPT,
-            timeout=90  # Longer timeout for graduation
+            timeout=90
         )
 
         if result:
@@ -85,7 +96,7 @@ Be very smart and thorough - extract ALL semester data you can see.
                 all_results.append(result)
             else:
                 skipped += 1
-                print(f"   ⭐ Skipped page {i+1} (extraction failed)")
+                print(f"   ⭕ Skipped page {i+1} (extraction failed)")
 
                 # If too many failures, stop processing
                 if skipped >= 3:
