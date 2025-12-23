@@ -49,6 +49,11 @@ const StudentDashboard = () => {
         loanAnalysisAPI.getCompleteness(),
         userAPI.getProfile(),
       ]);
+      console.log(loanRes);
+      console.log(kycRes);
+      console.log(completenessRes);
+      console.log(profileRes);
+      
 
       // Process loan requests
       if (loanRes.status === "fulfilled") {
