@@ -338,7 +338,7 @@ export const notificationAPI = {
 
 // User APIs
 export const userAPI = {
-  getProfile: () => api.get("/users/profile"),
+  getProfile: () => api.get("/user/profile"),
   updateProfile: (data) => api.put("/user/profile", data),
   uploadProfilePicture: (formData) =>
     api.post("/user/profile/picture", formData, {
