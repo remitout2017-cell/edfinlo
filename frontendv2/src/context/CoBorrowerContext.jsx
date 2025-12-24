@@ -68,49 +68,6 @@ export const CoBorrowerProvider = ({ children }) => {
   }, [getAuthHeader]);
 
   // ============================================================================
-  // Get single co-borrower by ID
-  // ============================================================================
-  const getCoBorrowerById = useCallback(
-    async (coBorrowerId) => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Unauthorized");
-      }
-
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/coborrower/${coBorrowerId}`,
-          {
-            headers: getAuthHeader(),
-          }
-        );
-
-        if (response.data.success) {
-          console.log("✅ Co-borrower fetched:", coBorrowerId);
-          setSelectedCoBorrower(response.data.data);
-          return response.data.data;
-        } else {
-          throw new Error(response.data.error || "Failed to fetch co-borrower");
-        }
-      } catch (err) {
-        console.error("❌ Failed to fetch co-borrower:", err);
-        const errorMsg =
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          err.message ||
-          "Failed to load co-borrower";
-        setError(errorMsg);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [getAuthHeader]
-  );
-
-  // ============================================================================
   // Create coborrower with KYC
   // ============================================================================
   const createCoBorrowerWithKyc = useCallback(
