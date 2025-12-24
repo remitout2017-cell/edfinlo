@@ -1,6 +1,6 @@
 // src/pages/student/CoBorrower.jsx
 import React, { useEffect, useState } from "react";
-import { coBorrowerAPI } from "../../services/api";
+import { useCoBorrowerData } from "../../context/CoBorrowerContext";
 import toast from "react-hot-toast";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import StepperExample from "../../components/common/stepper";
@@ -31,157 +31,136 @@ const RELATIONS = [
 ];
 
 const CoBorrower = () => {
-  const [coBorrowers, setCoBorrowers] = useState([]);
-  const [loadingList, setLoadingList] = useState(false);
+  // Get coborrower data from context
+  const {
+    coBorrowers,
+    loading,
+    fetchCoBorrowers,
+    createCoBorrowerWithKyc,
+    uploadFinancialDocuments,
+    deleteCoBorrower,
+  } = useCoBorrowerData();
+
   const [creating, setCreating] = useState(false);
-  const [uploadingBank, setUploadingBank] = useState(null);
+  const [uploadingFinancial, setUploadingFinancial] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // Core form state
+  // Core form state - only KYC info (split from financial docs)
   const [form, setForm] = useState({
     relationToStudent: "",
     firstName: "",
     lastName: "",
+    email: "",
+    phoneNumber: "",
+    dateOfBirth: "",
   });
 
-  // File inputs for core docs
-  const [files, setFiles] = useState({
-    aadhaarFront: null,
-    aadhaarBack: null,
-    panFront: null,
-    panBack: null,
-    salarySlip1: null,
-    salarySlip2: null,
-    salarySlip3: null,
-    itr2024: null,
-    itr2023: null,
-    form162024: null,
-    form162023: null,
+  // KYC files only
+  const [kycFiles, setKycFiles] = useState({
+    aadhaar_front: null,
+    aadhaar_back: null,
+    pan_front: null,
+    passport: null,
   });
 
-  // Bank statement upload files per co-borrower
-  const [bankFiles, setBankFiles] = useState({});
+  // Financial files per co-borrower
+  const [financialFiles, setFinancialFiles] = useState({});
 
-  // ========================================================================
-  // Fetch Co-Borrowers
-  // ========================================================================
-  const fetchCoBorrowers = async () => {
-    try {
-      setLoadingList(true);
-      const { data } = await coBorrowerAPI.getAll();
-      if (data?.success) {
-        setCoBorrowers(data.data || []);
-      } else {
-        toast.error("Failed to load co-borrowers");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.error || "Failed to load co-borrowers");
-    } finally {
-      setLoadingList(false);
-    }
-  };
-
+  // Fetch coborrowers on mount
   useEffect(() => {
     fetchCoBorrowers();
-  }, []);
+  }, [fetchCoBorrowers]);
 
   const handleTextChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
+  const handleKycFileChange = (e) => {
     const { name, files: selected } = e.target;
-    setFiles((prev) => ({ ...prev, [name]: selected }));
+    setKycFiles((prev) => ({ ...prev, [name]: selected }));
   };
 
-  const handleBankFileChange = (coBorrowerId, e) => {
+  const handleFinancialFileChange = (coBorrowerId, field, e) => {
     const { files: selected } = e.target;
-    setBankFiles((prev) => ({ ...prev, [coBorrowerId]: selected }));
+    setFinancialFiles((prev) => ({
+      ...prev,
+      [coBorrowerId]: {
+        ...prev[coBorrowerId],
+        [field]: selected,
+      },
+    }));
   };
 
-  const resetCoreForm = () => {
-    setForm({ relationToStudent: "", firstName: "", lastName: "" });
-    setFiles({
-      aadhaarFront: null,
-      aadhaarBack: null,
-      panFront: null,
-      panBack: null,
-      salarySlip1: null,
-      salarySlip2: null,
-      salarySlip3: null,
-      itr2024: null,
-      itr2023: null,
-      form162024: null,
-      form162023: null,
+  const resetKycForm = () => {
+    setForm({
+      relationToStudent: "",
+      firstName: "",
+      lastName: "",
+      email: "",
+      phoneNumber: "",
+      dateOfBirth: "",
+    });
+    setKycFiles({
+      aadhaar_front: null,
+      aadhaar_back: null,
+      pan_front: null,
+      passport: null,
     });
     setShowAddForm(false);
   };
 
   // ========================================================================
-  // Submit: Create Co-Borrower
+  // Submit: Create Co-Borrower with KYC (Step 1)
   // ========================================================================
   const handleCreateCoBorrower = async (e) => {
     e.preventDefault();
+
+    // Validate required fields
     if (!form.relationToStudent || !form.firstName) {
       toast.error("Relation and first name are required");
       return;
     }
     if (
-      !files.aadhaarFront?.length ||
-      !files.aadhaarBack?.length ||
-      !files.panFront?.length
+      !kycFiles.aadhaar_front?.length ||
+      !kycFiles.aadhaar_back?.length ||
+      !kycFiles.pan_front?.length
     ) {
-      toast.error("Aadhaar (front & back) and PAN (front) are required");
-      return;
-    }
-    if (
-      !files.salarySlip1?.length ||
-      !files.salarySlip2?.length ||
-      !files.salarySlip3?.length
-    ) {
-      toast.error("All 3 months of salary slips are required");
-      return;
-    }
-    if (!files.itr2024?.length || !files.itr2023?.length) {
-      toast.error("ITR for 2024 and 2023 are required");
+      toast.error("Aadhaar (front & back) and PAN are required");
       return;
     }
 
     try {
       setCreating(true);
       const formData = new FormData();
+
+      // Append personal info
       formData.append("relationToStudent", form.relationToStudent);
       formData.append("firstName", form.firstName);
       formData.append("lastName", form.lastName || "");
+      if (form.email) formData.append("email", form.email);
+      if (form.phoneNumber) formData.append("phoneNumber", form.phoneNumber);
+      if (form.dateOfBirth) formData.append("dateOfBirth", form.dateOfBirth);
 
-      const appendFiles = (fieldName, fileList) => {
-        if (!fileList) return;
-        Array.from(fileList).forEach((file) =>
-          formData.append(fieldName, file)
-        );
-      };
+      // Append KYC documents
+      if (kycFiles.aadhaar_front) {
+        formData.append("aadhaar_front", kycFiles.aadhaar_front[0]);
+      }
+      if (kycFiles.aadhaar_back) {
+        formData.append("aadhaar_back", kycFiles.aadhaar_back[0]);
+      }
+      if (kycFiles.pan_front) {
+        formData.append("pan_front", kycFiles.pan_front[0]);
+      }
+      if (kycFiles.passport) {
+        formData.append("passport", kycFiles.passport[0]);
+      }
 
-      appendFiles("aadhaarFront", files.aadhaarFront);
-      appendFiles("aadhaarBack", files.aadhaarBack);
-      appendFiles("panFront", files.panFront);
-      appendFiles("panBack", files.panBack);
-      appendFiles("salarySlip1", files.salarySlip1);
-      appendFiles("salarySlip2", files.salarySlip2);
-      appendFiles("salarySlip3", files.salarySlip3);
-      appendFiles("itr2024", files.itr2024);
-      appendFiles("itr2023", files.itr2023);
-      appendFiles("form162024", files.form162024);
-      appendFiles("form162023", files.form162023);
-
-      const { data } = await coBorrowerAPI.uploadCoreDocs(formData);
-      if (data?.success) {
-        toast.success(data.message || "Co-borrower created successfully");
-        resetCoreForm();
-        await fetchCoBorrowers();
-      } else {
-        toast.error(data?.error || "Failed to create co-borrower");
+      // Call context function
+      const result = await createCoBorrowerWithKyc(formData);
+      if (result?.success) {
+        toast.success(result.message || "Co-borrower created successfully");
+        resetKycForm();
       }
     } catch (error) {
       console.error(error);
@@ -194,54 +173,66 @@ const CoBorrower = () => {
   };
 
   // ========================================================================
-  // Upload Bank Statements
+  // Upload Financial Documents (Step 2 - after KYC is done)
   // ========================================================================
-  const handleUploadBankStatements = async (coBorrowerId) => {
-    const selected = bankFiles[coBorrowerId];
-    if (!selected || selected.length === 0) {
-      toast.error("Select at least 5 bank statement pages");
+  const handleUploadFinancialDocs = async (coBorrowerId) => {
+    const files = financialFiles[coBorrowerId];
+
+    // Validate required files
+    if (!files?.salary_slips_pdf?.length) {
+      toast.error("Salary slips PDF is required");
       return;
     }
-    if (selected.length < 5) {
-      toast.error("Minimum 5 bank statement pages required");
+    if (!files?.bank_statement_pdf?.length) {
+      toast.error("Bank statement PDF is required");
       return;
     }
+    if (!files?.itr_pdf_1?.length || !files?.itr_pdf_2?.length) {
+      toast.error("Both ITR PDFs are required");
+      return;
+    }
+
     try {
-      setUploadingBank(coBorrowerId);
+      setUploadingFinancial(coBorrowerId);
       const formData = new FormData();
-      Array.from(selected).forEach((file) =>
-        formData.append("bankStatements", file)
-      );
-      const { data } = await coBorrowerAPI.uploadBankStatements(
-        coBorrowerId,
-        formData
-      );
-      if (data?.success) {
-        toast.success(data.message || "Bank statements uploaded successfully");
-        setBankFiles((prev) => ({ ...prev, [coBorrowerId]: null }));
-        await fetchCoBorrowers();
-      } else {
-        toast.error(data?.error || "Failed to upload bank statements");
+
+      // Append financial documents
+      formData.append("salary_slips_pdf", files.salary_slips_pdf[0]);
+      formData.append("bank_statement_pdf", files.bank_statement_pdf[0]);
+      formData.append("itr_pdf_1", files.itr_pdf_1[0]);
+      formData.append("itr_pdf_2", files.itr_pdf_2[0]);
+      if (files.form16_pdf) {
+        formData.append("form16_pdf", files.form16_pdf[0]);
+      }
+
+      // Call context function
+      const result = await uploadFinancialDocuments(coBorrowerId, formData);
+      if (result?.success) {
+        toast.success(
+          result.message ||
+            "Financial documents uploaded and analyzed successfully"
+        );
+        // Clear files for this coborrower
+        setFinancialFiles((prev) => ({ ...prev, [coBorrowerId]: {} }));
       }
     } catch (error) {
       console.error(error);
       toast.error(
-        error.response?.data?.error || "Failed to upload bank statements"
+        error.response?.data?.error || "Failed to upload financial documents"
       );
     } finally {
-      setUploadingBank(null);
+      setUploadingFinancial(null);
     }
   };
 
   // ========================================================================
   // Delete Co-Borrower
   // ========================================================================
-  const handleDeleteCoBorrower = async (id) => {
+  const handleDelete = async (id) => {
     if (!window.confirm("Delete this co-borrower?")) return;
     try {
-      await coBorrowerAPI.delete(id);
+      await deleteCoBorrower(id);
       toast.success("Co-borrower deleted successfully");
-      await fetchCoBorrowers();
     } catch (error) {
       console.error(error);
       toast.error(
@@ -250,7 +241,7 @@ const CoBorrower = () => {
     }
   };
 
-  if (loadingList) {
+  if (loading && coBorrowers.length === 0) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -314,7 +305,7 @@ const CoBorrower = () => {
 
             <form onSubmit={handleCreateCoBorrower} className="p-6 space-y-6">
               {/* Personal Information */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Relation to Student <span className="text-red-500">*</span>
@@ -363,180 +354,102 @@ const CoBorrower = () => {
                     placeholder="Enter last name"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleTextChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter email"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="phoneNumber"
+                    value={form.phoneNumber}
+                    onChange={handleTextChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    name="dateOfBirth"
+                    value={form.dateOfBirth}
+                    onChange={handleTextChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
               </div>
 
-              {/* Identity Documents */}
+              {/* KYC Documents */}
               <div className="border-t border-gray-200 pt-6">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                  Identity Documents <span className="text-red-500">*</span>
+                  KYC Documents <span className="text-red-500">*</span>
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {["aadhaarFront", "aadhaarBack", "panFront", "panBack"].map(
-                    (fieldName) => (
-                      <div key={fieldName}>
-                        <label className="block text-xs font-medium text-gray-600 mb-2 capitalize">
-                          {fieldName.replace(/([A-Z])/g, " $1").trim()}
-                          {fieldName !== "panBack" && (
-                            <span className="text-red-500"> *</span>
-                          )}
-                        </label>
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                          <input
-                            type="file"
-                            name={fieldName}
-                            onChange={handleFileChange}
-                            className="hidden"
-                            accept="image/*,.pdf"
-                          />
-                          {files[fieldName]?.length > 0 ? (
-                            <div className="text-center">
-                              <CheckCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                              <span className="text-xs text-green-600 font-medium">
-                                Uploaded
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="text-center">
-                              <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-                              <span className="text-xs text-gray-500">
-                                Upload
-                              </span>
-                            </div>
-                          )}
-                        </label>
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* Salary Slips */}
-              <div className="border-t border-gray-200 pt-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                  Last 3 Months Salary Slips{" "}
-                  <span className="text-red-500">*</span>
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {["salarySlip1", "salarySlip2", "salarySlip3"].map(
-                    (fieldName, idx) => (
-                      <div key={fieldName}>
-                        <label className="block text-xs font-medium text-gray-600 mb-2">
-                          Month {idx + 1}{" "}
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                          <input
-                            type="file"
-                            name={fieldName}
-                            onChange={handleFileChange}
-                            className="hidden"
-                            accept=".pdf"
-                          />
-                          {files[fieldName]?.length > 0 ? (
-                            <div className="text-center">
-                              <CheckCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                              <span className="text-xs text-green-600 font-medium">
-                                Uploaded
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="text-center">
-                              <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-                              <span className="text-xs text-gray-500">
-                                Upload PDF
-                              </span>
-                            </div>
-                          )}
-                        </label>
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* ITR and Form 16 */}
-              <div className="border-t border-gray-200 pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* ITR */}
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                      ITR Documents <span className="text-red-500">*</span>
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      {["itr2024", "itr2023"].map((fieldName) => (
-                        <div key={fieldName}>
-                          <label className="block text-xs font-medium text-gray-600 mb-2">
-                            ITR {fieldName.slice(-4)}{" "}
-                            <span className="text-red-500">*</span>
-                          </label>
-                          <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                            <input
-                              type="file"
-                              name={fieldName}
-                              onChange={handleFileChange}
-                              className="hidden"
-                              accept=".pdf"
-                            />
-                            {files[fieldName]?.length > 0 ? (
-                              <div className="text-center">
-                                <CheckCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                                <span className="text-xs text-green-600 font-medium">
-                                  Uploaded
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="text-center">
-                                <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-                                <span className="text-xs text-gray-500">
-                                  Upload PDF
-                                </span>
-                              </div>
-                            )}
-                          </label>
-                        </div>
-                      ))}
+                  {[
+                    {
+                      name: "aadhaar_front",
+                      label: "Aadhaar Front",
+                      required: true,
+                    },
+                    {
+                      name: "aadhaar_back",
+                      label: "Aadhaar Back",
+                      required: true,
+                    },
+                    { name: "pan_front", label: "PAN Card", required: true },
+                    { name: "passport", label: "Passport", required: false },
+                  ].map((field) => (
+                    <div key={field.name}>
+                      <label className="block text-xs font-medium text-gray-600 mb-2">
+                        {field.label}
+                        {field.required && (
+                          <span className="text-red-500"> *</span>
+                        )}
+                      </label>
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                        <input
+                          type="file"
+                          name={field.name}
+                          onChange={handleKycFileChange}
+                          className="hidden"
+                          accept="image/*,.pdf"
+                        />
+                        {kycFiles[field.name]?.length > 0 ? (
+                          <div className="text-center">
+                            <CheckCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
+                            <span className="text-xs text-green-600 font-medium">
+                              Uploaded
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="text-center">
+                            <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                            <span className="text-xs text-gray-500">
+                              Upload
+                            </span>
+                          </div>
+                        )}
+                      </label>
                     </div>
-                  </div>
-
-                  {/* Form 16 */}
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                      Form 16 (Optional)
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      {["form162024", "form162023"].map((fieldName) => (
-                        <div key={fieldName}>
-                          <label className="block text-xs font-medium text-gray-600 mb-2">
-                            Form 16 ({fieldName.slice(-4)})
-                          </label>
-                          <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                            <input
-                              type="file"
-                              name={fieldName}
-                              onChange={handleFileChange}
-                              className="hidden"
-                              accept=".pdf"
-                            />
-                            {files[fieldName]?.length > 0 ? (
-                              <div className="text-center">
-                                <CheckCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                                <span className="text-xs text-green-600 font-medium">
-                                  Uploaded
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="text-center">
-                                <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-                                <span className="text-xs text-gray-500">
-                                  Upload PDF
-                                </span>
-                              </div>
-                            )}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -602,7 +515,7 @@ const CoBorrower = () => {
                     </p>
                   </div>
                   <button
-                    onClick={() => handleDeleteCoBorrower(cb._id)}
+                    onClick={() => handleDelete(cb._id)}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
                     title="Delete Co-Borrower"
                   >

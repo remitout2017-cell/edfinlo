@@ -1,15 +1,22 @@
 """
-Production Configuration for Loan Approval AI - CORRECTED
+Production Configuration - WINDOWS COMPATIBLE
 """
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Check if .env exists
+# Fix Windows console encoding for emojis
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except:
+        pass
+
 env_path = Path(__file__).parent / ".env"
 if not env_path.exists():
-    print("⚠️  .env file not found. Creating from .env.example...")
-    print("⚠️  Please update .env with your actual GEMINI_API_KEY")
+    print("[WARNING] .env file not found. Creating from .env.example...")
+    print("[WARNING] Please update .env with your actual GEMINI_API_KEY")
 
 load_dotenv()
 
@@ -21,17 +28,17 @@ class Config:
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     if not GEMINI_API_KEY:
         raise ValueError(
-            "❌ GEMINI_API_KEY not found in environment variables. "
+            "[ERROR] GEMINI_API_KEY not found in environment variables. "
             "Please set it in .env file"
         )
 
     # ========== MODEL CONFIGURATION ==========
-    # Updated to stable model versions
-    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-    GEMINI_VISION_MODEL = os.getenv("GEMINI_VISION_MODEL", "gemini-1.5-flash")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+    GEMINI_VISION_MODEL = os.getenv(
+        "GEMINI_VISION_MODEL", "gemini-2.0-flash-exp")
     TEMPERATURE = float(os.getenv("TEMPERATURE", "0.0"))
     MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
-    TIMEOUT = int(os.getenv("TIMEOUT_SECONDS", "120"))
+    TIMEOUT = int(os.getenv("TIMEOUT_SECONDS", "180"))
 
     # ========== DIRECTORIES ==========
     BASE_DIR = Path(__file__).parent
@@ -92,13 +99,13 @@ class Config:
     @classmethod
     def validate(cls):
         """Validate configuration"""
-        assert cls.GEMINI_API_KEY, "❌ GEMINI_API_KEY is required"
+        assert cls.GEMINI_API_KEY, "[ERROR] GEMINI_API_KEY is required"
         assert cls.GEMINI_API_KEY.startswith(
-            "AIza"), "❌ Invalid GEMINI_API_KEY format"
-        print("✅ Configuration validated")
-        print(f"   Model: {cls.GEMINI_MODEL}")
-        print(f"   Vision Model: {cls.GEMINI_VISION_MODEL}")
-        print(f"   Environment: {cls.ENVIRONMENT}")
+            "AIza"), "[ERROR] Invalid GEMINI_API_KEY format"
+        print("[OK] Configuration validated")
+        print(f"  Model: {cls.GEMINI_MODEL}")
+        print(f"  Vision Model: {cls.GEMINI_VISION_MODEL}")
+        print(f"  Environment: {cls.ENVIRONMENT}")
 
     @classmethod
     def get_summary(cls):
@@ -119,6 +126,6 @@ class Config:
 try:
     Config.validate()
 except Exception as e:
-    print(f"❌ Configuration error: {e}")
+    print(f"[ERROR] Configuration error: {e}")
     print("Please check your .env file")
     raise

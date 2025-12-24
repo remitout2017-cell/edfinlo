@@ -631,11 +631,8 @@ exports.reverifyKyc = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @route   GET /api/coborrower/list
- * @desc    Get all co-borrowers for logged-in student (newest first)
- * @access  Private
- */
+// In coBorrowerKyc.controller.js - Line ~470
+
 exports.getAllCoBorrowers = asyncHandler(async (req, res) => {
   const studentId = req.user?.id;
   if (!studentId) throw new AppError("Unauthorized", 401);
@@ -649,12 +646,15 @@ exports.getAllCoBorrowers = asyncHandler(async (req, res) => {
     )
     .sort({ createdAt: -1 });
 
+  // ✅ FIXED: Changed 'coBorrowers' to 'data' to match frontend
   return res.json({
     success: true,
     count: coBorrowers.length,
-    coBorrowers: coBorrowers.map((cb) => ({
-      id: cb._id,
+    data: coBorrowers.map((cb) => ({
+      _id: cb._id,
       fullName: cb.fullName,
+      firstName: cb.firstName,
+      lastName: cb.lastName,
       relationToStudent: cb.relationToStudent,
       email: cb.email,
       phoneNumber: cb.phoneNumber,

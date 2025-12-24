@@ -2,13 +2,29 @@
 FastAPI Production API for Loan Approval AI - PRODUCTION READY
 CORRECTED: Added file validation, better error handling, health checks
 """
+
+# app.py - Add at the very top
+import sys
+import os
+
+# Fix Windows console encoding
+if sys.platform == "win32":
+    try:
+        import codecs
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+    except:
+        pass
+
+# Set environment variable
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import uvicorn
-import os
 import logging
 from pathlib import Path
 from typing import Optional

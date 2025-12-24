@@ -323,10 +323,8 @@ const resetFinancialDocuments = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * Get Financial Status
- * GET /api/coborrower/:coBorrowerId/financial/status
- */
+// In coBorrowerFinancial.controller.js - getFinancialStatus
+
 const getFinancialStatus = asyncHandler(async (req, res) => {
   const studentId = req.user?.id;
   if (!studentId) throw new AppError("Unauthorized", 401);
@@ -341,21 +339,22 @@ const getFinancialStatus = asyncHandler(async (req, res) => {
 
   if (!coBorrower) throw new AppError("Co-borrower not found", 404);
 
+  // ✅ FIXED: Wrapped in 'data' object
   return res.json({
     success: true,
-    coBorrowerId,
-    status: coBorrower.financialVerificationStatus,
-    confidence: coBorrower.financialVerificationConfidence,
-    documents: coBorrower.financialDocuments || {},
-    summary: coBorrower.financialSummary,
-    errors: coBorrower.financialVerificationErrors || [],
+    data: {
+      coBorrowerId,
+      status: coBorrower.financialVerificationStatus,
+      confidence: coBorrower.financialVerificationConfidence,
+      documents: coBorrower.financialDocuments || {},
+      summary: coBorrower.financialSummary,
+      errors: coBorrower.financialVerificationErrors || [],
+    },
   });
 });
 
-/**
- * Get Complete Financial Analysis
- * GET /api/coborrower/:coBorrowerId/financial/analysis
- */
+// In coBorrowerFinancial.controller.js - getCompleteAnalysis
+
 const getCompleteAnalysis = asyncHandler(async (req, res) => {
   const studentId = req.user?.id;
   if (!studentId) throw new AppError("Unauthorized", 401);
@@ -375,12 +374,15 @@ const getCompleteAnalysis = asyncHandler(async (req, res) => {
     );
   }
 
+  // ✅ FIXED: Wrapped in 'data' object
   return res.json({
     success: true,
-    coBorrowerId,
-    analysis: coBorrower.financialAnalysis,
-    summary: coBorrower.financialSummary,
-    status: coBorrower.financialVerificationStatus,
+    data: {
+      coBorrowerId,
+      analysis: coBorrower.financialAnalysis,
+      summary: coBorrower.financialSummary,
+      status: coBorrower.financialVerificationStatus,
+    },
   });
 });
 

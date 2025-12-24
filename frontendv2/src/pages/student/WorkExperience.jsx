@@ -11,83 +11,64 @@ import {
 } from "lucide-react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import StepperExample from "../../components/common/stepper";
-import { workExperienceAPI } from "../../services/api";
+import { useWorkExperience } from "../../context/WorkExperienceContext";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 
 const WorkExperience = () => {
-  const [data, setData] = useState({
-    experiences: [],
-    totalMonths: 0,
-    totalYears: 0,
-    count: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  // Get work experience from context
+  const {
+    workExperience,
+    loading,
+    fetchWorkExperience,
+    uploadWorkExperience,
+    deleteWorkExperience,
+  } = useWorkExperience();
+
   const [uploading, setUploading] = useState(false);
 
   const [files, setFiles] = useState({
-    experienceLetter: null,
-    offerLetter: null,
-    joiningLetter: null,
-    employeeIdCard: null,
-    salarySlip1: null,
-    salarySlip2: null,
-    salarySlip3: null,
+    experience_letters: null,
+    offer_letters: null,
+    relieving_letters: null,
+    salary_slips: null,
+    other_documents: null,
   });
 
   useEffect(() => {
-    fetchExperiences();
-  }, []);
+    fetchWorkExperience();
+  }, [fetchWorkExperience]);
 
-  const fetchExperiences = async () => {
-    setLoading(true);
-    try {
-      const res = await workExperienceAPI.getExperiences();
-      const payload = res.data?.data || {};
-      setData({
-        experiences: payload.experiences || [],
-        totalMonths: payload.totalMonths || 0,
-        totalYears: payload.totalYears || 0,
-        count: payload.count || payload.experiences?.length || 0,
-      });
-    } catch (error) {
-      if (error.response?.status !== 404) {
-        console.error("Failed to fetch work experience:", error);
-        toast.error(
-          error.response?.data?.message || "Failed to fetch work experience"
-        );
-      } else {
-        setData({
-          experiences: [],
-          totalMonths: 0,
-          totalYears: 0,
-          count: 0,
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  // No need for fetchExperiences - using context's fetchWorkExperience
 
   const handleFileChange = (e, field) => {
-    const file = e.target.files?.[0] || null;
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Each file should be less than 5MB");
-        return;
-      }
-      if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
-        toast.error("Only image and PDF files are allowed");
-        return;
+    const fileList = e.target.files;
+    if (fileList && fileList.length > 0) {
+      // Validate file sizes
+      for (let file of fileList) {
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error("Each file should be less than 5MB");
+          return;
+        }
+        if (
+          !file.type.startsWith("image/") &&
+          file.type !== "application/pdf"
+        ) {
+          toast.error("Only image and PDF files are allowed");
+          return;
+        }
       }
     }
-    setFiles((prev) => ({ ...prev, [field]: file }));
+    setFiles((prev) => ({
+      ...prev,
+      [field]: fileList ? Array.from(fileList) : null,
+    }));
   };
 
   const handleUpload = async (e) => {
     e.preventDefault();
 
-    if (!files.experienceLetter) {
+    if (!files.experience_letters || files.experience_letters.length === 0) {
       toast.error("Experience letter is required");
       return;
     }
@@ -95,53 +76,59 @@ const WorkExperience = () => {
     setUploading(true);
     try {
       const formData = new FormData();
-      if (files.experienceLetter)
-        formData.append("experienceLetter", files.experienceLetter);
-      if (files.offerLetter) formData.append("offerLetter", files.offerLetter);
-      if (files.joiningLetter)
-        formData.append("joiningLetter", files.joiningLetter);
-      if (files.employeeIdCard)
-        formData.append("employeeIdCard", files.employeeIdCard);
-      if (files.salarySlip1) formData.append("salarySlip1", files.salarySlip1);
-      if (files.salarySlip2) formData.append("salarySlip2", files.salarySlip2);
-      if (files.salarySlip3) formData.append("salarySlip3", files.salarySlip3);
 
-      await workExperienceAPI.uploadDocuments(formData);
-      toast.success("Work experience uploaded successfully");
+      // Append multiple files for each category
+      if (files.experience_letters) {
+        files.experience_letters.forEach((file) => {
+          formData.append("experience_letters", file);
+        });
+      }
+      if (files.offer_letters) {
+        files.offer_letters.forEach((file) => {
+          formData.append("offer_letters", file);
+        });
+      }
+      if (files.relieving_letters) {
+        files.relieving_letters.forEach((file) => {
+          formData.append("relieving_letters", file);
+        });
+      }
+      if (files.salary_slips) {
+        files.salary_slips.forEach((file) => {
+          formData.append("salary_slips", file);
+        });
+      }
+      if (files.other_documents) {
+        files.other_documents.forEach((file) => {
+          formData.append("other_documents", file);
+        });
+      }
 
+      // Use context function
+      await uploadWorkExperience(formData);
+
+      // Reset form
       setFiles({
-        experienceLetter: null,
-        offerLetter: null,
-        joiningLetter: null,
-        employeeIdCard: null,
-        salarySlip1: null,
-        salarySlip2: null,
-        salarySlip3: null,
+        experience_letters: null,
+        offer_letters: null,
+        relieving_letters: null,
+        salary_slips: null,
+        other_documents: null,
       });
-
-      await fetchExperiences();
     } catch (error) {
       console.error("Upload failed:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to upload work experience"
-      );
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async (experienceId) => {
-    if (!window.confirm("Delete this work experience entry?")) return;
+  const handleDelete = async () => {
+    if (!window.confirm("Delete all work experience data?")) return;
 
     try {
-      await workExperienceAPI.deleteExperience(experienceId);
-      toast.success("Work experience deleted successfully");
-      await fetchExperiences();
+      await deleteWorkExperience();
     } catch (error) {
       console.error("Delete failed:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to delete work experience"
-      );
     }
   };
 
@@ -155,7 +142,9 @@ const WorkExperience = () => {
     );
   }
 
-  const hasExperiences = data.experiences && data.experiences.length > 0;
+  const hasExperiences =
+    workExperience?.workExperiences &&
+    workExperience.workExperiences.length > 0;
 
   return (
     <DashboardLayout>
@@ -175,7 +164,7 @@ const WorkExperience = () => {
               <div className="mt-3 flex items-center gap-2 text-sm">
                 <span className="inline-flex items-center rounded-full bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 border border-purple-200">
                   <Briefcase size={14} className="mr-1" />
-                  {data.totalYears} year(s) · {data.totalMonths} months total
+                  {workExperience.totalYearsExperience || 0} year(s) experience
                 </span>
               </div>
             )}
@@ -190,11 +179,11 @@ const WorkExperience = () => {
                     Your Work History
                   </h3>
                   <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 border border-emerald-200">
-                    {data.count} record{data.count > 1 ? "s" : ""}
+                    {workExperience.validExperiences || 0} valid experience(s)
                   </span>
                 </div>
 
-                {data.experiences.map((exp) => (
+                {workExperience.workExperiences.map((exp) => (
                   <div
                     key={exp._id}
                     className="border border-gray-200 rounded-xl p-4 md:p-6 bg-gray-50"
@@ -273,23 +262,31 @@ const WorkExperience = () => {
                       </div>
 
                       <div className="flex flex-row md:flex-col gap-2">
-                        {exp.verified ? (
-                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 border border-emerald-200 whitespace-nowrap">
-                            <CheckCircle size={14} className="mr-1" />
-                            Verified
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-200 whitespace-nowrap">
-                            <AlertCircle size={14} className="mr-1" />
-                            Pending
-                          </span>
-                        )}
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium border whitespace-nowrap ${
+                            exp.extractionConfidence > 0.7
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200"
+                          }`}
+                        >
+                          {exp.extractionConfidence > 0.7 ? (
+                            <>
+                              <CheckCircle size={14} className="mr-1" />
+                              Verified
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle size={14} className="mr-1" />
+                              Uncertain
+                            </>
+                          )}
+                        </span>
                         <button
-                          onClick={() => handleDelete(exp._id)}
+                          onClick={handleDelete}
                           className="inline-flex items-center px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition whitespace-nowrap"
                         >
                           <Trash2 size={14} className="mr-1" />
-                          Delete
+                          Delete All
                         </button>
                       </div>
                     </div>
@@ -297,68 +294,26 @@ const WorkExperience = () => {
                     {/* Documents Section */}
                     <div className="border-t border-gray-200 pt-4 mt-4">
                       <p className="text-sm font-semibold text-gray-800 mb-3">
-                        Uploaded Documents
+                        Source Document
                       </p>
 
-                      {/* Document Status Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4">
-                        <DocumentStatus
-                          label="Experience Letter"
-                          uploaded={!!exp.experienceLetterUrl}
-                        />
-                        <DocumentStatus
-                          label="Offer Letter"
-                          uploaded={!!exp.offerLetterUrl}
-                        />
-                        <DocumentStatus
-                          label="Joining Letter"
-                          uploaded={!!exp.joiningLetterUrl}
-                        />
-                        <DocumentStatus
-                          label="Employee ID"
-                          uploaded={!!exp.employeeIdCardUrl}
-                        />
-                        <DocumentStatus
-                          label="Salary Slips"
-                          uploaded={exp.salarySlips?.length > 0}
-                          count={exp.salarySlips?.length}
-                        />
-                      </div>
-
-                      {/* Document Previews */}
-                      <div className="flex flex-wrap gap-3">
-                        {exp.experienceLetterUrl && (
-                          <DocumentPreview
-                            url={exp.experienceLetterUrl}
-                            label="Experience"
-                          />
-                        )}
-                        {exp.offerLetterUrl && (
-                          <DocumentPreview
-                            url={exp.offerLetterUrl}
-                            label="Offer"
-                          />
-                        )}
-                        {exp.joiningLetterUrl && (
-                          <DocumentPreview
-                            url={exp.joiningLetterUrl}
-                            label="Joining"
-                          />
-                        )}
-                        {exp.employeeIdCardUrl && (
-                          <DocumentPreview
-                            url={exp.employeeIdCardUrl}
-                            label="ID Card"
-                          />
-                        )}
-                        {exp.salarySlips?.map((slip) => (
-                          <DocumentPreview
-                            key={slip._id}
-                            url={slip.documentUrl}
-                            label={`${slip.month} ${slip.year}`}
-                          />
-                        ))}
-                      </div>
+                      {exp.documentUrl ? (
+                        <div className="flex gap-3">
+                          <a
+                            href={exp.documentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                          >
+                            <FileText size={14} className="mr-2" />
+                            View {exp.sourceDocumentType || "Document"}
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">
+                          No document URL available
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -488,7 +443,13 @@ const DocumentPreview = ({ url, label }) => (
 
 // Upload Form Component
 const UploadForm = ({ files, onFileChange, onSubmit, uploading }) => {
-  const FileUploadField = ({ field, label, required = false, icon: Icon }) => (
+  const FileUploadField = ({
+    field,
+    label,
+    required = false,
+    icon: Icon,
+    multiple = true,
+  }) => (
     <div className="relative">
       <div className="absolute left-3 top-4 text-gray-400">
         <Icon size={20} />
@@ -501,13 +462,16 @@ const UploadForm = ({ files, onFileChange, onSubmit, uploading }) => {
           <input
             type="file"
             accept="image/*,application/pdf"
+            multiple={multiple}
             onChange={(e) => onFileChange(e, field)}
             className="hidden"
           />
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Upload size={16} />
             <span className="truncate">
-              {files[field] ? files[field].name : "Click to upload"}
+              {files[field] && files[field].length > 0
+                ? `${files[field].length} file(s) selected`
+                : "Click to upload"}
             </span>
           </div>
         </label>
@@ -519,60 +483,34 @@ const UploadForm = ({ files, onFileChange, onSubmit, uploading }) => {
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FileUploadField
-          field="experienceLetter"
-          label="Experience Letter"
+          field="experience_letters"
+          label="Experience Letters"
           required
           icon={FileText}
         />
         <FileUploadField
-          field="offerLetter"
-          label="Offer Letter"
+          field="offer_letters"
+          label="Offer Letters"
           icon={FileText}
         />
         <FileUploadField
-          field="joiningLetter"
-          label="Joining Letter"
+          field="relieving_letters"
+          label="Relieving Letters"
           icon={FileText}
         />
         <FileUploadField
-          field="employeeIdCard"
-          label="Employee ID Card"
+          field="other_documents"
+          label="Other Documents"
           icon={FileText}
         />
       </div>
 
       <div className="border-t border-gray-200 pt-4">
-        <p className="text-sm font-medium text-gray-700 mb-3">
-          Salary Slips (Optional)
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {["salarySlip1", "salarySlip2", "salarySlip3"].map((field, idx) => (
-            <div key={field} className="relative">
-              <div className="absolute left-3 top-4 text-gray-400">
-                <DollarSign size={20} />
-              </div>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 pl-11 hover:border-purple-400 transition">
-                <label className="cursor-pointer block">
-                  <p className="text-sm font-medium text-gray-700 mb-2">
-                    Slip {idx + 1}
-                  </p>
-                  <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={(e) => onFileChange(e, field)}
-                    className="hidden"
-                  />
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Upload size={16} />
-                    <span className="truncate">
-                      {files[field] ? files[field].name : "Click to upload"}
-                    </span>
-                  </div>
-                </label>
-              </div>
-            </div>
-          ))}
-        </div>
+        <FileUploadField
+          field="salary_slips"
+          label="Salary Slips (Optional)"
+          icon={DollarSign}
+        />
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

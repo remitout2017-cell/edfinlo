@@ -1,18 +1,15 @@
 """
-Bank Statement Chain - Extracts transactions via LLM, computes metrics deterministically
-CORRECTED: Fixed JSON parsing regex
+Bank Statement Chain - PRODUCTION READY with Structured Output
+✅ NO MORE JSON PARSING ERRORS - Uses Pydantic schemas directly
 """
 from __future__ import annotations
-import json
 import logging
-import re
 from pathlib import Path
-from typing import Any, Dict, List
-
+from typing import List
 from chains.base_chain import BaseChain
 from config import Config
 from processors.pdf_processor import PDFProcessor
-from schemas import BankStatementData, BankTransaction
+from schemas import BankStatementData, BankTransaction, BankStatementExtraction
 from bank_metrics import compute_bank_metrics
 
 logger = logging.getLogger(__name__)
@@ -20,96 +17,44 @@ logger = logging.getLogger(__name__)
 
 class BankStatementChain(BaseChain):
     """
-    LLM job: extract header + raw transaction rows.
-    Python job: compute EMI/salary/avg balance precisely from those rows.
+    ✅ PRODUCTION READY: Uses Gemini 2.0 Flash structured output
+    LLM extracts data directly into Pydantic models - NO JSON PARSING!
     """
 
     def __init__(self):
-        super().__init__(model_name=Config.GEMINI_VISION_MODEL, temperature=0.0)
+        super().__init__(model_name="gemini-2.0-flash-exp", temperature=0.0)
 
-    def _prompt_transactions_only(self) -> str:
+    def _create_extraction_prompt(self) -> str:
+        """Create prompt for structured extraction"""
         return """You are extracting bank statement data for loan application analysis.
 
-Return ONLY valid JSON with EXACT structure below. Do NOT add markdown fences or extra text.
+Extract ALL information accurately:
 
-{
-  "account_holder_name": "string",
-  "bank_name": "string",
-  "account_number": "string",
-  "account_type": "string",
-  "statement_period_start": "YYYY-MM-DD",
-  "statement_period_end": "YYYY-MM-DD",
-  "opening_balance": 0.0,
-  "closing_balance": 0.0,
-  "transactions": [
-    {
-      "date": "DD-MM-YYYY or DD/MM/YYYY",
-      "narration": "exact transaction description",
-      "debit": 0.0,
-      "credit": 0.0,
-      "balance": 0.0
-    }
-  ],
-  "extraction_confidence": 0.9,
-  "extraction_notes": ["any observations"]
-}
+1. **Account Details**: holder name, bank name, account number, account type
+2. **Statement Period**: start and end dates (YYYY-MM-DD format)
+3. **Balances**: opening and closing balance
+4. **ALL Transactions**: Extract EVERY transaction from ALL pages with:
+   - date (DD-MM-YYYY or DD/MM/YYYY format)
+   - narration (exact description, don't summarize)
+   - debit amount (0.0 if none)
+   - credit amount (0.0 if none)
+   - balance after transaction
 
 CRITICAL RULES:
-- Extract ALL transactions from ALL pages provided
-- If a field is empty/null, use 0.0 for numbers, "" for strings
-- Keep narration exactly as shown (don't summarize)
-- Date format: DD-MM-YYYY preferred
-- Never output null values
-- Return pure JSON only (no markdown fences)"""
+- Extract ALL transactions, don't skip any
+- Keep narrations EXACTLY as shown
+- Use 0.0 for missing amounts, never null
+- Be thorough and accurate
 
-    def _parse_json(self, text: str) -> Dict[str, Any]:
-        """Parse JSON from LLM response with multiple fallback strategies - CORRECTED"""
-        cleaned = (text or "").strip()
-
-        # Strategy 1: direct parse
-        try:
-            return json.loads(cleaned)
-        except Exception:
-            pass
-
-        # Strategy 2: remove fenced block if any - FIXED REGEX
-        matches = re.findall(r"```json\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
-        if matches:
-            try:
-                return json.loads(matches[0].strip())
-            except Exception:
-                pass
-
-        # Strategy 2b: Try without json keyword
-        matches = re.findall(r"```\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
-        if matches:
-            try:
-                return json.loads(matches[0].strip())
-            except Exception:
-                pass
-
-        # Strategy 3: find JSON boundaries
-        start = cleaned.find("{")
-        end = cleaned.rfind("}")
-        if start != -1 and end != -1 and start < end:
-            s = cleaned[start:end + 1]
-            # Fix trailing commas
-            s = re.sub(r",(\s*[}\]])", r"\1", s)
-            try:
-                return json.loads(s)
-            except Exception as e:
-                logger.warning(f"   ⚠️  JSON parse attempt failed: {e}")
-                pass
-
-        raise ValueError("Could not parse JSON from bank response")
+The system will validate your response automatically."""
 
     def process(self, bank_statement_pdf: str, employer_name: str | None = None) -> BankStatementData:
         """
-        Process bank statement PDF and compute precise metrics.
+        Process bank statement PDF with structured output.
 
         Args:
             bank_statement_pdf: Path to bank statement PDF
-            employer_name: Optional employer name for better salary detection
+            employer_name: Optional employer name for salary detection
 
         Returns:
             BankStatementData with deterministic metrics
@@ -120,103 +65,75 @@ CRITICAL RULES:
         # Convert PDF to images
         images = PDFProcessor.process_pdf_for_gemini(
             bank_statement_pdf, max_pages=Config.MAX_PDF_PAGES)
-        logger.info(f"   ✅ Loaded {len(images)} pages")
+        logger.info(f"  ✅ Loaded {len(images)} pages")
 
-        # Process in batches to manage API limits
-        batches: List[List[Dict[str, Any]]] = []
+        # Process in batches
         batch_size = 5
+        batches: List[List[dict]] = []
         for i in range(0, len(images), batch_size):
             batches.append(images[i:i + batch_size])
 
-        # Merged data structure
-        merged: Dict[str, Any] = {
-            "account_holder_name": "",
-            "bank_name": "",
-            "account_number": "",
-            "account_type": "",
-            "statement_period_start": "",
-            "statement_period_end": "",
-            "opening_balance": 0.0,
-            "closing_balance": 0.0,
-            "transactions": [],
-            "extraction_confidence": 0.0,
-            "extraction_notes": [],
-        }
+        # Merged data
+        all_transactions = []
+        header_data = None
+        extraction_notes = []
 
-        prompt = self._prompt_transactions_only()
+        prompt = self._create_extraction_prompt()
 
-        # Process each batch
+        # Process each batch with structured output
         for bi, batch in enumerate(batches, start=1):
             logger.info(
-                f"   🤖 Extracting transactions batch {bi}/{len(batches)}...")
+                f"  🤖 Extracting batch {bi}/{len(batches)} with structured output...")
 
             try:
-                # Create proper multimodal content using BaseChain method
+                # Create multimodal content
                 messages = self.create_gemini_content(prompt, batch)
 
-                # Invoke Gemini with retry logic
-                resp = self.invoke_with_retry(messages)
-                data = self._parse_json(resp.content)
+                # ✅ Invoke with structured output (guaranteed valid Pydantic object!)
+                extraction = self.invoke_structured_with_retry(
+                    messages,
+                    schema=BankStatementExtraction  # Pydantic schema
+                )
 
-                # Merge header fields (take first non-empty)
-                for k in ("account_holder_name", "bank_name", "account_number", "account_type",
-                          "statement_period_start", "statement_period_end"):
-                    if not merged.get(k) and data.get(k):
-                        merged[k] = data.get(k)
-
-                # Balances: take first opening, last closing
-                if merged.get("opening_balance", 0.0) == 0.0 and data.get("opening_balance") not in (None, 0, 0.0):
-                    merged["opening_balance"] = data.get(
-                        "opening_balance", 0.0)
-                if data.get("closing_balance") not in (None, 0, 0.0):
-                    merged["closing_balance"] = data.get(
-                        "closing_balance", merged.get("closing_balance", 0.0))
+                # Store header from first batch
+                if bi == 1:
+                    header_data = extraction
 
                 # Accumulate transactions
-                txns = data.get("transactions") or []
-                merged["transactions"].extend(txns)
+                all_transactions.extend([t.model_dump()
+                                        for t in extraction.transactions])
+                extraction_notes.extend(extraction.extraction_notes)
 
-                # Track confidence and notes
-                merged["extraction_confidence"] = max(
-                    float(merged.get("extraction_confidence") or 0.0),
-                    float(data.get("extraction_confidence") or 0.0),
-                )
-                merged["extraction_notes"].extend(
-                    data.get("extraction_notes") or [])
+                logger.info(
+                    f"    ✅ Extracted {len(extraction.transactions)} transactions")
 
             except Exception as e:
-                logger.error(f"   ❌ Batch {bi} extraction failed: {e}")
-                merged["extraction_notes"].append(
-                    f"Batch {bi} failed: {str(e)}")
+                logger.error(f"  ❌ Batch {bi} extraction failed: {e}")
+                extraction_notes.append(f"Batch {bi} failed: {str(e)}")
                 continue
 
-        # Validate and coerce transactions to BankTransaction schema
-        txn_objs = []
-        for t in merged["transactions"]:
-            try:
-                txn_objs.append(BankTransaction(**t).model_dump())
-            except Exception as e:
-                logger.warning(f"   ⚠️  Skipping invalid transaction: {e}")
-                continue
+        logger.info(
+            f"  ✅ Total transactions extracted: {len(all_transactions)}")
 
-        logger.info(f"   ✅ Extracted {len(txn_objs)} valid transactions")
+        # Compute deterministic metrics
+        logger.info(f"  🧮 Computing bank metrics...")
+        metrics = compute_bank_metrics(
+            all_transactions, employer_name=employer_name)
 
-        # Compute deterministic metrics from transactions
-        logger.info(f"   🧮 Computing deterministic bank metrics...")
-        metrics = compute_bank_metrics(txn_objs, employer_name=employer_name)
-
-        # Build final BankStatementData with computed metrics
+        # Build final BankStatementData
         bank = BankStatementData(
-            account_holder_name=merged["account_holder_name"] or "Not Found",
-            bank_name=merged["bank_name"] or "Not Found",
-            account_number=merged["account_number"] or "Not Found",
-            account_type=merged["account_type"] or "Not Found",
-            statement_period_start=merged["statement_period_start"] or "1970-01-01",
-            statement_period_end=merged["statement_period_end"] or "1970-01-01",
-            opening_balance=float(merged.get("opening_balance") or 0.0),
-            closing_balance=float(merged.get("closing_balance") or 0.0),
+            account_holder_name=header_data.account_holder_name if header_data else "Not Found",
+            bank_name=header_data.bank_name if header_data else "Not Found",
+            account_number=header_data.account_number if header_data else "Not Found",
+            account_type=header_data.account_type if header_data else "Not Found",
+            statement_period_start=header_data.statement_period_start if header_data else "1970-01-01",
+            statement_period_end=header_data.statement_period_end if header_data else "1970-01-01",
+            opening_balance=float(
+                header_data.opening_balance if header_data else 0.0),
+            closing_balance=float(
+                header_data.closing_balance if header_data else 0.0),
 
-            # Computed metrics (deterministic)
+            # ✅ Computed metrics (deterministic)
             average_monthly_balance=float(metrics["average_monthly_balance"]),
             minimum_balance=float(metrics["minimum_balance"]),
             salary_credits_detected=int(metrics["salary_credits_detected"]),
@@ -235,27 +152,28 @@ CRITICAL RULES:
             average_monthly_spending=float(
                 metrics["average_monthly_spending"]),
 
-            # Keep raw transactions for audit trail
-            transactions=[BankTransaction(**t) for t in txn_objs],
+            # ✅ NEW: Bounce/Dishonor metrics
+            bounce_count=int(metrics["bounce_count"]),
+            dishonor_count=int(metrics["dishonor_count"]),
+            insufficient_fund_incidents=int(
+                metrics["insufficient_fund_incidents"]),
 
-            # Placeholder fields (can be enhanced later)
+            # Transactions and metadata
+            transactions=[BankTransaction(**t) for t in all_transactions],
             red_flags=[],
             positive_indicators=[],
-            bounce_count=0,
-            dishonor_count=0,
-            insufficient_fund_incidents=0,
-
             extraction_confidence=float(
-                merged.get("extraction_confidence") or 0.0),
-            extraction_notes=merged.get("extraction_notes") or [],
+                header_data.extraction_confidence if header_data else 0.0),
+            extraction_notes=extraction_notes,
         )
 
-        logger.info("   ✅ Bank statement processing complete")
+        logger.info("  ✅ Bank statement processing complete")
+        logger.info(f"  💰 Avg Monthly EMI: ₹{bank.average_monthly_emi:,.2f}")
         logger.info(
-            f"      💰 Avg Monthly EMI: ₹{bank.average_monthly_emi:,.2f}")
+            f"  💵 Avg Monthly Salary: ₹{bank.average_monthly_salary:,.2f}")
+        logger.info(f"  ⚠️ Bounce Count: {bank.bounce_count}")
+        logger.info(f"  ⚠️ Dishonor Count: {bank.dishonor_count}")
         logger.info(
-            f"      💵 Avg Monthly Salary (detected): ₹{bank.average_monthly_salary:,.2f}")
-        logger.info(
-            f"      🏦 Avg Monthly Balance: ₹{bank.average_monthly_balance:,.2f}")
+            f"  ⚠️ Insufficient Funds: {bank.insufficient_fund_incidents}")
 
         return bank

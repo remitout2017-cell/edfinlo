@@ -1,7 +1,6 @@
 """
-Deterministic bank metrics computation from transaction list.
-Computes EMI, salary credits, average balance WITHOUT relying on LLM.
-CORRECTED: Added edge case handling
+Deterministic bank metrics computation - PRODUCTION READY
+✅ FIXED: Added bounce/dishonor/insufficient fund detection
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -44,7 +43,6 @@ def _safe_float(x) -> float:
             return 0.0
         if isinstance(x, (int, float)):
             return float(x)
-        # Remove commas/currency
         s = str(x).replace(",", "").replace("₹", "").strip()
         if s == "" or s.lower() == "null":
             return 0.0
@@ -87,7 +85,7 @@ def _to_txns(raw_txns: List[Dict]) -> List[Txn]:
     return out
 
 
-# EMI detection keywords
+# Detection keywords
 EMI_KEYWORDS = re.compile(
     r"\bEMI\b|NACH|ECS|ACH|AUTO\s*DEBIT|INSTAL|INSTALL|LOAN|FINANCE|HOME\s*FIN|PL\b|HL\b",
     re.IGNORECASE
@@ -95,12 +93,20 @@ EMI_KEYWORDS = re.compile(
 
 SALARY_KEYWORDS = re.compile(r"\bSALARY\b|\bPAYROLL\b", re.IGNORECASE)
 
+# ✅ NEW: Bounce/Dishonor Detection
+BOUNCE_KEYWORDS = re.compile(
+    r"\bBOUNCE\b|\bBOUNCED\b|\bRETURN\s*CHE?Q\b|\bCHE?Q\s*RETURN\b|\bRETURNED\b|"
+    r"\bREVERSAL\b|\bDISHONOU?RED?\b|\bINSUFF\b|\bINSUFFICIENT\s*FUND\b|"
+    r"\bECS\s*RETURN\b|\bNACH\s*RETURN\b|\bPAYMENT\s*FAIL\b|\bFAILED\s*PAYMENT\b|"
+    r"\bCHQ\s*RTN\b|\bPENALTY\b|\bBOUNCE\s*CHARGE\b",
+    re.IGNORECASE
+)
+
 
 def detect_salary_credits(txns: List[Txn], employer_name: Optional[str] = None) -> List[Txn]:
     """Detect salary credits using keywords and employer name"""
     employer_tokens = []
     if employer_name:
-        # Keep meaningful tokens to match in narration
         toks = [t for t in re.split(
             r"[^A-Za-z0-9]+", employer_name.upper()) if len(t) >= 4]
         employer_tokens = toks[:6]
@@ -110,30 +116,25 @@ def detect_salary_credits(txns: List[Txn], employer_name: Optional[str] = None) 
         if t.credit <= 0:
             continue
         nar = _norm_text(t.narration)
-
         if SALARY_KEYWORDS.search(nar):
             hits.append(t)
             continue
-
         if employer_tokens and any(tok in nar for tok in employer_tokens):
             hits.append(t)
-
     return hits
 
 
 def detect_emi_debits(txns: List[Txn]) -> List[Txn]:
     """Detect EMI debits using keywords and recurrence patterns"""
-    # Step 1: keyword-based candidates
     candidates = [t for t in txns if t.debit >
                   0 and EMI_KEYWORDS.search(t.narration or "")]
+
     if not candidates:
         candidates = [t for t in txns if t.debit > 0 and re.search(
             r"NACH|ECS|ACH", t.narration or "", re.I)]
 
-    # Step 2: strengthen by recurrence (same rounded debit amount across months)
     by_amount_months: Dict[int, set] = defaultdict(set)
     by_amount: Dict[int, List[Txn]] = defaultdict(list)
-
     for t in candidates:
         amt = int(round(t.debit))
         by_amount_months[amt].add(_month_key(t.txn_date))
@@ -141,16 +142,14 @@ def detect_emi_debits(txns: List[Txn]) -> List[Txn]:
 
     recurring_amounts = {amt for amt,
                          months in by_amount_months.items() if len(months) >= 3}
-
     strong: List[Txn] = []
     for amt in recurring_amounts:
         strong.extend(by_amount[amt])
 
-    # If nothing satisfies recurrence, fall back to all keyword candidates
     if not strong:
         strong = candidates
 
-    # Deduplicate by (date, amount, narration)
+    # Deduplicate
     seen = set()
     uniq = []
     for t in strong:
@@ -162,21 +161,58 @@ def detect_emi_debits(txns: List[Txn]) -> List[Txn]:
     uniq.sort(key=lambda x: x.txn_date)
     return uniq
 
+# ✅ NEW: Detect Bounce/Dishonor/Insufficient Fund Incidents
+
+
+def detect_bounce_incidents(txns: List[Txn]) -> Dict[str, int]:
+    """
+    Detect bounce, dishonor, and insufficient fund incidents.
+    Returns: {bounce_count, dishonor_count, insufficient_fund_incidents}
+    """
+    bounce_count = 0
+    dishonor_count = 0
+    insufficient_fund_incidents = 0
+
+    for t in txns:
+        nar = _norm_text(t.narration)
+
+        if not BOUNCE_KEYWORDS.search(nar):
+            continue
+
+        # Classify the type of incident
+        is_bounce = re.search(r"\bBOUNCE\b|\bBOUNCED\b|\bRETURN", nar, re.I)
+        is_dishonor = re.search(r"\bDISHONOU?R", nar, re.I)
+        is_insufficient = re.search(
+            r"\bINSUFF\b|\bINSUFFICIENT\s*FUND", nar, re.I)
+
+        # Count each category
+        if is_insufficient:
+            insufficient_fund_incidents += 1
+        if is_dishonor:
+            dishonor_count += 1
+        if is_bounce:
+            bounce_count += 1
+
+        # If none matched but BOUNCE_KEYWORDS did, count as generic bounce
+        if not (is_bounce or is_dishonor or is_insufficient):
+            bounce_count += 1
+
+    return {
+        "bounce_count": bounce_count,
+        "dishonor_count": dishonor_count,
+        "insufficient_fund_incidents": insufficient_fund_incidents
+    }
+
 
 def weighted_average_balance(txns: List[Txn]) -> Tuple[float, float]:
-    """
-    Approx avg daily balance using transaction balances weighted by days until next txn.
-    CORRECTED: Added edge case handling
-    """
+    """Calculate weighted average balance"""
     if not txns:
         return 0.0, 0.0
 
-    # Filter out invalid balances
     valid_txns = [t for t in txns if t.balance >= 0]
     if not valid_txns:
         return 0.0, 0.0
 
-    # Handle single transaction
     if len(valid_txns) == 1:
         bal = valid_txns[0].balance
         return round(bal, 2), round(bal, 2)
@@ -188,14 +224,10 @@ def weighted_average_balance(txns: List[Txn]) -> Tuple[float, float]:
     for i in range(len(valid_txns)):
         cur = valid_txns[i]
         min_bal = min(min_bal, cur.balance)
-        start = cur.txn_date
 
-        # Calculate days until next transaction
         if i + 1 < len(valid_txns):
-            end = valid_txns[i + 1].txn_date
-            days = max(1, (end - start).days)
+            days = max(1, (valid_txns[i + 1].txn_date - cur.txn_date).days)
         else:
-            # Last transaction - assume 1 day
             days = 1
 
         total_days += days
@@ -211,8 +243,7 @@ def compute_bank_metrics(
 ) -> Dict:
     """
     Compute precise bank metrics from transaction list.
-    Returns dict with all required BankStatementData fields.
-    CORRECTED: Added validation and edge case handling
+    ✅ FIXED: Now includes bounce_count, dishonor_count, insufficient_fund_incidents
     """
     txns = _to_txns(raw_transactions)
 
@@ -234,6 +265,9 @@ def compute_bank_metrics(
             "emi_transactions": [],
             "unique_loan_accounts": 0,
             "average_monthly_spending": 0.0,
+            "bounce_count": 0,
+            "dishonor_count": 0,
+            "insufficient_fund_incidents": 0,
         }
 
     totals = {
@@ -254,8 +288,8 @@ def compute_bank_metrics(
     salary_months = sorted(salary_by_month.keys())
     salary_amounts = []
     last_salary_date = None
+
     for m in salary_months:
-        # Choose the largest credit in that month as the salary credit
         mx = max(salary_by_month[m], key=lambda x: x.credit)
         salary_amounts.append(mx.credit)
         last_salary_date = mx.txn_date
@@ -269,15 +303,10 @@ def compute_bank_metrics(
     for t in emi_hits:
         emi_by_month[_month_key(t.txn_date)] += t.debit
 
-    # Use statement months in data for averaging
     all_months = sorted({_month_key(t.txn_date) for t in txns})
-    if all_months:
-        avg_monthly_emi = round(
-            sum(emi_by_month.get(m, 0.0)
-                for m in all_months) / len(all_months), 2
-        )
-    else:
-        avg_monthly_emi = 0.0
+    avg_monthly_emi = round(
+        sum(emi_by_month.get(m, 0.0) for m in all_months) / len(all_months), 2
+    ) if all_months else 0.0
 
     emi_transactions = [
         {
@@ -289,15 +318,20 @@ def compute_bank_metrics(
         for t in emi_hits
     ]
 
-    # Spending = non-EMI debits average per month
+    # ✅ Bounce/Dishonor Detection
+    bounce_data = detect_bounce_incidents(txns)
+
+    # Spending calculation
     emi_keys = {
         (t.txn_date, int(round(t.debit)), _norm_text(t.narration))
         for t in emi_hits
     }
+
     non_emi_debits = [
         t for t in txns
         if t.debit > 0 and (t.txn_date, int(round(t.debit)), _norm_text(t.narration)) not in emi_keys
     ]
+
     spend_by_month: Dict[str, float] = defaultdict(float)
     for t in non_emi_debits:
         spend_by_month[_month_key(t.txn_date)] += t.debit
@@ -311,16 +345,17 @@ def compute_bank_metrics(
         **totals,
         "average_monthly_balance": avg_bal,
         "minimum_balance": min_bal,
-
         "salary_credits_detected": sum(len(v) for v in salary_by_month.values()),
         "average_monthly_salary": avg_monthly_salary,
         "salary_consistency_months": len(salary_months),
         "last_salary_date": last_salary_date.isoformat() if last_salary_date else None,
-
         "total_emi_debits": round(sum(t.debit for t in emi_hits), 2),
         "average_monthly_emi": avg_monthly_emi,
         "emi_transactions": emi_transactions,
         "unique_loan_accounts": max(0, len({int(round(t.debit)) for t in emi_hits})),
-
         "average_monthly_spending": avg_monthly_spending,
+        # ✅ NEW: Bounce/Dishonor metrics
+        "bounce_count": bounce_data["bounce_count"],
+        "dishonor_count": bounce_data["dishonor_count"],
+        "insufficient_fund_incidents": bounce_data["insufficient_fund_incidents"],
     }
