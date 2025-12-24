@@ -138,9 +138,9 @@ const Stepper = ({ currentStep = 1, steps = [] }) => {
 const StepperExample = ({ currentStep = 1 }) => {
   const steps = [
     { id: 1, title: "Personal Info", label: "01" },
-    { id: 2, title: "KYC", label: "02" },
-    { id: 3, title: "Academic", label: "03" },
-    { id: 4, title: "Education", label: "04" },
+    { id: 2, title: "Education", label: "02" },
+    { id: 3, title: "KYC", label: "03" },
+    { id: 4, title: "Academic", label: "04" },
     { id: 5, title: "Work Experience", label: "05" },
     { id: 6, title: "Co-borrower", label: "06" },
     { id: 7, title: "Admission", label: "07" },

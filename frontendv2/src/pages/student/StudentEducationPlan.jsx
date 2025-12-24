@@ -18,6 +18,7 @@ import {
   Image,
 } from "lucide-react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
+import StepperExample from "../../components/common/stepper";
 
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -299,6 +300,7 @@ const StudentEducationPlan = () => {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-center flex-col min-h-screen">
+        <StepperExample currentStep={2} />
 
 
         <div className="w-full p-6">
@@ -794,8 +796,55 @@ const StudentEducationPlan = () => {
                 </div>
               </div>
             </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex items-center justify-between pt-4 pb-6">
+              <Link to="/student/profile">
+                <button
+                  type="button"
+                  className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
+                >
+                  <svg
+                    className="w-5 h-5 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+              </Link>
+
+              <Link to="/student/kyc">
+                <button
+                  type="button"
+                  className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
+                >
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
+
+
       </div>
 
       {/* Document Preview Modal */}

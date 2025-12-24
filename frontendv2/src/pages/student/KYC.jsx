@@ -103,8 +103,7 @@ const KYC = () => {
         toast.success("KYC verified successfully!");
       } else {
         toast.error(
-          `KYC verification failed: ${
-            response.data.reasons?.join(", ") || "Unknown reason"
+          `KYC verification failed: ${response.data.reasons?.join(", ") || "Unknown reason"
           }`
         );
       }
@@ -165,7 +164,7 @@ const KYC = () => {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-center flex-col min-h-screen ">
-        <StepperExample currentStep={2} />
+        <StepperExample currentStep={3} />
 
         <div className="w-full max-w-4xl mt-4 bg-white rounded-2xl shadow-lg p-8">
           {/* Header */}

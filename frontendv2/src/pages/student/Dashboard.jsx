@@ -151,7 +151,7 @@ const StudentDashboard = () => {
                     </span>
                   </div>
                   <Link
-                    to="/student/kyc"
+                    to="/student/education-plan"
                     className="px-4 py-2 bg-gray-800 text-white text-sm rounded-md hover:bg-gray-700 flex items-center gap-2"
                   >
                     <Upload className="w-4 h-4" />

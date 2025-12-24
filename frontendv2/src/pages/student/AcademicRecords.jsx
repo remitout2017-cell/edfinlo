@@ -131,7 +131,7 @@ const AcademicRecords = () => {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          `Failed to delete ${labels[recordType]} record`
+        `Failed to delete ${labels[recordType]} record`
       );
     }
   };

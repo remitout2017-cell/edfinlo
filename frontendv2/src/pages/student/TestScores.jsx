@@ -542,18 +542,48 @@ const TestScores = () => {
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between mt-8">
-          <Link
-            to="/admission"
-            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
-          >
-            ← Previous
+        {/* Navigation Buttons */}
+        <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
+          <Link to="/student/academic-records">
+            <button
+              type="button"
+              className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
+            >
+              <svg
+                className="w-5 h-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
           </Link>
-          <Link
-            to="/dashboard"
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-          >
-            Complete →
+
+          <Link to="/student/work-experience">
+            <button
+              type="button"
+              className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
+            >
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
           </Link>
         </div>
       </div>
