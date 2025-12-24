@@ -15,7 +15,6 @@ import {
   Image,
 } from "lucide-react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
-import StepperExample from "../../components/common/stepper";
 import { useAuth } from "../../context/AuthContext";
 import {
   studentEducationPlanAPI,
@@ -296,7 +295,7 @@ const Profile = () => {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-center flex-col min-h-screen">
-        <StepperExample currentStep={1} />
+
 
         <div className="w-full p-6">
           <div className="flex flex-col lg:flex-row gap-6">
@@ -764,31 +763,6 @@ const Profile = () => {
                   )}
                 </AccordionSection>
 
-                {/* Pagination + Send Email Button */}
-                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(1, prev - 1))
-                      }
-                      className="p-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage((prev) => prev + 1)}
-                      className="p-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <button
-                    onClick={handleSendToNBFCs}
-                    className="px-4 py-2 border border-purple-600 text-purple-600 text-sm rounded-md hover:bg-purple-50"
-                  >
-                    Send Email to NBFCs
-                  </button>
-                </div>
               </div>
             </div>
           </div>

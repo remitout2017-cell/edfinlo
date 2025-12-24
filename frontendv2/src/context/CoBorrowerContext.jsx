@@ -206,8 +206,52 @@ export const CoBorrowerProvider = ({ children }) => {
         setLoading(false);
       }
     },
-    [fetchCoBorrowers, getAuthHeader]
+    [fetchCoBorrowers]
   );
+
+  // ============================================================================
+  // Get coborrower by ID
+  // ============================================================================
+  const getCoBorrowerById = useCallback(async (coBorrowerId) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Unauthorized");
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/coborrower/${coBorrowerId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        console.log("✅ Co-borrower details fetched:", coBorrowerId);
+        setSelectedCoBorrower(response.data.data);
+        return response.data.data;
+      } else {
+        throw new Error(
+          response.data.error || "Failed to fetch co-borrower details"
+        );
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch co-borrower details:", err);
+      const errorMsg =
+        err.response?.data?.error ||
+        err.message ||
+        "Failed to fetch co-borrower details";
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // ============================================================================
   // Delete coborrower

@@ -1,7 +1,7 @@
-// src/pages/auth/Login.jsx - COMPLETE WITH ADMIN SUPPORT
+// src/pages/auth/Login.jsx - Uses AuthContext for all login types
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import {
   Mail,
@@ -23,6 +23,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -33,101 +34,50 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Determine endpoint based on user type
-      let endpoint = "";
-      switch (formData.userType) {
-        case "student":
-          endpoint = "http://localhost:5000/api/auth/login";
-          break;
-        case "consultant":
-          endpoint = "http://localhost:5000/api/consultant/auth/login";
-          break;
-        case "admin":
-          endpoint = "http://localhost:5000/api/admin/auth/login";
-          break;
-        default:
-          endpoint = "http://localhost:5000/api/auth/login";
-      }
-
-      const response = await axios.post(
-        endpoint,
-        {
-          email: formData.email,
-          password: formData.password,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      // Use AuthContext login method - handles all user types
+      const result = await login(
+        formData.email,
+        formData.password,
+        formData.userType
       );
 
-      if (response.data.success) {
-        toast.success(response.data.message || "Login successful!");
+      if (result.success) {
+        toast.success("Login successful!");
 
-        // Store token and user data in localStorage
-        if (response.data.data?.token) {
-          localStorage.setItem("token", response.data.data.token);
+        // Check verification status for students
+        if (formData.userType === "student") {
+          const student = result.data?.user;
 
-          // Store user data based on user type
-          if (formData.userType === "student") {
-            localStorage.setItem(
-              "user",
-              JSON.stringify(response.data.data.student)
-            );
-            localStorage.setItem("userType", "student");
-          } else if (formData.userType === "consultant") {
-            localStorage.setItem(
-              "user",
-              JSON.stringify(response.data.data.consultant)
-            );
-            localStorage.setItem("userType", "consultant");
-          } else if (formData.userType === "admin") {
-            localStorage.setItem(
-              "user",
-              JSON.stringify(response.data.data.admin)
-            );
-            localStorage.setItem("userType", "admin");
+          if (student && !student.isEmailVerified) {
+            toast.error("Please verify your email first");
+            navigate("/verify-email", { state: { email: formData.email } });
+            return;
           }
 
-          // Check verification status for students
-          if (formData.userType === "student") {
-            const student = response.data.data.student;
-
-            // Check if email or phone verification is needed
-            if (!student.isEmailVerified) {
-              toast.error("Please verify your email first");
-              navigate("/verify-email", { state: { email: formData.email } });
-              return;
-            }
-
-            if (student.phoneNumber && !student.isPhoneVerified) {
-              toast.error("Please verify your phone number");
-              navigate("/verify-phone");
-              return;
-            }
+          if (student?.phoneNumber && !student.isPhoneVerified) {
+            toast.error("Please verify your phone number");
+            navigate("/verify-phone");
+            return;
           }
+        }
 
-          // Navigate based on user type - use window.location for full reload
-          // This ensures AuthContext re-reads the token from localStorage
-          switch (formData.userType) {
-            case "student":
-              window.location.href = "/student";
-              break;
-            case "consultant":
-              window.location.href = "/consultant/dashboard";
-              break;
-            case "admin":
-              window.location.href = "/admin/dashboard";
-              break;
-            default:
-              window.location.href = "/dashboard";
-          }
-        } else {
-          toast.error("Login response invalid");
+        // Navigate based on user type - use window.location for full reload
+        // This ensures all contexts re-read the token from localStorage
+        switch (formData.userType) {
+          case "student":
+            window.location.href = "/student";
+            break;
+          case "consultant":
+            window.location.href = "/consultant/dashboard";
+            break;
+          case "admin":
+            window.location.href = "/admin/dashboard";
+            break;
+          default:
+            window.location.href = "/dashboard";
         }
       } else {
-        toast.error(response.data.message || "Login failed");
+        toast.error(result.message || "Login failed");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -229,11 +179,10 @@ const Login = () => {
                 onClick={() =>
                   setFormData({ ...formData, userType: "student" })
                 }
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${
-                  formData.userType === "student"
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "student"
                     ? "bg-emerald-500 text-slate-900 font-semibold"
                     : "text-slate-200 hover:bg-slate-800"
-                }`}
+                  }`}
               >
                 <GraduationCap className="h-3.5 w-3.5" />
                 Student
@@ -243,11 +192,10 @@ const Login = () => {
                 onClick={() =>
                   setFormData({ ...formData, userType: "consultant" })
                 }
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${
-                  formData.userType === "consultant"
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "consultant"
                     ? "bg-sky-500 text-slate-900 font-semibold"
                     : "text-slate-200 hover:bg-slate-800"
-                }`}
+                  }`}
               >
                 <Briefcase className="h-3.5 w-3.5" />
                 Consultant
@@ -255,18 +203,17 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, userType: "admin" })}
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${
-                  formData.userType === "admin"
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "admin"
                     ? "bg-purple-500 text-slate-900 font-semibold"
                     : "text-slate-200 hover:bg-slate-800"
-                }`}
+                  }`}
               >
                 <Shield className="h-3.5 w-3.5" />
                 Admin
               </button>
             </div>
 
-            {/* Email & Password fields remain same */}
+            {/* Email & Password fields */}
             <div className="space-y-1.5">
               <label className="block text-xs font-medium text-slate-200">
                 Email

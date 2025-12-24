@@ -8,8 +8,6 @@ import {
   Mail,
   Phone,
   Building2,
-  Briefcase,
-  Calendar,
   Eye,
   EyeOff,
   ArrowRight,
@@ -18,19 +16,18 @@ import {
 const ConsultantRegister = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { register } = useAuth();
+  const { registerConsultant } = useAuth();
 
   // Data coming from invite redirect (RegisterFromInvite / Register page)
   const inviteEmail = location.state?.email || "";
   const inviteToken = location.state?.inviteToken || null;
 
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: inviteEmail,
     phoneNumber: "",
     companyName: "",
-    designation: "",
-    experienceYears: "",
     password: "",
     confirmPassword: "",
   });
@@ -53,8 +50,12 @@ const ConsultantRegister = () => {
   };
 
   const validate = () => {
-    if (!formData.name.trim()) {
-      toast.error("Name is required");
+    if (!formData.firstName.trim()) {
+      toast.error("First name is required");
+      return false;
+    }
+    if (!formData.lastName.trim()) {
+      toast.error("Last name is required");
       return false;
     }
     if (!formData.email.trim()) {
@@ -63,28 +64,6 @@ const ConsultantRegister = () => {
     }
     if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
       toast.error("Enter a valid email");
-      return false;
-    }
-    if (!formData.companyName.trim()) {
-      toast.error("Company name is required");
-      return false;
-    }
-    if (!formData.designation.trim()) {
-      toast.error("Designation is required");
-      return false;
-    }
-    if (
-      !formData.experienceYears ||
-      Number.isNaN(Number(formData.experienceYears))
-    ) {
-      toast.error("Experience years must be a number");
-      return false;
-    }
-    if (
-      Number(formData.experienceYears) < 0 ||
-      Number(formData.experienceYears) > 50
-    ) {
-      toast.error("Experience years must be between 0 and 50");
       return false;
     }
     if (formData.password.length < 8) {
@@ -106,26 +85,24 @@ const ConsultantRegister = () => {
       setLoading(true);
 
       const payload = {
-        name: formData.name.trim(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         email: formData.email.trim(),
         phoneNumber: formData.phoneNumber.trim() || undefined,
-        companyName: formData.companyName.trim(),
-        designation: formData.designation.trim(),
-        experienceYears: Number(formData.experienceYears),
+        companyName: formData.companyName.trim() || undefined,
         password: formData.password,
-        // important: send inviteToken if present
-        inviteToken: inviteToken || undefined,
       };
 
-      const result = await register(payload, "consultant");
+      const result = await registerConsultant(payload);
 
       if (result.success) {
-        toast.success(
-          "Consultant registration successful! Please verify your email."
-        );
-        navigate("/verify-email", {
-          state: { email: formData.email, userType: "consultant" },
+        toast.success("Consultant registration successful!");
+        // Navigate to login since backend doesn't auto-verify email
+        navigate("/login", {
+          state: { userType: "consultant", email: formData.email },
         });
+      } else {
+        toast.error(result.message || "Registration failed");
       }
     } catch (error) {
       const message = error?.message || "Registration failed";
@@ -142,26 +119,46 @@ const ConsultantRegister = () => {
           Create consultant account
         </h2>
         <p className="text-xs text-slate-300/80">
-          Onboard students, manage profiles and track loans from one
-          dashboard.
+          Onboard students, manage profiles and track loans from one dashboard.
         </p>
       </div>
-      {/* Personal */}
-      <div className="space-y-1.5">
-        <label className="block text-xs font-medium text-slate-200">
-          Full name
-        </label>
-        <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-            placeholder="Your full name"
-          />
+
+      {/* First Name & Last Name */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-slate-200">
+            First name
+          </label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleChange}
+              required
+              className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              placeholder="John"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-slate-200">
+            Last name
+          </label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleChange}
+              required
+              className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
+              placeholder="Doe"
+            />
+          </div>
         </div>
       </div>
 
@@ -178,7 +175,7 @@ const ConsultantRegister = () => {
             value={formData.email}
             onChange={handleChange}
             required
-            readOnly={!!inviteEmail} // lock when coming from invite
+            readOnly={!!inviteEmail}
             className={`block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400 ${inviteEmail ? "opacity-80 cursor-not-allowed" : ""
               }`}
             placeholder="you@company.com"
@@ -204,62 +201,20 @@ const ConsultantRegister = () => {
         </div>
       </div>
 
-      {/* Company + Designation */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-slate-200">
-            Company / firm
-          </label>
-          <div className="relative">
-            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              name="companyName"
-              value={formData.companyName}
-              onChange={handleChange}
-              required
-              className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-              placeholder="Consultancy name"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-slate-200">
-            Designation
-          </label>
-          <div className="relative">
-            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              name="designation"
-              value={formData.designation}
-              onChange={handleChange}
-              required
-              className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-              placeholder="Founder / Counselor"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Experience */}
+      {/* Company Name */}
       <div className="space-y-1.5">
         <label className="block text-xs font-medium text-slate-200">
-          Experience (years)
+          Company / Firm (optional)
         </label>
         <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
-            type="number"
-            name="experienceYears"
-            value={formData.experienceYears}
+            type="text"
+            name="companyName"
+            value={formData.companyName}
             onChange={handleChange}
-            min={0}
-            max={50}
-            required
             className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400"
-            placeholder="5"
+            placeholder="Your consultancy name"
           />
         </div>
       </div>
