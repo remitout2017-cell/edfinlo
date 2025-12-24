@@ -544,13 +544,13 @@ const TestScores = () => {
         {/* Navigation */}
         <div className="flex justify-between mt-8">
           <Link
-            to="/admission"
+            to="/student/academic-records"
             className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
           >
             ← Previous
           </Link>
           <Link
-            to="/dashboard"
+            to="/student/work-experience"
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
           >
             Complete →

@@ -390,7 +390,7 @@ const WorkExperience = () => {
 
             {/* Navigation Buttons */}
             <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-              <Link to="/student/academic-records">
+              <Link to="/student/test-scores">
                 {" "}
                 <button
                   type="button"
