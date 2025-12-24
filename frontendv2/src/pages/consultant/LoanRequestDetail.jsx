@@ -1,16 +1,16 @@
-// src/pages/consultant/LoanRequestDetail.jsx - DETAILED VIEW
+// src/pages/consultant/LoanRequestDetail.jsx - Uses ConsultantDataContext
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import ConsultantLayout from '../../components/layouts/ConsultantLayout';
-import { consultantAPI } from '../../services/api';
+import { useConsultantData } from '../../context/ConsultantDataContext';
 import toast from 'react-hot-toast';
-import { 
-  ArrowLeft, 
-  User, 
-  DollarSign, 
-  Percent, 
-  Calendar, 
-  FileText, 
+import {
+  ArrowLeft,
+  User,
+  DollarSign,
+  Percent,
+  Calendar,
+  FileText,
   ShieldCheck,
   CheckCircle,
   Clock,
@@ -22,6 +22,8 @@ import {
 const ConsultantLoanRequestDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { getLoanRequestById, getStudentLoanRequests } = useConsultantData();
+
   const [loading, setLoading] = useState(true);
   const [request, setRequest] = useState(null);
   const [analysis, setAnalysis] = useState(null);
@@ -33,13 +35,13 @@ const ConsultantLoanRequestDetail = () => {
   const fetchRequestDetails = async () => {
     try {
       setLoading(true);
-      const [requestRes, analysisRes] = await Promise.all([
-        consultantAPI.getLoanRequestById(id),
-        consultantAPI.getStudentLoanRequests(id)
+      const [requestData, analysisData] = await Promise.all([
+        getLoanRequestById(id),
+        getStudentLoanRequests(id)
       ]);
-      
-      setRequest(requestRes.data.loanRequest);
-      setAnalysis(analysisRes.data.analysis);
+
+      setRequest(requestData?.loanRequest || requestData);
+      setAnalysis(analysisData?.analysis || analysisData);
     } catch (error) {
       toast.error('Failed to load loan request details');
       console.error(error);
@@ -63,10 +65,10 @@ const ConsultantLoanRequestDetail = () => {
       rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle },
       processing: { bg: 'bg-blue-100', text: 'text-blue-800', icon: TrendingUp }
     };
-    
+
     const badge = badges[status] || badges.pending;
     const Icon = badge.icon;
-    
+
     return (
       <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-semibold ${badge.bg} ${badge.text}`}>
         <Icon className="h-4 w-4" />
@@ -162,7 +164,7 @@ const ConsultantLoanRequestDetail = () => {
                       <p className="text-sm text-gray-600">{request.student?.email}</p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">KYC Status:</span>
@@ -194,7 +196,7 @@ const ConsultantLoanRequestDetail = () => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500 block">Interest Rate</span>
@@ -233,13 +235,12 @@ const ConsultantLoanRequestDetail = () => {
                   <div className="text-2xl font-bold">{analysis?.creditScore || 0}</div>
                   <div className="text-xs uppercase tracking-wide">/100</div>
                 </div>
-                <div className={`inline-flex items-center gap-1 px-4 py-2 rounded-2xl text-sm font-bold ${
-                  analysis?.recommendation === 'APPROVED' 
-                    ? 'bg-green-100 text-green-800' 
+                <div className={`inline-flex items-center gap-1 px-4 py-2 rounded-2xl text-sm font-bold ${analysis?.recommendation === 'APPROVED'
+                    ? 'bg-green-100 text-green-800'
                     : analysis?.recommendation === 'REJECTED'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
                   {analysis?.recommendation || 'PENDING'}
                 </div>
               </div>

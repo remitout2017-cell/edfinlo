@@ -1,12 +1,13 @@
-// src/pages/consultant/Profiles.jsx - COMPLETE VERSION
+// src/pages/consultant/Profiles.jsx - Uses ConsultantDataContext
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import ConsultantLayout from '../../components/layouts/ConsultantLayout';
-import { consultantAPI } from '../../services/api';
+import { useConsultantData } from '../../context/ConsultantDataContext';
 import toast from 'react-hot-toast';
-import { 
-  UserCheck, 
-  Search, 
-  Filter, 
+import {
+  UserCheck,
+  Search,
+  Filter,
   GraduationCap,
   Briefcase,
   FileText,
@@ -15,6 +16,8 @@ import {
 } from 'lucide-react';
 
 const ConsultantProfiles = () => {
+  const { fetchStudentsWithParams } = useConsultantData();
+
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,12 +31,12 @@ const ConsultantProfiles = () => {
   const fetchProfiles = async () => {
     try {
       setLoading(true);
-      const response = await consultantAPI.getStudents({
+      const result = await fetchStudentsWithParams({
         search: searchTerm,
         profileType,
         completion: completionFilter
       });
-      setProfiles(response.data.students || []);
+      setProfiles(result.students || []);
     } catch (error) {
       toast.error('Failed to fetch profiles');
     } finally {
@@ -52,7 +55,7 @@ const ConsultantProfiles = () => {
   const getCompletionBadge = (completion) => {
     const percentage = Math.round(completion || 0);
     let color, label;
-    
+
     if (percentage === 100) {
       color = 'bg-green-100 text-green-800';
       label = 'Complete';
@@ -153,7 +156,7 @@ const ConsultantProfiles = () => {
                   {profile.firstName} {profile.lastName}
                 </h3>
                 <p className="text-sm text-gray-600 text-center mb-4 truncate">{profile.email}</p>
-                
+
                 <div className="flex items-center justify-center mb-6">
                   {getCompletionBadge(profile.profileCompletion)}
                 </div>
