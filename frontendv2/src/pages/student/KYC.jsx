@@ -164,7 +164,7 @@ const KYC = () => {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-center flex-col min-h-screen ">
-        <StepperExample currentStep={3} />
+        <StepperExample currentStep={2} />
 
         <div className="w-full max-w-4xl mt-4 bg-white rounded-2xl shadow-lg p-8">
           {/* Header */}

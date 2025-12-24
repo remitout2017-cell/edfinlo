@@ -300,551 +300,237 @@ const StudentEducationPlan = () => {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-center flex-col min-h-screen">
-        <StepperExample currentStep={2} />
+        <StepperExample currentStep={1} />
 
 
-        <div className="w-full p-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Left Column - My Profile */}
-            <div className="w-full lg:w-80">
-              <div className="bg-white rounded-lg border border-gray-200 p-5">
-                {/* Profile Photo */}
-                <div className="flex justify-center mb-4">
-                  <div className="relative">
-                    {displayUser?.profilePicture ? (
-                      <img
-                        src={displayUser.profilePicture}
-                        alt="Profile"
-                        className="w-32 h-32 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-32 h-32 rounded-lg bg-teal-500 flex items-center justify-center">
-                        <span className="text-4xl font-bold text-white">
-                          {displayUser?.firstName?.[0] || "U"}
-                          {displayUser?.lastName?.[0] || ""}
-                        </span>
-                      </div>
-                    )}
-                    <button className="absolute bottom-2 right-2 p-1.5 bg-white rounded-full shadow-md">
-                      <Edit2 className="w-3 h-3 text-gray-600" />
-                    </button>
-                  </div>
-                </div>
+        <div className="w-full max-w-4xl mt-4 bg-white rounded-2xl shadow-lg p-8">
 
-                {/* Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    My Profile
-                  </h3>
-                  <Link
-                    to="/student/profile"
-                    className="px-3 py-1 border border-gray-300 text-sm text-gray-600 rounded-md hover:bg-gray-50"
-                  >
-                    Edit
-                  </Link>
-                </div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-orange-500">
+              Course Details
+            </h2>
+            {!editing ? (
+              <button
+                onClick={() => setEditing(true)}
+                className="px-4 py-1.5 border border-gray-800 text-gray-800 text-sm rounded-md hover:bg-gray-50"
+              >
+                Edit
+              </button>
+            ) : (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-4 py-1.5 bg-orange-500 text-white text-sm rounded-md hover:bg-orange-600 disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
+            )}
+          </div>
 
-                {/* Unique ID */}
-                <p className="text-xs text-gray-500 mb-4">
-                  Unique ID:{" "}
-                  <span className="font-medium text-gray-800">
-                    {displayUser?._id?.slice(-10).toUpperCase() || "N/A"}
+          <div className="space-y-4">
+            {/* Question 1 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                1. Where are you planning to study?
+              </label>
+              <input
+                type="text"
+                name="targetCountry"
+                value={form.targetCountry}
+                onChange={handleChange}
+                disabled={!editing}
+                placeholder="e.g., USA, UK, Canada, Australia"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
+              />
+            </div>
+
+            {/* Question 2 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                2. Type of Degree?
+              </label>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="Bachelors"
+                    checked={form.degreeType === "Bachelors"}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-600">
+                    Bachelors (only secured loan)
                   </span>
-                </p>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="Masters"
+                    checked={form.degreeType === "Masters"}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-600">Masters</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="Others"
+                    checked={form.degreeType === "Others"}
+                    onChange={handleChange}
+                    disabled={!editing}
+                    className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-600">Others</span>
+                </label>
+              </div>
+              {form.degreeType && (
+                <input
+                  type="text"
+                  name="degreeTypeOther"
+                  value={form.degreeTypeOther || form.degreeType}
+                  onChange={handleChange}
+                  disabled={!editing}
+                  placeholder="Specify your degree type"
+                  className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
+                />
+              )}
+            </div>
 
-                {/* Contact Details */}
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-3 text-sm">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">
-                      {displayUser?.firstName} {displayUser?.lastName}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700">
-                      {displayUser?.phoneNumber || "Not provided"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-700 break-all">
-                      {displayUser?.email || "Not provided"}
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-3 text-sm">
-                    <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
-                    <span className="text-gray-700">
-                      {displayUser?.address || "Address not provided"}
-                    </span>
-                  </div>
-                </div>
+            {/* Question 3 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                3. What is the duration of the course?
+              </label>
+              <input
+                type="text"
+                name="courseDurationMonths"
+                value={form.courseDurationMonths}
+                onChange={handleChange}
+                disabled={!editing}
+                placeholder="e.g., 12, 24, 36 months"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
+              />
+            </div>
 
-                {/* Education */}
-                <div className="mb-4">
-                  <h4 className="font-medium text-gray-800 mb-2">Education</h4>
-                  <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
-                    {academicDocs?.class10?.marksheetUrl && <li>10th Grade</li>}
-                    {academicDocs?.class12?.marksheetUrl && <li>12th Grade</li>}
-                    {academicDocs?.higherEducation?.length > 0 && (
-                      <li>Graduation</li>
-                    )}
-                    {!academicDocs?.class10?.marksheetUrl &&
-                      !academicDocs?.class12?.marksheetUrl &&
-                      !academicDocs?.higherEducation?.length && (
-                        <li className="text-gray-400">No education records</li>
-                      )}
-                  </ol>
-                </div>
+            {/* Question 4 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                4. What is the Loan amount required?
+              </label>
+              <input
+                type="text"
+                name="loanAmountRequested"
+                value={form.loanAmountRequested}
+                onChange={handleChange}
+                disabled={!editing}
+                placeholder="e.g., ₹15,00,000"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
+              />
+            </div>
 
-                {/* Test Scores */}
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-2">
-                    Test Scores
-                  </h4>
-                  <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
-                    <li>IELTS</li>
-                    <li>GRE</li>
-                    <li>TOEFL</li>
-                    <li>Others</li>
-                  </ol>
-                </div>
+            {/* Living Expense Option */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                5. Do you need living expenses included?
+              </label>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="livingExpenseOption"
+                    value="WITH_LIVING_EXPENSE"
+                    checked={
+                      form.livingExpenseOption === "WITH_LIVING_EXPENSE"
+                    }
+                    onChange={handleChange}
+                    disabled={!editing}
+                    className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-600">
+                    Yes, include living expenses
+                  </span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="livingExpenseOption"
+                    value="WITHOUT_LIVING_EXPENSE"
+                    checked={
+                      form.livingExpenseOption ===
+                      "WITHOUT_LIVING_EXPENSE"
+                    }
+                    onChange={handleChange}
+                    disabled={!editing}
+                    className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-600">
+                    No, tuition fee only
+                  </span>
+                </label>
               </div>
             </div>
 
-            {/* Right Column - Course Details + Documents */}
-            <div className="flex-1 space-y-6">
-              {/* Course Details */}
-              <div className="bg-white rounded-lg border border-gray-200 p-5">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-orange-500">
-                    Course Details
-                  </h2>
-                  {!editing ? (
-                    <button
-                      onClick={() => setEditing(true)}
-                      className="px-4 py-1.5 border border-gray-800 text-gray-800 text-sm rounded-md hover:bg-gray-50"
-                    >
-                      Edit
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="px-4 py-1.5 bg-orange-500 text-white text-sm rounded-md hover:bg-orange-600 disabled:opacity-50"
-                    >
-                      {saving ? "Saving..." : "Save"}
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  {/* Question 1 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      1. Where are you planning to study?
-                    </label>
-                    <input
-                      type="text"
-                      name="targetCountry"
-                      value={form.targetCountry}
-                      onChange={handleChange}
-                      disabled={!editing}
-                      placeholder="e.g., USA, UK, Canada, Australia"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
-                    />
-                  </div>
-
-                  {/* Question 2 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      2. Type of Degree?
-                    </label>
-                    <div className="flex flex-wrap gap-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          name="Bachelors"
-                          checked={form.degreeType === "Bachelors"}
-                          onChange={handleChange}
-                          disabled={!editing}
-                          className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
-                        />
-                        <span className="text-sm text-gray-600">
-                          Bachelors (only secured loan)
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          name="Masters"
-                          checked={form.degreeType === "Masters"}
-                          onChange={handleChange}
-                          disabled={!editing}
-                          className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
-                        />
-                        <span className="text-sm text-gray-600">Masters</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          name="Others"
-                          checked={form.degreeType === "Others"}
-                          onChange={handleChange}
-                          disabled={!editing}
-                          className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
-                        />
-                        <span className="text-sm text-gray-600">Others</span>
-                      </label>
-                    </div>
-                    {form.degreeType && (
-                      <input
-                        type="text"
-                        name="degreeTypeOther"
-                        value={form.degreeTypeOther || form.degreeType}
-                        onChange={handleChange}
-                        disabled={!editing}
-                        placeholder="Specify your degree type"
-                        className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
-                      />
-                    )}
-                  </div>
-
-                  {/* Question 3 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      3. What is the duration of the course?
-                    </label>
-                    <input
-                      type="text"
-                      name="courseDurationMonths"
-                      value={form.courseDurationMonths}
-                      onChange={handleChange}
-                      disabled={!editing}
-                      placeholder="e.g., 12, 24, 36 months"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
-                    />
-                  </div>
-
-                  {/* Question 4 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      4. What is the Loan amount required?
-                    </label>
-                    <input
-                      type="text"
-                      name="loanAmountRequested"
-                      value={form.loanAmountRequested}
-                      onChange={handleChange}
-                      disabled={!editing}
-                      placeholder="e.g., ₹15,00,000"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
-                    />
-                  </div>
-
-                  {/* Living Expense Option */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      5. Do you need living expenses included?
-                    </label>
-                    <div className="flex flex-wrap gap-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="livingExpenseOption"
-                          value="WITH_LIVING_EXPENSE"
-                          checked={
-                            form.livingExpenseOption === "WITH_LIVING_EXPENSE"
-                          }
-                          onChange={handleChange}
-                          disabled={!editing}
-                          className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500"
-                        />
-                        <span className="text-sm text-gray-600">
-                          Yes, include living expenses
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="livingExpenseOption"
-                          value="WITHOUT_LIVING_EXPENSE"
-                          checked={
-                            form.livingExpenseOption ===
-                            "WITHOUT_LIVING_EXPENSE"
-                          }
-                          onChange={handleChange}
-                          disabled={!editing}
-                          className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500"
-                        />
-                        <span className="text-sm text-gray-600">
-                          No, tuition fee only
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Referral Code */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Referral Code
-                    </label>
-                    <input
-                      type="text"
-                      name="referralCode"
-                      value={form.referralCode}
-                      onChange={handleChange}
-                      disabled={!editing}
-                      placeholder="Enter referral code (optional)"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
-                    />
-                  </div>
-
-                  {/* Course Details Textarea */}
-                  <div>
-                    <textarea
-                      name="courseDetails"
-                      value={form.courseDetails}
-                      onChange={handleChange}
-                      disabled={!editing}
-                      rows={4}
-                      placeholder="Describe your course, university details, program specifics, and any additional information about your education plan..."
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 resize-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Attached Documents */}
-              <div className="bg-white rounded-lg border border-gray-200 p-5">
-                <h2 className="text-xl font-semibold text-orange-500 mb-4">
-                  Attached Documents
-                </h2>
-
-                {/* Student KYC Documents */}
-                <div className="mb-4">
-                  <h3 className="font-medium text-gray-800 mb-3">
-                    Student KYC Document
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DocumentCard
-                      label="Pan Card"
-                      filename={
-                        kycDocs?.pancardUrl ? "pan_card.jpg" : "No file"
-                      }
-                      url={kycDocs?.pancardUrl}
-                    />
-                    <DocumentCard
-                      label="Aadhar Card"
-                      filename={
-                        kycDocs?.aadhaarUrl ? "aadhar_card.jpg" : "No file"
-                      }
-                      url={kycDocs?.aadhaarUrl}
-                    />
-                  </div>
-                  <div className="mt-4">
-                    <DocumentCard
-                      label="Passport"
-                      filename={
-                        kycDocs?.passportUrl ? "Passport.pdf" : "No file"
-                      }
-                      url={kycDocs?.passportUrl}
-                      size="470 MB uploaded"
-                    />
-                  </div>
-                </div>
-
-                {/* Academic Marksheets */}
-                <div className="border-t border-gray-200 pt-4 mb-4">
-                  <h3 className="font-medium text-gray-800 mb-3">
-                    Academic Marksheets
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DocumentCard
-                      label="10th grade marksheet"
-                      filename={
-                        academicDocs?.class10?.marksheetUrl
-                          ? "10th grade marksheet"
-                          : "No file"
-                      }
-                      url={academicDocs?.class10?.marksheetUrl}
-                    />
-                    <DocumentCard
-                      label="12th grade marksheet"
-                      filename={
-                        academicDocs?.class12?.marksheetUrl
-                          ? "12th grade marksheet"
-                          : "No file"
-                      }
-                      url={academicDocs?.class12?.marksheetUrl}
-                    />
-                  </div>
-                  <div className="mt-4">
-                    <DocumentCard
-                      label="Graduation marksheet"
-                      filename={
-                        academicDocs?.higherEducation?.[0]?.marksheetUrl
-                          ? "Graduation Marksheet"
-                          : "No file"
-                      }
-                      url={academicDocs?.higherEducation?.[0]?.marksheetUrl}
-                      size="470 MB uploaded"
-                    />
-                  </div>
-                </div>
-
-                {/* Collapsible Sections */}
-                <AccordionSection
-                  title="Secured Admissions"
-                  sectionKey="securedAdmissions"
-                >
-                  {admissionDocs ? (
-                    <DocumentCard
-                      label="Admission Letter"
-                      filename="admission_letter.pdf"
-                      url={admissionDocs.admissionLetterUrl}
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-500">
-                      No admission documents uploaded
-                    </p>
-                  )}
-                </AccordionSection>
-
-                <AccordionSection
-                  title="Work Experience"
-                  sectionKey="workExperience"
-                >
-                  {workExperience.length > 0 ? (
-                    <div className="space-y-2">
-                      {workExperience.map((exp, idx) => (
-                        <DocumentCard
-                          key={idx}
-                          label={`Experience ${idx + 1}`}
-                          filename={
-                            exp.documentUrl
-                              ? `experience_${idx + 1}.pdf`
-                              : "No file"
-                          }
-                          url={exp.documentUrl}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">
-                      No work experience documents uploaded
-                    </p>
-                  )}
-                </AccordionSection>
-
-                <AccordionSection
-                  title="Co-borrower Documents"
-                  sectionKey="coBorrowerDocuments"
-                >
-                  {coBorrowers.length > 0 ? (
-                    <div className="space-y-2">
-                      {coBorrowers.map((cb, idx) => (
-                        <div key={idx} className="grid grid-cols-2 gap-4">
-                          <DocumentCard
-                            label={`Co-borrower ${idx + 1} - PAN`}
-                            filename={
-                              cb.panCardUrl ? "pan_card.pdf" : "No file"
-                            }
-                            url={cb.panCardUrl}
-                          />
-                          <DocumentCard
-                            label={`Co-borrower ${idx + 1} - Aadhaar`}
-                            filename={
-                              cb.aadhaarCardUrl ? "aadhaar.pdf" : "No file"
-                            }
-                            url={cb.aadhaarCardUrl}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">
-                      No co-borrower documents uploaded
-                    </p>
-                  )}
-                </AccordionSection>
-
-                {/* Pagination + Send Email Button */}
-                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(1, prev - 1))
-                      }
-                      className="p-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage((prev) => prev + 1)}
-                      className="p-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <button
-                    onClick={handleSendToNBFCs}
-                    className="px-4 py-2 border border-purple-600 text-purple-600 text-sm rounded-md hover:bg-purple-50"
-                  >
-                    Send Email to NBFCs
-                  </button>
-                </div>
-              </div>
+            {/* Referral Code */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Referral Code
+              </label>
+              <input
+                type="text"
+                name="referralCode"
+                value={form.referralCode}
+                onChange={handleChange}
+                disabled={!editing}
+                placeholder="Enter referral code (optional)"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
+              />
             </div>
 
-            {/* Navigation Buttons */}
-            <div className="flex items-center justify-between pt-4 pb-6">
-              <Link to="/student/profile">
-                <button
-                  type="button"
-                  className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
-                >
-                  <svg
-                    className="w-5 h-5 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                </button>
-              </Link>
-
-              <Link to="/student/kyc">
-                <button
-                  type="button"
-                  className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
-                >
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              </Link>
+            {/* Course Details Textarea */}
+            <div>
+              <textarea
+                name="courseDetails"
+                value={form.courseDetails}
+                onChange={handleChange}
+                disabled={!editing}
+                rows={4}
+                placeholder="Describe your course, university details, program specifics, and any additional information about your education plan..."
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 resize-none"
+              />
             </div>
           </div>
+
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-end pt-4 pb-6">
+            <Link to="/student/kyc">
+              <button
+                type="button"
+                className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
+              >
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </Link>
+          </div>
+
+
+
         </div>
-
-
       </div>
 
       {/* Document Preview Modal */}
