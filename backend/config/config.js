@@ -16,6 +16,10 @@ module.exports = {
   port: Number(env.PORT) || 5000,
 
   academicurl: env.ACADEMIC_URL,
+  pythonFinancialServerUrl:
+    process.env.PYTHON_FINANCIAL_SERVER_URL ||
+    "http://localhost:8000/api/analyze",
+  kycServerUrl: process.env.KYC_SERVER_URL || "http://localhost:8001",
 
   ai: {
     openaiApiKey: env.OPENAI_API_KEY,
@@ -71,10 +75,6 @@ module.exports = {
     password: process.env.REDIS_PASSWORD || undefined,
   },
 
-  // Python Financial Analysis Server URL
-  pythonFinancialServerUrl:
-    process.env.PYTHON_FINANCIAL_SERVER_URL ||
-    "http://localhost:8000/api/analyze",
   email: {
     service: env.EMAIL_SERVICE || "gmail",
     host: env.EMAIL_HOST || "smtp.gmail.com",

@@ -190,8 +190,8 @@ export const CoBorrowerProvider = ({ children }) => {
 
       if (response.data.success) {
         console.log("✅ Co-borrower details fetched:", coBorrowerId);
-        setSelectedCoBorrower(response.data.data);
-        return response.data.data;
+        setSelectedCoBorrower(response.data.coBorrower);
+        return response.data.coBorrower;
       } else {
         throw new Error(
           response.data.error || "Failed to fetch co-borrower details"

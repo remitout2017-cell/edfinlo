@@ -1,0 +1,187 @@
+### Co-borrower API Testing
+### Use REST Client or Thunder Client extension in VS Code
+
+### Variables
+@baseUrl = http://localhost:5000/api
+@kycUrl = http://localhost:5001/api/kyc
+@token = YOUR_AUTH_TOKEN_HERE
+@coBorrowerId = YOUR_COBORROWER_ID_HERE
+
+################################################################################
+# AUTHENTICATION - RUN THIS FIRST
+################################################################################
+
+### 1. Login to get token
+POST {{baseUrl}}/students/login
+Content-Type: application/json
+
+{
+  "email": "your-email@example.com",
+  "password": "your-password"
+}
+
+# Copy the token from response and paste it into @token variable above
+
+################################################################################
+# CO-BORROWER - LIST & RETRIEVE
+################################################################################
+
+### 2. List all co-borrowers
+GET {{baseUrl}}/coborrower/list
+Authorization: Bearer {{token}}
+
+# Copy a co-borrower ID from the response and paste it into @coBorrowerId variable above
+
+### 3. Get single co-borrower details
+GET {{baseUrl}}/coborrower/{{coBorrowerId}}
+Authorization: Bearer {{token}}
+
+################################################################################
+# KYC ROUTES (Requires KYC agent on port 5001)
+################################################################################
+
+### 4. Submit New Co-borrower KYC
+POST {{baseUrl}}/coborrower/kyc/upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="firstName"
+
+John
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="lastName"
+
+Doe
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="relationToStudent"
+
+Father
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="email"
+
+john.doe@example.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="phoneNumber"
+
++911234567890
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="dateOfBirth"
+
+1970-01-01
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="aadhaar_front"; filename="aadhaar_front.jpg"
+Content-Type: image/jpeg
+
+< ./test-files/aadhaar_front.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="aadhaar_back"; filename="aadhaar_back.jpg"
+Content-Type: image/jpeg
+
+< ./test-files/aadhaar_back.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="pan_front"; filename="pan_front.jpg"
+Content-Type: image/jpeg
+
+< ./test-files/pan_front.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 5. Re-verify KYC (for rejected co-borrowers)
+PUT {{baseUrl}}/coborrower/{{coBorrowerId}}/kyc/reverify
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="aadhaar_front"; filename="aadhaar_front.jpg"
+Content-Type: image/jpeg
+
+< ./test-files/aadhaar_front.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="aadhaar_back"; filename="aadhaar_back.jpg"
+Content-Type: image/jpeg
+
+< ./test-files/aadhaar_back.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="pan_front"; filename="pan_front.jpg"
+Content-Type: image/jpeg
+
+< ./test-files/pan_front.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+################################################################################
+# FINANCIAL ROUTES
+################################################################################
+
+### 6. Upload Financial Documents
+POST {{baseUrl}}/coborrower/{{coBorrowerId}}/financial/upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="salary_slips_pdf"; filename="salary.pdf"
+Content-Type: application/pdf
+
+< ./test-files/salary_slips.pdf
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="bank_statement_pdf"; filename="bank.pdf"
+Content-Type: application/pdf
+
+< ./test-files/bank_statement.pdf
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="itr_pdf_1"; filename="itr1.pdf"
+Content-Type: application/pdf
+
+< ./test-files/itr_1.pdf
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 7. Get Financial Status
+GET {{baseUrl}}/coborrower/{{coBorrowerId}}/financial/status
+Authorization: Bearer {{token}}
+
+### 8. Get Complete Financial Analysis
+GET {{baseUrl}}/coborrower/{{coBorrowerId}}/financial/analysis
+Authorization: Bearer {{token}}
+
+### 9. Reset Financial Documents (DELETE)
+DELETE {{baseUrl}}/coborrower/{{coBorrowerId}}/financial/reset
+Authorization: Bearer {{token}}
+
+### 10. Reset Financial Documents (POST - alternative)
+POST {{baseUrl}}/coborrower/{{coBorrowerId}}/financial/reset
+Authorization: Bearer {{token}}
+
+################################################################################
+# DELETE CO-BORROWER
+################################################################################
+
+### 11. Soft Delete Co-borrower
+DELETE {{baseUrl}}/coborrower/{{coBorrowerId}}
+Authorization: Bearer {{token}}
+
+################################################################################
+# ERROR HANDLING TESTS
+################################################################################
+
+### 12. Test Invalid Co-borrower ID
+GET {{baseUrl}}/coborrower/invalid-id-123456
+Authorization: Bearer {{token}}
+
+### 13. Test Deprecated Endpoint (should return 410)
+POST {{baseUrl}}/coborrower/{{coBorrowerId}}/financial/process
+Authorization: Bearer {{token}}
+
+### 14. Test Missing Auth Token (should return 401)
+GET {{baseUrl}}/coborrower/list
+
+################################################################################
+# HEALTH CHECKS
+################################################################################
+
+### 15. Backend Health Check
+GET http://localhost:5000/health
+
+### 16. Financial Agent Health Check
+GET http://localhost:8000/health
+
+### 17. KYC Agent Health Check
+GET http://localhost:5001/health

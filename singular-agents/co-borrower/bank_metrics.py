@@ -1,6 +1,9 @@
 """
-Deterministic bank metrics computation - PRODUCTION READY
-✅ FIXED: Added bounce/dishonor/insufficient fund detection
+Deterministic bank metrics computation - CORRECTED
+✅ FIXED: Bounce detection logic (no double counting)
+✅ FIXED: Transaction date parsing with logging
+✅ FIXED: Weighted average balance calculation
+✅ FIXED: Safe float conversion
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -8,7 +11,10 @@ from datetime import datetime, date
 from typing import List, Dict, Optional, Tuple
 import re
 import math
+import logging
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 DATE_FORMATS = ["%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d", "%d-%b-%Y", "%d %b %Y"]
 
@@ -27,17 +33,36 @@ def _parse_date(s: str) -> Optional[date]:
 
 
 def _month_key(d: date) -> str:
-    """Convert date to YYYY-MM month key"""
+    """
+    Convert date to YYYY-MM month key
+
+    Args:
+        d: Date object
+
+    Returns:
+        str: Month key in YYYY-MM format
+    """
     return f"{d.year:04d}-{d.month:02d}"
 
 
 def _norm_text(s: str) -> str:
-    """Normalize text for matching"""
+    """
+    Normalize text for matching
+
+    Args:
+        s: Text to normalize
+
+    Returns:
+        str: Normalized text
+    """
     return re.sub(r"\s+", " ", (s or "")).strip().upper()
 
 
 def _safe_float(x) -> float:
-    """Convert any value to float safely"""
+    """
+    Convert any value to float safely
+    ✅ FIXED: Only catch ValueError, not all exceptions
+    """
     try:
         if x is None:
             return 0.0
@@ -47,7 +72,8 @@ def _safe_float(x) -> float:
         if s == "" or s.lower() == "null":
             return 0.0
         return float(s)
-    except Exception:
+    except (ValueError, TypeError) as e:
+        logger.debug(f"Failed to convert to float: {x} - {e}")
         return 0.0
 
 
@@ -66,12 +92,24 @@ class Txn:
 
 
 def _to_txns(raw_txns: List[Dict]) -> List[Txn]:
-    """Convert raw transaction dicts to Txn objects"""
+    """
+    Convert raw transaction dicts to Txn objects
+    ✅ FIXED: Added logging for skipped transactions
+    """
     out: List[Txn] = []
+    skipped_count = 0
+
     for t in raw_txns or []:
         d = _parse_date(t.get("date") or t.get("txn_date") or "")
         if not d:
+            skipped_count += 1
+            if skipped_count <= 5:  # Log first 5 only
+                logger.warning(
+                    f"Skipping transaction with invalid date: "
+                    f"{t.get('date')} - {t.get('narration', 'N/A')[:50]}"
+                )
             continue
+
         out.append(
             Txn(
                 txn_date=d,
@@ -81,6 +119,11 @@ def _to_txns(raw_txns: List[Dict]) -> List[Txn]:
                 balance=_safe_float(t.get("balance"))
             )
         )
+
+    if skipped_count > 0:
+        logger.info(
+            f"Total transactions skipped due to invalid dates: {skipped_count}")
+
     out.sort(key=lambda x: x.txn_date)
     return out
 
@@ -93,7 +136,7 @@ EMI_KEYWORDS = re.compile(
 
 SALARY_KEYWORDS = re.compile(r"\bSALARY\b|\bPAYROLL\b", re.IGNORECASE)
 
-# ✅ NEW: Bounce/Dishonor Detection
+# Bounce/Dishonor Detection
 BOUNCE_KEYWORDS = re.compile(
     r"\bBOUNCE\b|\bBOUNCED\b|\bRETURN\s*CHE?Q\b|\bCHE?Q\s*RETURN\b|\bRETURNED\b|"
     r"\bREVERSAL\b|\bDISHONOU?RED?\b|\bINSUFF\b|\bINSUFFICIENT\s*FUND\b|"
@@ -161,13 +204,14 @@ def detect_emi_debits(txns: List[Txn]) -> List[Txn]:
     uniq.sort(key=lambda x: x.txn_date)
     return uniq
 
-# ✅ NEW: Detect Bounce/Dishonor/Insufficient Fund Incidents
-
 
 def detect_bounce_incidents(txns: List[Txn]) -> Dict[str, int]:
     """
     Detect bounce, dishonor, and insufficient fund incidents.
-    Returns: {bounce_count, dishonor_count, insufficient_fund_incidents}
+    ✅ FIXED: Exclusive categorization (no double counting)
+
+    Returns: 
+        Dict with bounce_count, dishonor_count, insufficient_fund_incidents
     """
     bounce_count = 0
     dishonor_count = 0
@@ -179,22 +223,21 @@ def detect_bounce_incidents(txns: List[Txn]) -> Dict[str, int]:
         if not BOUNCE_KEYWORDS.search(nar):
             continue
 
-        # Classify the type of incident
-        is_bounce = re.search(r"\bBOUNCE\b|\bBOUNCED\b|\bRETURN", nar, re.I)
-        is_dishonor = re.search(r"\bDISHONOU?R", nar, re.I)
+        # ✅ FIXED: Use elif for exclusive categorization
         is_insufficient = re.search(
             r"\bINSUFF\b|\bINSUFFICIENT\s*FUND", nar, re.I)
+        is_dishonor = re.search(r"\bDISHONOU?R", nar, re.I)
+        is_bounce = re.search(r"\bBOUNCE\b|\bBOUNCED\b|\bRETURN", nar, re.I)
 
-        # Count each category
+        # Prioritize specific categories
         if is_insufficient:
             insufficient_fund_incidents += 1
-        if is_dishonor:
+        elif is_dishonor:
             dishonor_count += 1
-        if is_bounce:
+        elif is_bounce:
             bounce_count += 1
-
-        # If none matched but BOUNCE_KEYWORDS did, count as generic bounce
-        if not (is_bounce or is_dishonor or is_insufficient):
+        else:
+            # Generic bounce if no specific match but BOUNCE_KEYWORDS matched
             bounce_count += 1
 
     return {
@@ -205,7 +248,10 @@ def detect_bounce_incidents(txns: List[Txn]) -> Dict[str, int]:
 
 
 def weighted_average_balance(txns: List[Txn]) -> Tuple[float, float]:
-    """Calculate weighted average balance"""
+    """
+    Calculate weighted average balance
+    ✅ FIXED: Last transaction handling
+    """
     if not txns:
         return 0.0, 0.0
 
@@ -228,7 +274,15 @@ def weighted_average_balance(txns: List[Txn]) -> Tuple[float, float]:
         if i + 1 < len(valid_txns):
             days = max(1, (valid_txns[i + 1].txn_date - cur.txn_date).days)
         else:
-            days = 1
+            # ✅ FIXED: Use average spacing for last transaction
+            if len(valid_txns) > 1:
+                # Calculate average spacing
+                total_span = (valid_txns[-1].txn_date -
+                              valid_txns[0].txn_date).days
+                avg_spacing = max(1, total_span // (len(valid_txns) - 1))
+                days = avg_spacing
+            else:
+                days = 1
 
         total_days += days
         weighted_sum += cur.balance * days
@@ -243,12 +297,20 @@ def compute_bank_metrics(
 ) -> Dict:
     """
     Compute precise bank metrics from transaction list.
-    ✅ FIXED: Now includes bounce_count, dishonor_count, insufficient_fund_incidents
+    ✅ FIXED: All critical bugs addressed
+
+    Args:
+        raw_transactions: List of transaction dictionaries
+        employer_name: Employer name for salary detection
+
+    Returns:
+        Dict with all computed metrics
     """
     txns = _to_txns(raw_transactions)
 
     # Handle empty transactions
     if not txns:
+        logger.warning("No valid transactions found")
         return {
             "total_credits": 0.0,
             "total_debits": 0.0,
@@ -295,7 +357,8 @@ def compute_bank_metrics(
         last_salary_date = mx.txn_date
 
     avg_monthly_salary = round(
-        sum(salary_amounts) / len(salary_amounts), 2) if salary_amounts else 0.0
+        sum(salary_amounts) / len(salary_amounts), 2
+    ) if salary_amounts else 0.0
 
     # EMI detection
     emi_hits = detect_emi_debits(txns)
@@ -318,7 +381,7 @@ def compute_bank_metrics(
         for t in emi_hits
     ]
 
-    # ✅ Bounce/Dishonor Detection
+    # ✅ Bounce/Dishonor Detection (FIXED)
     bounce_data = detect_bounce_incidents(txns)
 
     # Spending calculation
@@ -354,7 +417,7 @@ def compute_bank_metrics(
         "emi_transactions": emi_transactions,
         "unique_loan_accounts": max(0, len({int(round(t.debit)) for t in emi_hits})),
         "average_monthly_spending": avg_monthly_spending,
-        # ✅ NEW: Bounce/Dishonor metrics
+        # ✅ NEW: Fixed bounce metrics
         "bounce_count": bounce_data["bounce_count"],
         "dishonor_count": bounce_data["dishonor_count"],
         "insufficient_fund_incidents": bounce_data["insufficient_fund_incidents"],

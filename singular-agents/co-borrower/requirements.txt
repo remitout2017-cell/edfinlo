@@ -12,6 +12,7 @@ langchain-google-genai
 
 # Google AI
 google-generativeai
+langchain-groq                    # ⚠️ CRITICAL - MISSING IN YOUR FILE
 
 # PDF Processing
 PyMuPDF
