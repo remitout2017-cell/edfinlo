@@ -44,7 +44,7 @@ const Stepper = ({ currentStep = 1, steps = [] }) => {
       </div>
 
       {/* Content Container */}
-      <div className="relative px-3 sm:px-4 md:px-6 lg:px-10 xl:px-12 pt-4 sm:pt-5 md:pt-6 lg:pt-8">
+      <div className="relative pt-4 sm:pt-5 md:pt-6 lg:pt-8">
         {/* Header Section */}
         <div className="mb-3 sm:mb-4 md:mb-5 lg:mb-6">
           <h2 className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 md:mb-2">
@@ -56,7 +56,7 @@ const Stepper = ({ currentStep = 1, steps = [] }) => {
         </div>
 
         {/* ----------------- DESKTOP/TABLET VIEW (Titles) ----------------- */}
-        <div className="hidden sm:flexb items-center justify-start filter drop-shadow-lg w-full">
+        <div className="hidden sm:flex items-center justify-start filter drop-shadow-lg w-full">
           {stepsList.map((step, index) => (
             <div
               key={step.id}
@@ -137,10 +137,10 @@ const Stepper = ({ currentStep = 1, steps = [] }) => {
 // --- Example Wrapper - NOW ACCEPTS currentStep PROP ---
 const StepperExample = ({ currentStep = 1 }) => {
   const steps = [
-    { id: 1, title: "Personal Info", label: "01" },
-    { id: 2, title: "Education", label: "02" },
-    { id: 3, title: "KYC", label: "03" },
-    { id: 4, title: "Academic", label: "04" },
+    { id: 1, title: "Education", label: "01" },
+    { id: 2, title: "KYC", label: "02" },
+    { id: 3, title: "Academic", label: "03" },
+    { id: 4, title: "Test Scores", label: "04" },
     { id: 5, title: "Work Experience", label: "05" },
     { id: 6, title: "Co-borrower", label: "06" },
     { id: 7, title: "Admission", label: "07" },

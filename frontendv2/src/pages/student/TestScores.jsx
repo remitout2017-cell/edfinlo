@@ -178,10 +178,10 @@ const TestScores = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="flex items-center justify-center flex-col min-h-screen">
         <StepperExample currentStep={4} />
 
-        <div className="bg-white rounded-lg shadow-lg p-8 mt-6">
+        <div className="w-full max-w-4xl mt-4 bg-white rounded-2xl shadow-lg p-6 md:p-8">
           <h1 className="text-3xl font-bold mb-2">Test Scores</h1>
           <p className="text-gray-600 mb-8">
             Upload your TOEFL, GRE, and IELTS test scores for automated
@@ -286,305 +286,304 @@ const TestScores = () => {
               </div>
             )}
           </form>
-        </div>
 
-        {/* Display Existing Scores */}
-        {testScoresData && (
-          <div className="space-y-6 mt-6">
-            {/* TOEFL Score */}
-            {testScoresData.toeflScore && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-blue-100 p-3 rounded-lg">
-                      <FileText className="text-blue-600" size={24} />
+          {/* Display Existing Scores */}
+          {testScoresData && (
+            <div className="space-y-6 mt-6">
+              {/* TOEFL Score */}
+              {testScoresData.toeflScore && (
+                <div className="border border-gray-200 rounded-xl p-6 bg-gradient-to-br from-blue-50 to-cyan-50">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 p-3 rounded-lg">
+                        <FileText className="text-blue-600" size={24} />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold">TOEFL Score</h2>
+                        {testScoresData.toeflScore.testDate && (
+                          <p className="text-sm text-gray-600">
+                            Test Date:{" "}
+                            {new Date(
+                              testScoresData.toeflScore.testDate
+                            ).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold">TOEFL Score</h2>
-                      {testScoresData.toeflScore.testDate && (
-                        <p className="text-sm text-gray-600">
-                          Test Date:{" "}
-                          {new Date(
-                            testScoresData.toeflScore.testDate
-                          ).toLocaleDateString()}
-                        </p>
-                      )}
+                    <button
+                      onClick={() => handleDelete("toefl")}
+                      className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-gray-600 text-sm mb-1">Reading</p>
+                      <p className="text-2xl font-bold">
+                        {testScoresData.toeflScore.reading || "N/A"}
+                      </p>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => handleDelete("toefl")}
-                    className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-600 text-sm mb-1">Reading</p>
-                    <p className="text-2xl font-bold">
-                      {testScoresData.toeflScore.reading || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-600 text-sm mb-1">Listening</p>
-                    <p className="text-2xl font-bold">
-                      {testScoresData.toeflScore.listening || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-600 text-sm mb-1">Speaking</p>
-                    <p className="text-2xl font-bold">
-                      {testScoresData.toeflScore.speaking || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-600 text-sm mb-1">Writing</p>
-                    <p className="text-2xl font-bold">
-                      {testScoresData.toeflScore.writing || "N/A"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg">
-                  <p className="text-gray-600 text-sm mb-2">Total Score</p>
-                  <p className="text-4xl font-bold text-blue-600">
-                    {testScoresData.toeflScore.totalScore || "N/A"}
-                  </p>
-                </div>
-
-                {testScoresData.toeflScore.verificationIssues?.length > 0 && (
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm font-semibold text-yellow-800 mb-2 flex items-center gap-2">
-                      <AlertCircle size={16} />
-                      Verification Issues:
-                    </p>
-                    <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
-                      {testScoresData.toeflScore.verificationIssues.map(
-                        (issue, idx) => (
-                          <li key={idx}>{issue}</li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* GRE Score */}
-            {testScoresData.greScore && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-purple-100 p-3 rounded-lg">
-                      <FileText className="text-purple-600" size={24} />
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-gray-600 text-sm mb-1">Listening</p>
+                      <p className="text-2xl font-bold">
+                        {testScoresData.toeflScore.listening || "N/A"}
+                      </p>
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold">GRE Score</h2>
-                      {testScoresData.greScore.testDate && (
-                        <p className="text-sm text-gray-600">
-                          Test Date:{" "}
-                          {new Date(
-                            testScoresData.greScore.testDate
-                          ).toLocaleDateString()}
-                        </p>
-                      )}
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-gray-600 text-sm mb-1">Speaking</p>
+                      <p className="text-2xl font-bold">
+                        {testScoresData.toeflScore.speaking || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-gray-600 text-sm mb-1">Writing</p>
+                      <p className="text-2xl font-bold">
+                        {testScoresData.toeflScore.writing || "N/A"}
+                      </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDelete("gre")}
-                    className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-gray-50 p-6 rounded-lg text-center">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg">
+                    <p className="text-gray-600 text-sm mb-2">Total Score</p>
+                    <p className="text-4xl font-bold text-blue-600">
+                      {testScoresData.toeflScore.totalScore || "N/A"}
+                    </p>
+                  </div>
+
+                  {testScoresData.toeflScore.verificationIssues?.length > 0 && (
+                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm font-semibold text-yellow-800 mb-2 flex items-center gap-2">
+                        <AlertCircle size={16} />
+                        Verification Issues:
+                      </p>
+                      <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
+                        {testScoresData.toeflScore.verificationIssues.map(
+                          (issue, idx) => (
+                            <li key={idx}>{issue}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* GRE Score */}
+              {testScoresData.greScore && (
+                <div className="border border-gray-200 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-pink-50">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-purple-100 p-3 rounded-lg">
+                        <FileText className="text-purple-600" size={24} />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold">GRE Score</h2>
+                        {testScoresData.greScore.testDate && (
+                          <p className="text-sm text-gray-600">
+                            Test Date:{" "}
+                            {new Date(
+                              testScoresData.greScore.testDate
+                            ).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete("gre")}
+                      className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white p-6 rounded-lg text-center">
+                      <p className="text-gray-600 text-sm mb-2">
+                        Verbal Reasoning
+                      </p>
+                      <p className="text-3xl font-bold text-purple-600">
+                        {testScoresData.greScore.verbalReasoning || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-6 rounded-lg text-center">
+                      <p className="text-gray-600 text-sm mb-2">
+                        Quantitative Reasoning
+                      </p>
+                      <p className="text-3xl font-bold text-purple-600">
+                        {testScoresData.greScore.quantitativeReasoning || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-6 rounded-lg text-center">
+                      <p className="text-gray-600 text-sm mb-2">
+                        Analytical Writing
+                      </p>
+                      <p className="text-3xl font-bold text-purple-600">
+                        {testScoresData.greScore.analyticalWriting || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {testScoresData.greScore.verificationIssues?.length > 0 && (
+                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm font-semibold text-yellow-800 mb-2 flex items-center gap-2">
+                        <AlertCircle size={16} />
+                        Verification Issues:
+                      </p>
+                      <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
+                        {testScoresData.greScore.verificationIssues.map(
+                          (issue, idx) => (
+                            <li key={idx}>{issue}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* IELTS Score */}
+              {testScoresData.ieltsScore && (
+                <div className="border border-gray-200 rounded-xl p-6 bg-gradient-to-br from-green-50 to-emerald-50">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-green-100 p-3 rounded-lg">
+                        <FileText className="text-green-600" size={24} />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold">IELTS Score</h2>
+                        {testScoresData.ieltsScore.testDate && (
+                          <p className="text-sm text-gray-600">
+                            Test Date:{" "}
+                            {new Date(
+                              testScoresData.ieltsScore.testDate
+                            ).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete("ielts")}
+                      className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-gray-600 text-sm mb-1">Listening</p>
+                      <p className="text-2xl font-bold">
+                        {testScoresData.ieltsScore.listening || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-gray-600 text-sm mb-1">Reading</p>
+                      <p className="text-2xl font-bold">
+                        {testScoresData.ieltsScore.reading || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-gray-600 text-sm mb-1">Writing</p>
+                      <p className="text-2xl font-bold">
+                        {testScoresData.ieltsScore.writing || "N/A"}
+                      </p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg">
+                      <p className="text-gray-600 text-sm mb-1">Speaking</p>
+                      <p className="text-2xl font-bold">
+                        {testScoresData.ieltsScore.speaking || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg">
                     <p className="text-gray-600 text-sm mb-2">
-                      Verbal Reasoning
+                      Overall Band Score
                     </p>
-                    <p className="text-3xl font-bold text-purple-600">
-                      {testScoresData.greScore.verbalReasoning || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-6 rounded-lg text-center">
-                    <p className="text-gray-600 text-sm mb-2">
-                      Quantitative Reasoning
-                    </p>
-                    <p className="text-3xl font-bold text-purple-600">
-                      {testScoresData.greScore.quantitativeReasoning || "N/A"}
+                    <p className="text-4xl font-bold text-green-600">
+                      {testScoresData.ieltsScore.overallBandScore || "N/A"}
                     </p>
                   </div>
-                  <div className="bg-gray-50 p-6 rounded-lg text-center">
-                    <p className="text-gray-600 text-sm mb-2">
-                      Analytical Writing
-                    </p>
-                    <p className="text-3xl font-bold text-purple-600">
-                      {testScoresData.greScore.analyticalWriting || "N/A"}
-                    </p>
-                  </div>
-                </div>
 
-                {testScoresData.greScore.verificationIssues?.length > 0 && (
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm font-semibold text-yellow-800 mb-2 flex items-center gap-2">
-                      <AlertCircle size={16} />
-                      Verification Issues:
-                    </p>
-                    <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
-                      {testScoresData.greScore.verificationIssues.map(
-                        (issue, idx) => (
-                          <li key={idx}>{issue}</li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* IELTS Score */}
-            {testScoresData.ieltsScore && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-green-100 p-3 rounded-lg">
-                      <FileText className="text-green-600" size={24} />
+                  {testScoresData.ieltsScore.verificationIssues?.length > 0 && (
+                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm font-semibold text-yellow-800 mb-2 flex items-center gap-2">
+                        <AlertCircle size={16} />
+                        Verification Issues:
+                      </p>
+                      <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
+                        {testScoresData.ieltsScore.verificationIssues.map(
+                          (issue, idx) => (
+                            <li key={idx}>{issue}</li>
+                          )
+                        )}
+                      </ul>
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold">IELTS Score</h2>
-                      {testScoresData.ieltsScore.testDate && (
-                        <p className="text-sm text-gray-600">
-                          Test Date:{" "}
-                          {new Date(
-                            testScoresData.ieltsScore.testDate
-                          ).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDelete("ielts")}
-                    className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={20} />
-                  </button>
+                  )}
                 </div>
+              )}
+            </div>
+          )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-600 text-sm mb-1">Listening</p>
-                    <p className="text-2xl font-bold">
-                      {testScoresData.ieltsScore.listening || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-600 text-sm mb-1">Reading</p>
-                    <p className="text-2xl font-bold">
-                      {testScoresData.ieltsScore.reading || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-600 text-sm mb-1">Writing</p>
-                    <p className="text-2xl font-bold">
-                      {testScoresData.ieltsScore.writing || "N/A"}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-600 text-sm mb-1">Speaking</p>
-                    <p className="text-2xl font-bold">
-                      {testScoresData.ieltsScore.speaking || "N/A"}
-                    </p>
-                  </div>
-                </div>
+          {/* No Scores Message */}
+          {!testScoresData && !loading && !uploading && (
+            <div className="bg-gray-50 rounded-lg p-12 text-center mt-6">
+              <AlertCircle className="mx-auto mb-4 text-gray-400" size={48} />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Test Scores Uploaded
+              </h3>
+              <p className="text-gray-600">
+                Upload your test scores above to get started
+              </p>
+            </div>
+          )}
 
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg">
-                  <p className="text-gray-600 text-sm mb-2">
-                    Overall Band Score
-                  </p>
-                  <p className="text-4xl font-bold text-green-600">
-                    {testScoresData.ieltsScore.overallBandScore || "N/A"}
-                  </p>
-                </div>
-
-                {testScoresData.ieltsScore.verificationIssues?.length > 0 && (
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm font-semibold text-yellow-800 mb-2 flex items-center gap-2">
-                      <AlertCircle size={16} />
-                      Verification Issues:
-                    </p>
-                    <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
-                      {testScoresData.ieltsScore.verificationIssues.map(
-                        (issue, idx) => (
-                          <li key={idx}>{issue}</li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* No Scores Message */}
-        {!testScoresData && !loading && !uploading && (
-          <div className="bg-gray-50 rounded-lg p-12 text-center mt-6">
-            <AlertCircle className="mx-auto mb-4 text-gray-400" size={48} />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              No Test Scores Uploaded
-            </h3>
-            <p className="text-gray-600">
-              Upload your test scores above to get started
-            </p>
-          </div>
-        )}
-
-        {/* Navigation */}
-        {/* Navigation Buttons */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-          <Link to="/student/academic-records">
-            <button
-              type="button"
-              className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
-            >
-              <svg
-                className="w-5 h-5 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-6 mt-6 border-t border-gray-200">
+            <Link to="/student/academic-records">
+              <button
+                type="button"
+                className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-          </Link>
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+            </Link>
 
-          <Link to="/student/work-experience">
-            <button
-              type="button"
-              className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
-            >
-              <svg
-                className="w-5 h-5 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <Link to="/student/work-experience">
+              <button
+                type="button"
+                className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </Link>
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
     </DashboardLayout>
