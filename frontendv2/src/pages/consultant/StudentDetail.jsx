@@ -1,15 +1,15 @@
-// src/pages/consultant/StudentDetail.jsx - COMPLETE VERSION
+// src/pages/consultant/StudentDetail.jsx - Uses ConsultantDataContext
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ConsultantLayout from '../../components/layouts/ConsultantLayout';
-import { consultantAPI } from '../../services/api';
+import { useConsultantData } from '../../context/ConsultantDataContext';
 import toast from 'react-hot-toast';
-import { 
-  ArrowLeft, 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  MapPin,
   Calendar,
   GraduationCap,
   Briefcase,
@@ -23,6 +23,8 @@ import {
 const ConsultantStudentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { getStudentDetails, getStudentSummary } = useConsultantData();
+
   const [loading, setLoading] = useState(true);
   const [student, setStudent] = useState(null);
   const [summary, setSummary] = useState(null);
@@ -34,13 +36,13 @@ const ConsultantStudentDetail = () => {
   const fetchStudentDetails = async () => {
     try {
       setLoading(true);
-      const [profileRes, summaryRes] = await Promise.all([
-        consultantAPI.getStudentById(id),
-        consultantAPI.getStudentSummary(id)
+      const [profileData, summaryData] = await Promise.all([
+        getStudentDetails(id),
+        getStudentSummary(id)
       ]);
-      
-      setStudent(profileRes.data.student);
-      setSummary(summaryRes.data.summary);
+
+      setStudent(profileData?.student || profileData);
+      setSummary(summaryData?.summary || summaryData);
     } catch (error) {
       toast.error('Failed to load student details');
       console.error(error);

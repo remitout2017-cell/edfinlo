@@ -1,12 +1,13 @@
-// src/pages/consultant/Admissions.jsx - COMPLETE VERSION
+// src/pages/consultant/Admissions.jsx - Uses ConsultantDataContext
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import ConsultantLayout from '../../components/layouts/ConsultantLayout';
-import { consultantAPI } from '../../services/api';
+import { useConsultantData } from '../../context/ConsultantDataContext';
 import toast from 'react-hot-toast';
-import { 
-  GraduationCap, 
-  Search, 
-  Filter, 
+import {
+  GraduationCap,
+  Search,
+  Filter,
   Calendar,
   MapPin,
   Award,
@@ -15,6 +16,8 @@ import {
 } from 'lucide-react';
 
 const ConsultantAdmissions = () => {
+  const { getAdmissions } = useConsultantData();
+
   const [admissions, setAdmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,11 +30,11 @@ const ConsultantAdmissions = () => {
   const fetchAdmissions = async () => {
     try {
       setLoading(true);
-      const response = await consultantAPI.getAdmissions({
+      const result = await getAdmissions({
         search: searchTerm,
         status: statusFilter
       });
-      setAdmissions(response.data.admissions || []);
+      setAdmissions(result.admissions || []);
     } catch (error) {
       toast.error('Failed to fetch admissions');
     } finally {
@@ -47,7 +50,7 @@ const ConsultantAdmissions = () => {
     };
     const badge = badges[status] || badges.pending;
     const Icon = badge.icon;
-    
+
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${badge.color}`}>
         <Icon className="h-3 w-3" />

@@ -1,17 +1,17 @@
-// src/pages/consultant/Students.jsx - COMPLETE VERSION
+// src/pages/consultant/Students.jsx - Uses ConsultantDataContext
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ConsultantLayout from '../../components/layouts/ConsultantLayout';
-import { consultantAPI } from '../../services/api';
+import { useConsultantData } from '../../context/ConsultantDataContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import toast from 'react-hot-toast';
-import { 
-  Users, 
-  Search, 
-  Filter, 
-  Download, 
-  Eye, 
-  Mail, 
+import {
+  Users,
+  Search,
+  Filter,
+  Download,
+  Eye,
+  Mail,
   Phone,
   CheckCircle,
   Clock,
@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 
 const ConsultantStudents = () => {
+  const { fetchStudentsWithParams, exportStudents } = useConsultantData();
+
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +30,7 @@ const ConsultantStudents = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalStudents, setTotalStudents] = useState(0);
-  
+
   const debouncedSearch = useDebounce(searchTerm, 500);
 
   useEffect(() => {
@@ -38,19 +40,27 @@ const ConsultantStudents = () => {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const response = await consultantAPI.getStudents({
+      const result = await fetchStudentsWithParams({
         page: currentPage,
         limit: 20,
         search: debouncedSearch,
         kycStatus: kycFilter
       });
-      
-      setStudents(response.data.students || []);
-      setTotalPages(response.data.totalPages || 1);
-      setTotalStudents(response.data.totalStudents || 0);
+
+      // Defensive null check
+      if (result && typeof result === 'object') {
+        setStudents(Array.isArray(result.students) ? result.students : []);
+        setTotalPages(result.totalPages || 1);
+        setTotalStudents(result.totalStudents || 0);
+      } else {
+        setStudents([]);
+        setTotalPages(1);
+        setTotalStudents(0);
+      }
     } catch (error) {
       toast.error('Failed to fetch students');
-      console.error(error);
+      console.error('fetchStudents error:', error);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -59,17 +69,17 @@ const ConsultantStudents = () => {
   const handleExport = async () => {
     try {
       toast.loading('Exporting students...');
-      const response = await consultantAPI.exportStudents({ kycStatus: kycFilter });
-      
+      const blobData = await exportStudents({ kycStatus: kycFilter });
+
       // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([blobData]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `students_${Date.now()}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       toast.dismiss();
       toast.success('Students exported successfully');
     } catch (error) {
@@ -85,10 +95,10 @@ const ConsultantStudents = () => {
       rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle, label: 'Rejected' },
       incomplete: { bg: 'bg-gray-100', text: 'text-gray-800', icon: Clock, label: 'Incomplete' },
     };
-    
+
     const badge = badges[status] || badges.incomplete;
     const Icon = badge.icon;
-    
+
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${badge.bg} ${badge.text}`}>
         <Icon className="h-3 w-3" />
@@ -140,7 +150,7 @@ const ConsultantStudents = () => {
               <div>
                 <p className="text-sm text-gray-600 font-medium">Verified</p>
                 <p className="text-3xl font-bold text-green-600 mt-1">
-                  {students.filter(s => s.kycStatus === 'verified').length}
+                  {(students || []).filter(s => s.kycStatus === 'verified').length}
                 </p>
               </div>
               <CheckCircle className="h-10 w-10 text-green-500" />
@@ -151,7 +161,7 @@ const ConsultantStudents = () => {
               <div>
                 <p className="text-sm text-gray-600 font-medium">Pending</p>
                 <p className="text-3xl font-bold text-yellow-600 mt-1">
-                  {students.filter(s => s.kycStatus === 'pending').length}
+                  {(students || []).filter(s => s.kycStatus === 'pending').length}
                 </p>
               </div>
               <Clock className="h-10 w-10 text-yellow-500" />
@@ -162,7 +172,7 @@ const ConsultantStudents = () => {
               <div>
                 <p className="text-sm text-gray-600 font-medium">Incomplete</p>
                 <p className="text-3xl font-bold text-gray-600 mt-1">
-                  {students.filter(s => !s.kycStatus || s.kycStatus === 'incomplete').length}
+                  {(students || []).filter(s => !s.kycStatus || s.kycStatus === 'incomplete').length}
                 </p>
               </div>
               <XCircle className="h-10 w-10 text-gray-500" />
@@ -212,7 +222,7 @@ const ConsultantStudents = () => {
                 <p className="text-gray-600">Loading students...</p>
               </div>
             </div>
-          ) : students.length === 0 ? (
+          ) : (students || []).length === 0 ? (
             <div className="text-center py-16">
               <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No Students Found</h3>
@@ -251,8 +261,8 @@ const ConsultantStudents = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {students.map((student) => (
-                      <tr key={student._id} className="hover:bg-blue-50/50 transition">
+                    {(students || []).map((student, index) => (
+                      <tr key={student._id || `student-${index}`} className="hover:bg-blue-50/50 transition">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center text-white font-semibold">

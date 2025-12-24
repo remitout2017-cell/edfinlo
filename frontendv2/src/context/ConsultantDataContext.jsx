@@ -137,20 +137,24 @@ export const ConsultantDataProvider = ({ children }) => {
             );
 
             if (response.data.success) {
-                const data = response.data.data || [];
+                const data = Array.isArray(response.data.data) ? response.data.data : [];
                 setStudents(data);
                 console.log("✅ Consultant students fetched:", data.length);
                 return data;
+            } else {
+                setStudents([]);
+                return [];
             }
         } catch (err) {
             console.error("❌ Failed to fetch students:", err);
+            setStudents([]);
             if (err.response?.status !== 404) {
                 setError(err.response?.data?.message || "Failed to load students");
             }
+            return [];
         } finally {
             setLoading(false);
         }
-        return [];
     }, [isConsultant]);
 
     // ============================================================================
@@ -237,6 +241,328 @@ export const ConsultantDataProvider = ({ children }) => {
     );
 
     // ============================================================================
+    // Fetch students with pagination, search, and filters
+    // ============================================================================
+    const fetchStudentsWithParams = useCallback(
+        async ({ page = 1, limit = 20, search = "", kycStatus = "" } = {}) => {
+            const token = localStorage.getItem("token");
+            if (!token || !isConsultant) {
+                return { students: [], totalPages: 1, totalStudents: 0 };
+            }
+
+            try {
+                const params = new URLSearchParams();
+                params.append("page", page);
+                params.append("limit", limit);
+                if (search) params.append("search", search);
+                if (kycStatus) params.append("kycStatus", kycStatus);
+
+                const response = await axios.get(
+                    `${API_BASE_URL}/api/consultant/students?${params.toString()}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    return {
+                        students: response.data.data || response.data.students || [],
+                        totalPages: response.data.totalPages || 1,
+                        totalStudents: response.data.totalStudents || response.data.data?.length || 0,
+                        pagination: response.data.pagination
+                    };
+                }
+                return { students: [], totalPages: 1, totalStudents: 0 };
+            } catch (err) {
+                console.error("❌ Failed to fetch students with params:", err);
+                return { students: [], totalPages: 1, totalStudents: 0 };
+            }
+        },
+        [isConsultant]
+    );
+
+    // ============================================================================
+    // Get student summary
+    // ============================================================================
+    const getStudentSummary = useCallback(
+        async (studentId) => {
+            const token = localStorage.getItem("token");
+            if (!token || !isConsultant) {
+                throw new Error("Unauthorized");
+            }
+
+            try {
+                const response = await axios.get(
+                    `${API_BASE_URL}/api/consultant/students/${studentId}/summary`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    return response.data.data;
+                }
+                return null;
+            } catch (err) {
+                console.error("❌ Failed to fetch student summary:", err);
+                return null;
+            }
+        },
+        [isConsultant]
+    );
+
+    // ============================================================================
+    // Invite multiple students
+    // ============================================================================
+    const inviteMultipleStudents = useCallback(
+        async (emails) => {
+            const token = localStorage.getItem("token");
+            if (!token || !isConsultant) {
+                throw new Error("Unauthorized");
+            }
+
+            setLoading(true);
+            setError(null);
+            try {
+                const response = await axios.post(
+                    `${API_BASE_URL}/api/consultant/students/invite`,
+                    { emails },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    console.log("✅ Students invited:", emails.length);
+                    await fetchConsultantProfile();
+                    return response.data;
+                } else {
+                    throw new Error(response.data.message || "Failed to invite students");
+                }
+            } catch (err) {
+                console.error("❌ Failed to invite students:", err);
+                const errorMsg =
+                    err.response?.data?.message || err.message || "Failed to invite students";
+                setError(errorMsg);
+                throw err;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [isConsultant, fetchConsultantProfile]
+    );
+
+    // ============================================================================
+    // Get dashboard stats
+    // ============================================================================
+    const getDashboardStats = useCallback(async () => {
+        const token = localStorage.getItem("token");
+        if (!token || !isConsultant) {
+            return null;
+        }
+
+        try {
+            const response = await axios.get(
+                `${API_BASE_URL}/api/consultant/dashboard/stats`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.data.success) {
+                setStats(response.data.data || response.data.stats);
+                return response.data.data || response.data.stats;
+            }
+            return null;
+        } catch (err) {
+            console.error("❌ Failed to fetch dashboard stats:", err);
+            return null;
+        }
+    }, [isConsultant]);
+
+    // ============================================================================
+    // Get admissions list
+    // ============================================================================
+    const getAdmissions = useCallback(
+        async ({ page = 1, limit = 20, status = "" } = {}) => {
+            const token = localStorage.getItem("token");
+            if (!token || !isConsultant) {
+                return { admissions: [], totalPages: 1 };
+            }
+
+            try {
+                const params = new URLSearchParams();
+                params.append("page", page);
+                params.append("limit", limit);
+                if (status) params.append("status", status);
+
+                const response = await axios.get(
+                    `${API_BASE_URL}/api/consultant/admissions?${params.toString()}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    return {
+                        admissions: response.data.data || response.data.admissions || [],
+                        totalPages: response.data.totalPages || 1
+                    };
+                }
+                return { admissions: [], totalPages: 1 };
+            } catch (err) {
+                console.error("❌ Failed to fetch admissions:", err);
+                return { admissions: [], totalPages: 1 };
+            }
+        },
+        [isConsultant]
+    );
+
+    // ============================================================================
+    // Get loan analysis
+    // ============================================================================
+    const getLoanAnalysis = useCallback(async () => {
+        const token = localStorage.getItem("token");
+        if (!token || !isConsultant) {
+            return null;
+        }
+
+        try {
+            const response = await axios.get(
+                `${API_BASE_URL}/api/consultant/loan-analysis`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.data.success) {
+                return response.data.data;
+            }
+            return null;
+        } catch (err) {
+            console.error("❌ Failed to fetch loan analysis:", err);
+            return null;
+        }
+    }, [isConsultant]);
+
+    // ============================================================================
+    // Get loan request by ID
+    // ============================================================================
+    const getLoanRequestById = useCallback(
+        async (requestId) => {
+            const token = localStorage.getItem("token");
+            if (!token || !isConsultant) {
+                throw new Error("Unauthorized");
+            }
+
+            try {
+                const response = await axios.get(
+                    `${API_BASE_URL}/api/consultant/loan-requests/${requestId}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    return response.data.data;
+                }
+                throw new Error(response.data.message || "Failed to fetch loan request");
+            } catch (err) {
+                console.error("❌ Failed to fetch loan request:", err);
+                throw err;
+            }
+        },
+        [isConsultant]
+    );
+
+    // ============================================================================
+    // Get student loan requests
+    // ============================================================================
+    const getStudentLoanRequests = useCallback(
+        async (studentId) => {
+            const token = localStorage.getItem("token");
+            if (!token || !isConsultant) {
+                return [];
+            }
+
+            try {
+                const response = await axios.get(
+                    `${API_BASE_URL}/api/consultant/students/${studentId}/loan-requests`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (response.data.success) {
+                    return response.data.data || [];
+                }
+                return [];
+            } catch (err) {
+                console.error("❌ Failed to fetch student loan requests:", err);
+                return [];
+            }
+        },
+        [isConsultant]
+    );
+
+    // ============================================================================
+    // Export students (returns blob data for download)
+    // ============================================================================
+    const exportStudents = useCallback(
+        async ({ kycStatus = "" } = {}) => {
+            const token = localStorage.getItem("token");
+            if (!token || !isConsultant) {
+                throw new Error("Unauthorized");
+            }
+
+            try {
+                const params = new URLSearchParams();
+                if (kycStatus) params.append("kycStatus", kycStatus);
+
+                const response = await axios.get(
+                    `${API_BASE_URL}/api/consultant/students/export?${params.toString()}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        responseType: 'blob'
+                    }
+                );
+
+                return response.data;
+            } catch (err) {
+                console.error("❌ Failed to export students:", err);
+                throw err;
+            }
+        },
+        [isConsultant]
+    );
+
+    // ============================================================================
     // Refresh all consultant data
     // ============================================================================
     const refreshConsultantData = useCallback(async () => {
@@ -286,8 +612,17 @@ export const ConsultantDataProvider = ({ children }) => {
         // Actions
         fetchConsultantProfile,
         fetchStudents,
+        fetchStudentsWithParams,
         inviteStudent,
+        inviteMultipleStudents,
         getStudentDetails,
+        getStudentSummary,
+        getDashboardStats,
+        getAdmissions,
+        getLoanAnalysis,
+        getLoanRequestById,
+        getStudentLoanRequests,
+        exportStudents,
         refreshConsultantData,
         clearConsultantData,
 
