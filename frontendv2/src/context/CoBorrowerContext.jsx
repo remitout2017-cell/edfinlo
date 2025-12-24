@@ -171,70 +171,49 @@ export const CoBorrowerProvider = ({ children }) => {
     [fetchCoBorrowers]
   );
 
-  // In coBorrowerKyc.controller.js - getCoBorrowerById
+  // ============================================================================
+  // Get coborrower by ID
+  // ============================================================================
+  const getCoBorrowerById = useCallback(async (coBorrowerId) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Unauthorized");
+    }
 
-  exports.getCoBorrowerById = asyncHandler(async (req, res) => {
-    const studentId = req.user?.id;
-    if (!studentId) throw new AppError("Unauthorized", 401);
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/coborrower/${coBorrowerId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    const { coBorrowerId } = req.params;
-
-    const coBorrower = await CoBorrower.findOne({
-      _id: coBorrowerId,
-      student: studentId,
-      isDeleted: false,
-    }).select(
-      "firstName lastName relationToStudent email phoneNumber dateOfBirth " +
-        "kycStatus kycVerifiedAt kycRejectedAt financialVerificationStatus " +
-        "financialVerifiedAt financialSummary " +
-        "+kycData.aadhaarNumber +kycData.panNumber +kycData.passportNumber " +
-        "+kycData.aadhaarFrontUrl +kycData.aadhaarBackUrl +kycData.panFrontUrl +kycData.passportUrl " +
-        "kycData.aadhaarName kycData.panName kycData.aadhaarAddress"
-    );
-
-    if (!coBorrower) throw new AppError("Co-borrower not found", 404);
-
-    const aad = aadForUser(coBorrowerId);
-
-    // ✅ FIXED: Changed 'coBorrower' to 'data' to match frontend
-    return res.json({
-      success: true,
-      data: {
-        _id: coBorrower._id,
-        fullName: coBorrower.fullName,
-        firstName: coBorrower.firstName,
-        lastName: coBorrower.lastName,
-        relationToStudent: coBorrower.relationToStudent,
-        email: coBorrower.email,
-        phoneNumber: coBorrower.phoneNumber,
-        dateOfBirth: coBorrower.dateOfBirth,
-        age: coBorrower.age,
-        kycStatus: coBorrower.kycStatus,
-        kycVerifiedAt: coBorrower.kycVerifiedAt,
-        kycRejectedAt: coBorrower.kycRejectedAt,
-        financialStatus: coBorrower.financialVerificationStatus,
-        financialVerifiedAt: coBorrower.financialVerifiedAt,
-        financialSummary: coBorrower.financialSummary,
-        kycData: coBorrower.kycData
-          ? {
-              aadhaarNumber: decryptText(coBorrower.kycData.aadhaarNumber, aad),
-              panNumber: decryptText(coBorrower.kycData.panNumber, aad),
-              passportNumber: decryptText(
-                coBorrower.kycData.passportNumber,
-                aad
-              ),
-              aadhaarName: coBorrower.kycData.aadhaarName,
-              panName: coBorrower.kycData.panName,
-              aadhaarAddress: coBorrower.kycData.aadhaarAddress,
-              aadhaarFrontUrl: coBorrower.kycData.aadhaarFrontUrl,
-              aadhaarBackUrl: coBorrower.kycData.aadhaarBackUrl,
-              panFrontUrl: coBorrower.kycData.panFrontUrl,
-              passportUrl: coBorrower.kycData.passportUrl,
-            }
-          : null,
-      },
-    });
-  });
+      if (response.data.success) {
+        console.log("✅ Co-borrower details fetched:", coBorrowerId);
+        setSelectedCoBorrower(response.data.data);
+        return response.data.data;
+      } else {
+        throw new Error(
+          response.data.error || "Failed to fetch co-borrower details"
+        );
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch co-borrower details:", err);
+      const errorMsg =
+        err.response?.data?.error ||
+        err.message ||
+        "Failed to fetch co-borrower details";
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // ============================================================================
   // Delete coborrower

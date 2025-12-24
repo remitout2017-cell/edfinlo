@@ -342,6 +342,50 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ==================== CONSULTANT FORGOT PASSWORD ====================
+  const forgotPasswordConsultant = async (email) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/consultant/auth/forgot-password`,
+        { email },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      if (response.data.success) {
+        return { success: true, message: response.data.message };
+      } else {
+        return { success: false, message: response.data.message };
+      }
+    } catch (error) {
+      console.error("Consultant forgot password error:", error);
+      const message =
+        error.response?.data?.message || "Failed to send reset email";
+      return { success: false, message };
+    }
+  };
+
+  // ==================== CONSULTANT RESET PASSWORD ====================
+  const resetPasswordConsultant = async (email, otp, newPassword) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/consultant/auth/reset-password`,
+        { email, otp, newPassword },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      if (response.data.success) {
+        return { success: true, message: response.data.message };
+      } else {
+        return { success: false, message: response.data.message };
+      }
+    } catch (error) {
+      console.error("Consultant reset password error:", error);
+      const message =
+        error.response?.data?.message || "Failed to reset password";
+      return { success: false, message };
+    }
+  };
+
   // ==================== LOGOUT ====================
   const logout = () => {
     clearAuth();
@@ -371,6 +415,8 @@ export const AuthProvider = ({ children }) => {
     // Password methods
     forgotPassword,
     resetPassword,
+    forgotPasswordConsultant,
+    resetPasswordConsultant,
 
     // Helpers
     getDashboardRoute,
