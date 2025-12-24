@@ -6,6 +6,9 @@ const StudentEducationPlan = require("../../models/student/StudentEducationPlan"
 // @access Private (student)
 exports.upsertEducationPlan = async (req, res, next) => {
   try {
+    console.log("📝 Upserting Education Plan. User:", req.user?._id);
+    console.log("📝 Request Body:", req.body);
+
     const {
       targetCountry,
       degreeType,
@@ -24,6 +27,13 @@ exports.upsertEducationPlan = async (req, res, next) => {
       loanAmountRequested,
       livingExpenseOption,
     };
+
+    // Remove undefined fields
+    Object.keys(payload).forEach(
+      (key) => payload[key] === undefined && delete payload[key]
+    );
+
+    console.log("📝 Payload to save:", payload);
 
     const plan = await StudentEducationPlan.findOneAndUpdate(
       { student: req.user._id },

@@ -1,4 +1,5 @@
 // src/pages/student/CoBorrower.jsx
+
 import React, { useEffect, useState } from "react";
 import { useCoBorrowerData } from "../../context/CoBorrowerContext";
 import toast from "react-hot-toast";
@@ -12,22 +13,18 @@ import {
   Trash2,
   CheckCircle,
   AlertCircle,
-  Download,
-  Eye,
+  XCircle,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 
 const RELATIONS = [
-  "father",
-  "mother",
-  "brother",
-  "sister",
-  "spouse",
-  "uncle",
-  "aunt",
-  "grandfather",
-  "grandmother",
-  "guardian",
+  "Father",
+  "Mother",
+  "Guardian",
+  "Spouse",
+  "Sibling",
+  "Other",
 ];
 
 const CoBorrower = () => {
@@ -39,11 +36,14 @@ const CoBorrower = () => {
     createCoBorrowerWithKyc,
     uploadFinancialDocuments,
     deleteCoBorrower,
+    reverifyKyc,
+    resetFinancialDocuments,
   } = useCoBorrowerData();
 
   const [creating, setCreating] = useState(false);
   const [uploadingFinancial, setUploadingFinancial] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [reverifying, setReverifying] = useState(null);
 
   // Core form state - only KYC info (split from financial docs)
   const [form, setForm] = useState({
@@ -110,9 +110,9 @@ const CoBorrower = () => {
     setShowAddForm(false);
   };
 
-  // ========================================================================
+  // ============================================================================
   // Submit: Create Co-Borrower with KYC (Step 1)
-  // ========================================================================
+  // ============================================================================
   const handleCreateCoBorrower = async (e) => {
     e.preventDefault();
 
@@ -121,12 +121,13 @@ const CoBorrower = () => {
       toast.error("Relation and first name are required");
       return;
     }
+
     if (
       !kycFiles.aadhaar_front?.length ||
       !kycFiles.aadhaar_back?.length ||
       !kycFiles.pan_front?.length
     ) {
-      toast.error("Aadhaar (front & back) and PAN are required");
+      toast.error("Aadhaar (front, back) and PAN are required");
       return;
     }
 
@@ -137,29 +138,34 @@ const CoBorrower = () => {
       // Append personal info
       formData.append("relationToStudent", form.relationToStudent);
       formData.append("firstName", form.firstName);
-      formData.append("lastName", form.lastName || "");
+      formData.append("lastName", form.lastName);
       if (form.email) formData.append("email", form.email);
       if (form.phoneNumber) formData.append("phoneNumber", form.phoneNumber);
       if (form.dateOfBirth) formData.append("dateOfBirth", form.dateOfBirth);
 
       // Append KYC documents
-      if (kycFiles.aadhaar_front) {
+      if (kycFiles.aadhaar_front)
         formData.append("aadhaar_front", kycFiles.aadhaar_front[0]);
-      }
-      if (kycFiles.aadhaar_back) {
+      if (kycFiles.aadhaar_back)
         formData.append("aadhaar_back", kycFiles.aadhaar_back[0]);
-      }
-      if (kycFiles.pan_front) {
+      if (kycFiles.pan_front)
         formData.append("pan_front", kycFiles.pan_front[0]);
-      }
-      if (kycFiles.passport) {
-        formData.append("passport", kycFiles.passport[0]);
-      }
+      if (kycFiles.passport) formData.append("passport", kycFiles.passport[0]);
 
       // Call context function
       const result = await createCoBorrowerWithKyc(formData);
+
       if (result?.success) {
-        toast.success(result.message || "Co-borrower created successfully");
+        if (result.verified) {
+          toast.success(
+            result.message || "Co-borrower created and KYC verified!"
+          );
+        } else {
+          toast.error(
+            result.message ||
+              "Co-borrower created but KYC verification failed. Please re-verify."
+          );
+        }
         resetKycForm();
       }
     } catch (error) {
@@ -172,9 +178,60 @@ const CoBorrower = () => {
     }
   };
 
-  // ========================================================================
+  // ============================================================================
+  // Re-verify KYC for rejected co-borrower
+  // ============================================================================
+  const handleReverifyKyc = async (coBorrowerId) => {
+    const files = financialFiles[coBorrowerId];
+
+    if (
+      !files?.aadhaar_front?.length ||
+      !files?.aadhaar_back?.length ||
+      !files?.pan_front?.length
+    ) {
+      toast.error(
+        "Aadhaar (front, back) and PAN are required for re-verification"
+      );
+      return;
+    }
+
+    try {
+      setReverifying(coBorrowerId);
+      const formData = new FormData();
+
+      formData.append("aadhaar_front", files.aadhaar_front[0]);
+      formData.append("aadhaar_back", files.aadhaar_back[0]);
+      formData.append("pan_front", files.pan_front[0]);
+      if (files.passport) formData.append("passport", files.passport[0]);
+
+      const result = await reverifyKyc(coBorrowerId, formData);
+
+      if (result?.success) {
+        if (result.verified) {
+          toast.success("KYC re-verified successfully!");
+        } else {
+          toast.error(
+            "KYC verification failed. " + (result.reasons?.join(", ") || "")
+          );
+        }
+        // Clear files
+        setFinancialFiles((prev) => {
+          const updated = { ...prev };
+          delete updated[coBorrowerId];
+          return updated;
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.error || "Failed to re-verify KYC");
+    } finally {
+      setReverifying(null);
+    }
+  };
+
+  // ============================================================================
   // Upload Financial Documents (Step 2 - after KYC is done)
-  // ========================================================================
+  // ============================================================================
   const handleUploadFinancialDocs = async (coBorrowerId) => {
     const files = financialFiles[coBorrowerId];
 
@@ -187,8 +244,8 @@ const CoBorrower = () => {
       toast.error("Bank statement PDF is required");
       return;
     }
-    if (!files?.itr_pdf_1?.length || !files?.itr_pdf_2?.length) {
-      toast.error("Both ITR PDFs are required");
+    if (!files?.itr_pdf_1?.length) {
+      toast.error("At least ITR 1 is required");
       return;
     }
 
@@ -200,20 +257,23 @@ const CoBorrower = () => {
       formData.append("salary_slips_pdf", files.salary_slips_pdf[0]);
       formData.append("bank_statement_pdf", files.bank_statement_pdf[0]);
       formData.append("itr_pdf_1", files.itr_pdf_1[0]);
-      formData.append("itr_pdf_2", files.itr_pdf_2[0]);
-      if (files.form16_pdf) {
-        formData.append("form16_pdf", files.form16_pdf[0]);
-      }
+      if (files.itr_pdf_2) formData.append("itr_pdf_2", files.itr_pdf_2[0]);
+      if (files.form16_pdf) formData.append("form16_pdf", files.form16_pdf[0]);
 
       // Call context function
       const result = await uploadFinancialDocuments(coBorrowerId, formData);
+
       if (result?.success) {
         toast.success(
           result.message ||
-            "Financial documents uploaded and analyzed successfully"
+            "Financial documents uploaded and analyzed successfully!"
         );
         // Clear files for this coborrower
-        setFinancialFiles((prev) => ({ ...prev, [coBorrowerId]: {} }));
+        setFinancialFiles((prev) => {
+          const updated = { ...prev };
+          delete updated[coBorrowerId];
+          return updated;
+        });
       }
     } catch (error) {
       console.error(error);
@@ -225,11 +285,36 @@ const CoBorrower = () => {
     }
   };
 
-  // ========================================================================
+  // ============================================================================
+  // Reset Financial Documents
+  // ============================================================================
+  const handleResetFinancial = async (coBorrowerId) => {
+    if (
+      !window.confirm(
+        "Reset financial documents? This will delete all uploaded files and analysis."
+      )
+    )
+      return;
+
+    try {
+      const result = await resetFinancialDocuments(coBorrowerId);
+      if (result?.success) {
+        toast.success("Financial documents reset. You can re-upload now.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error.response?.data?.error || "Failed to reset financial documents"
+      );
+    }
+  };
+
+  // ============================================================================
   // Delete Co-Borrower
-  // ========================================================================
+  // ============================================================================
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this co-borrower?")) return;
+
     try {
       await deleteCoBorrower(id);
       toast.success("Co-borrower deleted successfully");
@@ -239,6 +324,29 @@ const CoBorrower = () => {
         error.response?.data?.error || "Failed to delete co-borrower"
       );
     }
+  };
+
+  // ============================================================================
+  // Helper: Get Status Badge
+  // ============================================================================
+  const getStatusBadge = (status) => {
+    const styles = {
+      verified: "bg-green-100 text-green-700 border-green-200",
+      pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      rejected: "bg-red-100 text-red-700 border-red-200",
+      processing: "bg-blue-100 text-blue-700 border-blue-200",
+      failed: "bg-red-100 text-red-700 border-red-200",
+    };
+
+    return (
+      <span
+        className={`px-3 py-1 text-xs font-semibold rounded-full border ${
+          styles[status] || styles.pending
+        }`}
+      >
+        {status?.toUpperCase() || "UNKNOWN"}
+      </span>
+    );
   };
 
   if (loading && coBorrowers.length === 0) {
@@ -257,7 +365,7 @@ const CoBorrower = () => {
   return (
     <DashboardLayout>
       <div className="mb-6">
-        <StepperExample currentStep={6} />{" "}
+        <StepperExample currentStep={6} />
       </div>
 
       <div className="max-w-5xl mx-auto space-y-6">
@@ -319,8 +427,8 @@ const CoBorrower = () => {
                   >
                     <option value="">Select Relation</option>
                     {RELATIONS.map((r) => (
-                      <option key={r} value={r} className="capitalize">
-                        {r.charAt(0).toUpperCase() + r.slice(1)}
+                      <option key={r} value={r}>
+                        {r}
                       </option>
                     ))}
                   </select>
@@ -508,201 +616,320 @@ const CoBorrower = () => {
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-gray-900 text-lg">
-                      {cb.firstName} {cb.lastName}
+                      {cb.fullName || `${cb.firstName} ${cb.lastName}`}
                     </h3>
                     <p className="text-sm text-gray-500 capitalize">
                       {cb.relationToStudent}
                     </p>
                   </div>
-                  <button
-                    onClick={() => handleDelete(cb._id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                    title="Delete Co-Borrower"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {getStatusBadge(cb.kycStatus)}
+                    <button
+                      onClick={() => handleDelete(cb._id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                      title="Delete Co-Borrower"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="p-6 space-y-6">
-                  {/* Identity Documents */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                      Identity Documents
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
-                        <span className="text-gray-600">Aadhaar Documents</span>
-                        <span className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="w-4 h-4" />
-                          Uploaded
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
-                        <span className="text-gray-600">PAN Documents</span>
-                        <span className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="w-4 h-4" />
-                          Uploaded
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Financial Documents */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                      Financial Documents
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="text-gray-600 mb-1">Salary Slips</div>
-                        <div className="font-medium text-gray-900">
-                          {cb.financialInfo?.salarySlips?.length || 0} months
+                  {/* KYC Status */}
+                  {cb.kycStatus === "rejected" && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-start gap-3 mb-4">
+                        <XCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-red-900">
+                            KYC Verification Failed
+                          </p>
+                          <p className="text-xs text-red-700 mt-1">
+                            Please re-upload better quality documents
+                          </p>
                         </div>
                       </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="text-gray-600 mb-1">ITR Records</div>
-                        <div className="font-medium text-gray-900">
-                          {cb.financialInfo?.itrData?.length || 0} years
-                        </div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="text-gray-600 mb-1">Form 16</div>
-                        <div className="font-medium text-gray-900">
-                          {cb.financialInfo?.form16Data?.length || 0} years
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Bank Statement Upload/Analysis */}
-                  <div className="border-t border-gray-200 pt-6">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                      Bank Statement Analysis
-                    </h4>
-
-                    {cb.financialInfo?.bankStatement?.overallAnalysis ? (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div className="flex items-start gap-3">
-                          <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-green-900 mb-2">
-                              Bank Statement Analyzed
-                            </p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                              <div>
-                                <div className="text-green-700 text-xs">
-                                  Avg Balance
-                                </div>
-                                <div className="font-semibold text-green-900">
-                                  ₹
-                                  {cb.financialInfo.bankStatement.overallAnalysis.averageMonthlyBalance?.toLocaleString() ||
-                                    0}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-green-700 text-xs">
-                                  Pages Analyzed
-                                </div>
-                                <div className="font-semibold text-green-900">
-                                  {cb.financialInfo.bankStatement.pageCount ||
-                                    0}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-green-700 text-xs">
-                                  Total EMI
-                                </div>
-                                <div className="font-semibold text-green-900">
-                                  ₹
-                                  {cb.financialInfo.financialSummary?.totalExistingEmi?.toLocaleString() ||
-                                    0}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-green-700 text-xs">
-                                  FOIR
-                                </div>
-                                <div className="font-semibold text-green-900">
-                                  {cb.financialInfo.financialSummary?.foir?.toFixed(
-                                    2
-                                  ) || 0}
-                                  %
-                                </div>
-                              </div>
+                      {/* Re-verify Form */}
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {[
+                            { name: "aadhaar_front", label: "Aadhaar Front" },
+                            { name: "aadhaar_back", label: "Aadhaar Back" },
+                            { name: "pan_front", label: "PAN Card" },
+                          ].map((field) => (
+                            <div key={field.name}>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                {field.label}
+                              </label>
+                              <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                                <input
+                                  type="file"
+                                  onChange={(e) =>
+                                    handleFinancialFileChange(
+                                      cb._id,
+                                      field.name,
+                                      e
+                                    )
+                                  }
+                                  className="hidden"
+                                  accept="image/*,.pdf"
+                                />
+                                {financialFiles[cb._id]?.[field.name]?.length >
+                                0 ? (
+                                  <CheckCircle className="w-5 h-5 text-green-500" />
+                                ) : (
+                                  <Upload className="w-4 h-4 text-gray-400" />
+                                )}
+                              </label>
                             </div>
-                          </div>
+                          ))}
                         </div>
+                        <button
+                          onClick={() => handleReverifyKyc(cb._id)}
+                          disabled={reverifying === cb._id}
+                          className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {reverifying === cb._id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Re-verifying...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="w-4 h-4" />
+                              Re-verify KYC
+                            </>
+                          )}
+                        </button>
                       </div>
-                    ) : (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <div className="flex items-start gap-3 mb-4">
-                          <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-yellow-900">
-                              Bank Statement Required
-                            </p>
-                            <p className="text-xs text-yellow-700 mt-1">
-                              Upload at least 5 pages of recent bank statements
-                              (6-month period)
-                            </p>
-                          </div>
-                        </div>
+                    </div>
+                  )}
 
-                        <div className="space-y-3">
-                          <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-yellow-300 rounded-lg cursor-pointer hover:border-yellow-400 hover:bg-yellow-100 transition-colors bg-white">
-                            <input
-                              type="file"
-                              multiple
-                              onChange={(e) => handleBankFileChange(cb._id, e)}
-                              className="hidden"
-                              accept=".pdf"
-                            />
-                            {bankFiles[cb._id]?.length > 0 ? (
-                              <div className="text-center">
-                                <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
-                                <span className="text-sm font-medium text-gray-900">
-                                  {bankFiles[cb._id].length} files selected
-                                </span>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Click upload button below
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="text-center">
-                                <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                                <span className="text-sm font-medium text-gray-700">
-                                  Upload Bank Statements
-                                </span>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  PDF files only (min 5 pages)
-                                </p>
-                              </div>
-                            )}
-                          </label>
-
-                          {bankFiles[cb._id]?.length > 0 && (
-                            <button
-                              onClick={() => handleUploadBankStatements(cb._id)}
-                              disabled={uploadingBank === cb._id}
-                              className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                              {uploadingBank === cb._id ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                  Analyzing...
-                                </>
-                              ) : (
-                                <>
-                                  <Upload className="w-4 h-4" />
-                                  Upload & Analyze
-                                </>
-                              )}
-                            </button>
+                  {/* Financial Documents Section - Only show if KYC is verified */}
+                  {cb.kycStatus === "verified" && (
+                    <>
+                      <div className="border-t border-gray-200 pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-sm font-semibold text-gray-900">
+                            Financial Documents
+                          </h4>
+                          {getStatusBadge(
+                            cb.financialVerificationStatus || "pending"
                           )}
                         </div>
+
+                        {/* Show Financial Summary if verified */}
+                        {cb.financialVerificationStatus === "verified" &&
+                          cb.financialSummary && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                              <div className="flex items-start gap-3 mb-3">
+                                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-green-900 mb-2">
+                                    Financial Analysis Complete
+                                  </p>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                    <div>
+                                      <div className="text-green-700 text-xs">
+                                        Avg Monthly Salary
+                                      </div>
+                                      <div className="font-semibold text-green-900">
+                                        ₹
+                                        {cb.financialSummary.avgMonthlySalary?.toLocaleString() ||
+                                          0}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="text-green-700 text-xs">
+                                        Annual Income
+                                      </div>
+                                      <div className="font-semibold text-green-900">
+                                        ₹
+                                        {cb.financialSummary.estimatedAnnualIncome?.toLocaleString() ||
+                                          0}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="text-green-700 text-xs">
+                                        Total EMI
+                                      </div>
+                                      <div className="font-semibold text-green-900">
+                                        ₹
+                                        {cb.financialSummary.totalExistingEmi?.toLocaleString() ||
+                                          0}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="text-green-700 text-xs">
+                                        FOIR
+                                      </div>
+                                      <div className="font-semibold text-green-900">
+                                        {cb.financialSummary.foir?.toFixed(2) ||
+                                          0}
+                                        %
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="text-green-700 text-xs">
+                                        CIBIL Estimate
+                                      </div>
+                                      <div className="font-semibold text-green-900">
+                                        {cb.financialSummary.cibilEstimate ||
+                                          "N/A"}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="text-green-700 text-xs">
+                                        Avg Bank Balance
+                                      </div>
+                                      <div className="font-semibold text-green-900">
+                                        ₹
+                                        {cb.financialSummary.avgBankBalance?.toLocaleString() ||
+                                          0}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="text-green-700 text-xs">
+                                        Min Balance
+                                      </div>
+                                      <div className="font-semibold text-green-900">
+                                        ₹
+                                        {cb.financialSummary.minBankBalance?.toLocaleString() ||
+                                          0}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="text-green-700 text-xs">
+                                        Bounce Count
+                                      </div>
+                                      <div className="font-semibold text-green-900">
+                                        {cb.financialSummary.bounceCount || 0}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleResetFinancial(cb._id)}
+                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                              >
+                                Reset & Re-upload
+                              </button>
+                            </div>
+                          )}
+
+                        {/* Show Upload Form if not verified */}
+                        {cb.financialVerificationStatus !== "verified" && (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3 mb-4">
+                              <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-yellow-900">
+                                  Financial Documents Required
+                                </p>
+                                <p className="text-xs text-yellow-700 mt-1">
+                                  Upload salary slips, bank statement, and ITR
+                                  for financial analysis
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {[
+                                  {
+                                    name: "salary_slips_pdf",
+                                    label: "Salary Slips (PDF)",
+                                    required: true,
+                                  },
+                                  {
+                                    name: "bank_statement_pdf",
+                                    label: "Bank Statement (PDF)",
+                                    required: true,
+                                  },
+                                  {
+                                    name: "itr_pdf_1",
+                                    label: "ITR 1 (PDF)",
+                                    required: true,
+                                  },
+                                  {
+                                    name: "itr_pdf_2",
+                                    label: "ITR 2 (PDF)",
+                                    required: false,
+                                  },
+                                  {
+                                    name: "form16_pdf",
+                                    label: "Form 16 (PDF)",
+                                    required: false,
+                                  },
+                                ].map((field) => (
+                                  <div key={field.name}>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                      {field.label}
+                                      {field.required && (
+                                        <span className="text-red-500"> *</span>
+                                      )}
+                                    </label>
+                                    <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                                      <input
+                                        type="file"
+                                        onChange={(e) =>
+                                          handleFinancialFileChange(
+                                            cb._id,
+                                            field.name,
+                                            e
+                                          )
+                                        }
+                                        className="hidden"
+                                        accept=".pdf"
+                                      />
+                                      {financialFiles[cb._id]?.[field.name]
+                                        ?.length > 0 ? (
+                                        <div className="text-center">
+                                          <CheckCircle className="w-5 h-5 text-green-500 mx-auto mb-1" />
+                                          <span className="text-xs text-green-600 font-medium">
+                                            Selected
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <div className="text-center">
+                                          <Upload className="w-4 h-4 text-gray-400 mx-auto mb-1" />
+                                          <span className="text-xs text-gray-500">
+                                            Upload
+                                          </span>
+                                        </div>
+                                      )}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <button
+                                onClick={() =>
+                                  handleUploadFinancialDocs(cb._id)
+                                }
+                                disabled={uploadingFinancial === cb._id}
+                                className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              >
+                                {uploadingFinancial === cb._id ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    Uploading & Analyzing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-4 h-4" />
+                                    Upload & Analyze
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -712,7 +939,6 @@ const CoBorrower = () => {
         {/* Navigation Buttons */}
         <div className="flex items-center justify-between py-6 border-t border-gray-200">
           <Link to="/student/work-experience">
-            {" "}
             <button
               type="button"
               className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
@@ -733,25 +959,26 @@ const CoBorrower = () => {
             </button>
           </Link>
 
-          <button
-            type="button"
-            onClick={() => (window.location.href = "/student/admission")}
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
-          >
-            <svg
-              className="w-5 h-5 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <Link to="/student/admission">
+            <button
+              type="button"
+              className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </Link>
         </div>
       </div>
     </DashboardLayout>

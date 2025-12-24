@@ -32,7 +32,7 @@ const StudentEducationPlanSchema = new Schema(
     // Course and loan details
     courseDetails: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     loanAmountRequested: {

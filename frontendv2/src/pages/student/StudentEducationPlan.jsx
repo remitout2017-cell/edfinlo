@@ -2,7 +2,7 @@
 // Redesigned as "My Application" page matching the design mockup
 
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // Link removed, using useNavigate
 import {
   User,
   Phone,
@@ -21,8 +21,9 @@ import DashboardLayout from "../../components/layouts/DashboardLayout";
 import StepperExample from "../../components/common/stepper";
 
 import { useAuth } from "../../context/AuthContext";
+import { useStudentEducationPlan } from "../../context/StudentEducationPlanContext";
 import {
-  studentEducationPlanAPI,
+  // studentEducationPlanAPI removed
   kycAPI,
   academicAPI,
   admissionAPI,
@@ -34,9 +35,31 @@ import {
 } from "../../services/api";
 import toast from "react-hot-toast";
 
+const TARGET_COUNTRIES = [
+  "USA",
+  "UK",
+  "Canada",
+  "Australia",
+  "Germany",
+  "Ireland",
+  "New Zealand",
+  "France",
+  "Netherlands",
+  "Sweden",
+  "Other",
+];
+
 const StudentEducationPlan = () => {
+  const navigate = useNavigate();
   const { user: authUser } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const {
+    educationPlan,
+    loading: planLoading,
+    fetchEducationPlan,
+    saveEducationPlan,
+  } = useStudentEducationPlan();
+
+  const [localLoading, setLocalLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState(null);
@@ -81,6 +104,23 @@ const StudentEducationPlan = () => {
     fetchAllData();
   }, []);
 
+  // Sync form with context data
+  useEffect(() => {
+    if (educationPlan) {
+      setForm({
+        targetCountry: educationPlan.targetCountry || "",
+        degreeType: educationPlan.degreeType || "",
+        degreeTypeOther: "",
+        courseDurationMonths: educationPlan.courseDurationMonths || "",
+        loanAmountRequested: educationPlan.loanAmountRequested || "",
+        referralCode: educationPlan.referralCode || "",
+        courseDetails: educationPlan.courseDetails || "",
+        livingExpenseOption:
+          educationPlan.livingExpenseOption || "WITH_LIVING_EXPENSE",
+      });
+    }
+  }, [educationPlan]);
+
   const fetchAllData = async () => {
     try {
       const [
@@ -92,7 +132,7 @@ const StudentEducationPlan = () => {
         coRes,
         profileRes,
       ] = await Promise.allSettled([
-        studentEducationPlanAPI.getMyPlan(),
+        fetchEducationPlan(),
         kycAPI.getKYCDetails(),
         academicAPI.getRecords(),
         admissionAPI.getAdmission(),
@@ -101,23 +141,7 @@ const StudentEducationPlan = () => {
         userAPI.getProfile(),
       ]);
 
-      // Process education plan
-      if (planRes.status === "fulfilled") {
-        const plan = planRes.value.data?.data;
-        if (plan) {
-          setForm({
-            targetCountry: plan.targetCountry || "",
-            degreeType: plan.degreeType || "",
-            degreeTypeOther: "",
-            courseDurationMonths: plan.courseDurationMonths || "",
-            loanAmountRequested: plan.loanAmountRequested || "",
-            referralCode: plan.referralCode || "",
-            courseDetails: plan.courseDetails || "",
-            livingExpenseOption:
-              plan.livingExpenseOption || "WITH_LIVING_EXPENSE",
-          });
-        }
-      }
+      // Education plan is handled by context state via useEffect
 
       // Process KYC documents
       if (kycRes.status === "fulfilled") {
@@ -151,7 +175,7 @@ const StudentEducationPlan = () => {
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
@@ -164,38 +188,42 @@ const StudentEducationPlan = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (redirect = false) => {
     // Validate required fields
     if (
       !form.targetCountry ||
       !form.degreeType ||
       !form.courseDurationMonths ||
-      !form.courseDetails ||
       !form.loanAmountRequested
     ) {
       toast.error("Please fill in all required fields");
-      return;
+      return false;
     }
 
     setSaving(true);
-    try {
-      await studentEducationPlanAPI.upsertPlan({
-        targetCountry: form.targetCountry,
-        degreeType: form.degreeType,
-        courseDurationMonths: Number(form.courseDurationMonths) || 1,
-        loanAmountRequested: Number(form.loanAmountRequested) || 0,
-        courseDetails: form.courseDetails,
-        livingExpenseOption: form.livingExpenseOption || "WITH_LIVING_EXPENSE",
-      });
-      toast.success("Course details saved successfully");
+    // Use context save function
+    const result = await saveEducationPlan({
+      targetCountry: form.targetCountry,
+      degreeType: form.degreeType,
+      courseDurationMonths: Number(form.courseDurationMonths) || 1,
+      loanAmountRequested: Number(form.loanAmountRequested) || 0,
+      livingExpenseOption: form.livingExpenseOption || "WITH_LIVING_EXPENSE",
+    });
+
+    setSaving(false);
+
+    if (result.success) {
       setEditing(false);
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to save course details"
-      );
-    } finally {
-      setSaving(false);
+      if (redirect) {
+        navigate("/student/kyc");
+      }
+      return true;
     }
+    return false;
+  };
+
+  const handleNext = async () => {
+    await handleSave(true);
   };
 
   const handleSendToNBFCs = async () => {
@@ -250,8 +278,9 @@ const StudentEducationPlan = () => {
     <div className="space-y-1">
       <p className="text-sm text-gray-600">{label}</p>
       <div
-        className={`flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg ${url ? "cursor-pointer hover:bg-gray-50" : "bg-gray-50"
-          }`}
+        className={`flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg ${
+          url ? "cursor-pointer hover:bg-gray-50" : "bg-gray-50"
+        }`}
         onClick={() => url && openPreview(url, label)}
       >
         <div className="flex items-center gap-2">
@@ -287,7 +316,7 @@ const StudentEducationPlan = () => {
 
   const displayUser = profile || authUser;
 
-  if (loading) {
+  if (localLoading || planLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -302,9 +331,7 @@ const StudentEducationPlan = () => {
       <div className="flex items-center justify-center flex-col min-h-screen">
         <StepperExample currentStep={1} />
 
-
         <div className="w-full max-w-4xl mt-4 bg-white rounded-2xl shadow-lg p-8">
-
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-orange-500">
               Course Details
@@ -333,15 +360,20 @@ const StudentEducationPlan = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 1. Where are you planning to study?
               </label>
-              <input
-                type="text"
+              <select
                 name="targetCountry"
                 value={form.targetCountry}
                 onChange={handleChange}
                 disabled={!editing}
-                placeholder="e.g., USA, UK, Canada, Australia"
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
-              />
+              >
+                <option value="">Select Country</option>
+                {TARGET_COUNTRIES.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Question 2 */}
@@ -442,9 +474,7 @@ const StudentEducationPlan = () => {
                     type="radio"
                     name="livingExpenseOption"
                     value="WITH_LIVING_EXPENSE"
-                    checked={
-                      form.livingExpenseOption === "WITH_LIVING_EXPENSE"
-                    }
+                    checked={form.livingExpenseOption === "WITH_LIVING_EXPENSE"}
                     onChange={handleChange}
                     disabled={!editing}
                     className="w-4 h-4 text-orange-500 border-gray-300 focus:ring-orange-500"
@@ -459,8 +489,7 @@ const StudentEducationPlan = () => {
                     name="livingExpenseOption"
                     value="WITHOUT_LIVING_EXPENSE"
                     checked={
-                      form.livingExpenseOption ===
-                      "WITHOUT_LIVING_EXPENSE"
+                      form.livingExpenseOption === "WITHOUT_LIVING_EXPENSE"
                     }
                     onChange={handleChange}
                     disabled={!editing}
@@ -472,64 +501,30 @@ const StudentEducationPlan = () => {
                 </label>
               </div>
             </div>
-
-            {/* Referral Code */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Referral Code
-              </label>
-              <input
-                type="text"
-                name="referralCode"
-                value={form.referralCode}
-                onChange={handleChange}
-                disabled={!editing}
-                placeholder="Enter referral code (optional)"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50"
-              />
-            </div>
-
-            {/* Course Details Textarea */}
-            <div>
-              <textarea
-                name="courseDetails"
-                value={form.courseDetails}
-                onChange={handleChange}
-                disabled={!editing}
-                rows={4}
-                placeholder="Describe your course, university details, program specifics, and any additional information about your education plan..."
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 resize-none"
-              />
-            </div>
           </div>
-
 
           {/* Navigation Buttons */}
           <div className="flex items-center justify-end pt-4 pb-6">
-            <Link to="/student/kyc">
-              <button
-                type="button"
-                className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
+            <button
+              onClick={handleNext}
+              disabled={saving}
+              className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition disabled:opacity-50"
+            >
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </Link>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
           </div>
-
-
-
         </div>
       </div>
 

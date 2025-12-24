@@ -1,16 +1,12 @@
 // src/context/CoBorrowerContext.jsx
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
+
+import { createContext, useContext, useState, useCallback } from "react";
 import axios from "axios";
 
 const CoBorrowerContext = createContext(null);
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export const useCoBorrowerData = () => {
   const ctx = useContext(CoBorrowerContext);
@@ -33,7 +29,7 @@ export const CoBorrowerProvider = ({ children }) => {
   }, []);
 
   // ============================================================================
-  // Fetch all coborrowers for the logged-in student
+  // Fetch all coborrowers
   // ============================================================================
   const fetchCoBorrowers = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -46,10 +42,7 @@ export const CoBorrowerProvider = ({ children }) => {
     setError(null);
     try {
       const response = await axios.get(`${API_BASE_URL}/api/coborrower/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeader(),
       });
 
       if (response.data.success) {
@@ -64,6 +57,7 @@ export const CoBorrowerProvider = ({ children }) => {
       console.error("❌ Failed to fetch co-borrowers:", err);
       const errorMsg =
         err.response?.data?.error ||
+        err.response?.data?.message ||
         err.message ||
         "Failed to load co-borrowers";
       setError(errorMsg);
@@ -71,10 +65,53 @@ export const CoBorrowerProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getAuthHeader]);
 
   // ============================================================================
-  // Create coborrower with KYC documents
+  // Get single co-borrower by ID
+  // ============================================================================
+  const getCoBorrowerById = useCallback(
+    async (coBorrowerId) => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Unauthorized");
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/api/coborrower/${coBorrowerId}`,
+          {
+            headers: getAuthHeader(),
+          }
+        );
+
+        if (response.data.success) {
+          console.log("✅ Co-borrower fetched:", coBorrowerId);
+          setSelectedCoBorrower(response.data.data);
+          return response.data.data;
+        } else {
+          throw new Error(response.data.error || "Failed to fetch co-borrower");
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch co-borrower:", err);
+        const errorMsg =
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to load co-borrower";
+        setError(errorMsg);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getAuthHeader]
+  );
+
+  // ============================================================================
+  // Create coborrower with KYC
   // ============================================================================
   const createCoBorrowerWithKyc = useCallback(
     async (formData) => {
@@ -91,7 +128,7 @@ export const CoBorrowerProvider = ({ children }) => {
           formData,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
+              ...getAuthHeader(),
               "Content-Type": "multipart/form-data",
             },
           }
@@ -99,7 +136,6 @@ export const CoBorrowerProvider = ({ children }) => {
 
         if (response.data.success) {
           console.log("✅ Co-borrower created with KYC");
-          // Refresh the list
           await fetchCoBorrowers();
           return response.data;
         } else {
@@ -111,6 +147,7 @@ export const CoBorrowerProvider = ({ children }) => {
         console.error("❌ Failed to create co-borrower:", err);
         const errorMsg =
           err.response?.data?.error ||
+          err.response?.data?.message ||
           err.message ||
           "Failed to create co-borrower";
         setError(errorMsg);
@@ -119,11 +156,11 @@ export const CoBorrowerProvider = ({ children }) => {
         setLoading(false);
       }
     },
-    [fetchCoBorrowers]
+    [fetchCoBorrowers, getAuthHeader]
   );
 
   // ============================================================================
-  // Upload financial documents and auto-process via agent
+  // Upload financial documents
   // ============================================================================
   const uploadFinancialDocuments = useCallback(
     async (coBorrowerId, formData) => {
@@ -140,15 +177,15 @@ export const CoBorrowerProvider = ({ children }) => {
           formData,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
+              ...getAuthHeader(),
               "Content-Type": "multipart/form-data",
             },
+            timeout: 300000,
           }
         );
 
         if (response.data.success) {
           console.log("✅ Financial documents uploaded and processed");
-          // Refresh the list to get updated financial data
           await fetchCoBorrowers();
           return response.data;
         } else {
@@ -160,6 +197,7 @@ export const CoBorrowerProvider = ({ children }) => {
         console.error("❌ Failed to upload financial documents:", err);
         const errorMsg =
           err.response?.data?.error ||
+          err.response?.data?.message ||
           err.message ||
           "Failed to upload financial documents";
         setError(errorMsg);
@@ -168,73 +206,8 @@ export const CoBorrowerProvider = ({ children }) => {
         setLoading(false);
       }
     },
-    [fetchCoBorrowers]
+    [fetchCoBorrowers, getAuthHeader]
   );
-
-  // In coBorrowerKyc.controller.js - getCoBorrowerById
-
-  exports.getCoBorrowerById = asyncHandler(async (req, res) => {
-    const studentId = req.user?.id;
-    if (!studentId) throw new AppError("Unauthorized", 401);
-
-    const { coBorrowerId } = req.params;
-
-    const coBorrower = await CoBorrower.findOne({
-      _id: coBorrowerId,
-      student: studentId,
-      isDeleted: false,
-    }).select(
-      "firstName lastName relationToStudent email phoneNumber dateOfBirth " +
-        "kycStatus kycVerifiedAt kycRejectedAt financialVerificationStatus " +
-        "financialVerifiedAt financialSummary " +
-        "+kycData.aadhaarNumber +kycData.panNumber +kycData.passportNumber " +
-        "+kycData.aadhaarFrontUrl +kycData.aadhaarBackUrl +kycData.panFrontUrl +kycData.passportUrl " +
-        "kycData.aadhaarName kycData.panName kycData.aadhaarAddress"
-    );
-
-    if (!coBorrower) throw new AppError("Co-borrower not found", 404);
-
-    const aad = aadForUser(coBorrowerId);
-
-    // ✅ FIXED: Changed 'coBorrower' to 'data' to match frontend
-    return res.json({
-      success: true,
-      data: {
-        _id: coBorrower._id,
-        fullName: coBorrower.fullName,
-        firstName: coBorrower.firstName,
-        lastName: coBorrower.lastName,
-        relationToStudent: coBorrower.relationToStudent,
-        email: coBorrower.email,
-        phoneNumber: coBorrower.phoneNumber,
-        dateOfBirth: coBorrower.dateOfBirth,
-        age: coBorrower.age,
-        kycStatus: coBorrower.kycStatus,
-        kycVerifiedAt: coBorrower.kycVerifiedAt,
-        kycRejectedAt: coBorrower.kycRejectedAt,
-        financialStatus: coBorrower.financialVerificationStatus,
-        financialVerifiedAt: coBorrower.financialVerifiedAt,
-        financialSummary: coBorrower.financialSummary,
-        kycData: coBorrower.kycData
-          ? {
-              aadhaarNumber: decryptText(coBorrower.kycData.aadhaarNumber, aad),
-              panNumber: decryptText(coBorrower.kycData.panNumber, aad),
-              passportNumber: decryptText(
-                coBorrower.kycData.passportNumber,
-                aad
-              ),
-              aadhaarName: coBorrower.kycData.aadhaarName,
-              panName: coBorrower.kycData.panName,
-              aadhaarAddress: coBorrower.kycData.aadhaarAddress,
-              aadhaarFrontUrl: coBorrower.kycData.aadhaarFrontUrl,
-              aadhaarBackUrl: coBorrower.kycData.aadhaarBackUrl,
-              panFrontUrl: coBorrower.kycData.panFrontUrl,
-              passportUrl: coBorrower.kycData.passportUrl,
-            }
-          : null,
-      },
-    });
-  });
 
   // ============================================================================
   // Delete coborrower
@@ -252,17 +225,16 @@ export const CoBorrowerProvider = ({ children }) => {
         const response = await axios.delete(
           `${API_BASE_URL}/api/coborrower/${coBorrowerId}`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
+            headers: getAuthHeader(),
           }
         );
 
         if (response.data.success) {
           console.log("✅ Co-borrower deleted:", coBorrowerId);
-          // Refresh the list
           await fetchCoBorrowers();
+          if (selectedCoBorrower?._id === coBorrowerId) {
+            setSelectedCoBorrower(null);
+          }
           return response.data;
         } else {
           throw new Error(
@@ -273,6 +245,7 @@ export const CoBorrowerProvider = ({ children }) => {
         console.error("❌ Failed to delete co-borrower:", err);
         const errorMsg =
           err.response?.data?.error ||
+          err.response?.data?.message ||
           err.message ||
           "Failed to delete co-borrower";
         setError(errorMsg);
@@ -281,11 +254,11 @@ export const CoBorrowerProvider = ({ children }) => {
         setLoading(false);
       }
     },
-    [fetchCoBorrowers]
+    [fetchCoBorrowers, getAuthHeader, selectedCoBorrower]
   );
 
   // ============================================================================
-  // Re-verify KYC for rejected coborrower
+  // Re-verify KYC
   // ============================================================================
   const reverifyKyc = useCallback(
     async (coBorrowerId, formData) => {
@@ -302,7 +275,7 @@ export const CoBorrowerProvider = ({ children }) => {
           formData,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
+              ...getAuthHeader(),
               "Content-Type": "multipart/form-data",
             },
           }
@@ -310,7 +283,6 @@ export const CoBorrowerProvider = ({ children }) => {
 
         if (response.data.success) {
           console.log("✅ KYC re-verified for co-borrower:", coBorrowerId);
-          // Refresh the list
           await fetchCoBorrowers();
           return response.data;
         } else {
@@ -319,86 +291,89 @@ export const CoBorrowerProvider = ({ children }) => {
       } catch (err) {
         console.error("❌ Failed to re-verify KYC:", err);
         const errorMsg =
-          err.response?.data?.error || err.message || "Failed to re-verify KYC";
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to re-verify KYC";
         setError(errorMsg);
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [fetchCoBorrowers]
+    [fetchCoBorrowers, getAuthHeader]
   );
 
   // ============================================================================
-  // Get financial verification status
+  // Get financial status
   // ============================================================================
-  const getFinancialStatus = useCallback(async (coBorrowerId) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Unauthorized");
-    }
-
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/coborrower/${coBorrowerId}/financial/status`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.data.success) {
-        console.log("✅ Financial status fetched:", coBorrowerId);
-        return response.data.data;
-      } else {
-        throw new Error(
-          response.data.error || "Failed to fetch financial status"
-        );
+  const getFinancialStatus = useCallback(
+    async (coBorrowerId) => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Unauthorized");
       }
-    } catch (err) {
-      console.error("❌ Failed to fetch financial status:", err);
-      return null;
-    }
-  }, []);
 
-  // ============================================================================
-  // Get complete financial analysis
-  // ============================================================================
-  const getFinancialAnalysis = useCallback(async (coBorrowerId) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Unauthorized");
-    }
-
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/coborrower/${coBorrowerId}/financial/analysis`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.data.success) {
-        console.log("✅ Financial analysis fetched:", coBorrowerId);
-        return response.data.data;
-      } else {
-        throw new Error(
-          response.data.error || "Failed to fetch financial analysis"
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/api/coborrower/${coBorrowerId}/financial/status`,
+          {
+            headers: getAuthHeader(),
+          }
         );
+
+        if (response.data.success) {
+          console.log("✅ Financial status fetched:", coBorrowerId);
+          return response.data.data;
+        } else {
+          throw new Error(
+            response.data.error || "Failed to fetch financial status"
+          );
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch financial status:", err);
+        return null;
       }
-    } catch (err) {
-      console.error("❌ Failed to fetch financial analysis:", err);
-      return null;
-    }
-  }, []);
+    },
+    [getAuthHeader]
+  );
 
   // ============================================================================
-  // Reset financial documents (allows re-upload)
+  // Get financial analysis
+  // ============================================================================
+  const getFinancialAnalysis = useCallback(
+    async (coBorrowerId) => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Unauthorized");
+      }
+
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/api/coborrower/${coBorrowerId}/financial/analysis`,
+          {
+            headers: getAuthHeader(),
+          }
+        );
+
+        if (response.data.success) {
+          console.log("✅ Financial analysis fetched:", coBorrowerId);
+          return response.data.data;
+        } else {
+          throw new Error(
+            response.data.error || "Failed to fetch financial analysis"
+          );
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch financial analysis:", err);
+        return null;
+      }
+    },
+    [getAuthHeader]
+  );
+
+  // ============================================================================
+  // Reset financial documents
   // ============================================================================
   const resetFinancialDocuments = useCallback(
     async (coBorrowerId) => {
@@ -413,16 +388,12 @@ export const CoBorrowerProvider = ({ children }) => {
         const response = await axios.delete(
           `${API_BASE_URL}/api/coborrower/${coBorrowerId}/financial/reset`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
+            headers: getAuthHeader(),
           }
         );
 
         if (response.data.success) {
           console.log("✅ Financial documents reset:", coBorrowerId);
-          // Refresh the list
           await fetchCoBorrowers();
           return response.data;
         } else {
@@ -434,6 +405,7 @@ export const CoBorrowerProvider = ({ children }) => {
         console.error("❌ Failed to reset financial documents:", err);
         const errorMsg =
           err.response?.data?.error ||
+          err.response?.data?.message ||
           err.message ||
           "Failed to reset financial documents";
         setError(errorMsg);
@@ -442,7 +414,7 @@ export const CoBorrowerProvider = ({ children }) => {
         setLoading(false);
       }
     },
-    [fetchCoBorrowers]
+    [fetchCoBorrowers, getAuthHeader]
   );
 
   // ============================================================================
@@ -452,19 +424,15 @@ export const CoBorrowerProvider = ({ children }) => {
     setError(null);
   }, []);
 
-  // Context value
   const value = {
-    // State
     coBorrowers,
     loading,
     error,
     selectedCoBorrower,
-
-    // Actions
     fetchCoBorrowers,
+    getCoBorrowerById,
     createCoBorrowerWithKyc,
     uploadFinancialDocuments,
-    getCoBorrowerById,
     deleteCoBorrower,
     reverifyKyc,
     getFinancialStatus,
