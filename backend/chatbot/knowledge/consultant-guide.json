@@ -1,0 +1,17 @@
+{
+  "role": "Education loan consultants help students navigate the loan application process and work with NBFCs to facilitate approvals.",
+  "responsibilities": [
+    "Guide students through application completion",
+    "Verify and validate student documents",
+    "Communicate with NBFCs on behalf of students",
+    "Track application statuses",
+    "Help improve applications for better approval chances"
+  ],
+  "platform_features": {
+    "student_management": "View and manage all your students in one dashboard",
+    "document_verification": "Access tools to verify document authenticity",
+    "application_tracking": "Real-time updates on all applications",
+    "nbfc_communication": "Direct communication channels with NBFC partners",
+    "analytics": "Performance metrics and success rates"
+  }
+}

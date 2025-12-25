@@ -1,0 +1,50 @@
+{
+  "company_name": "EduLoan Platform",
+  "tagline": "Smart Education Loans for Global Dreams",
+  "mission": "We help students achieve their study abroad dreams by connecting them with the right education loan providers through AI-powered matching.",
+  "founded": "2024",
+  "headquarters": "Mumbai, India",
+  
+  "what_we_do": {
+    "overview": "We are an education loan platform that connects students with NBFCs (Non-Banking Financial Companies) for study abroad loans. Our AI technology analyzes student profiles and matches them with lenders most likely to approve their applications.",
+    "key_features": [
+      "AI-powered NBFC matching that finds the best lenders for your profile",
+      "Complete digital application process - no paperwork hassles",
+      "Expert consultant support throughout your journey",
+      "Real-time application tracking and status updates",
+      "Access to 10+ trusted NBFC partners",
+      "Dedicated support team available 24/7"
+    ]
+  },
+  
+  "why_choose_us": [
+    {
+      "title": "Smart AI Matching",
+      "description": "Our AI analyzes 50+ data points to match you with NBFCs that suit your profile, increasing approval chances by 3x"
+    },
+    {
+      "title": "Save Time & Effort",
+      "description": "Complete your application in 30 minutes instead of weeks of paperwork and running around"
+    },
+    {
+      "title": "Expert Guidance",
+      "description": "Get personalized support from education loan consultants who understand international education"
+    },
+    {
+      "title": "Transparent Process",
+      "description": "Know exactly where your application stands with real-time tracking and notifications"
+    },
+    {
+      "title": "Higher Approval Rates",
+      "description": "Our students have 85% approval rate compared to 45% industry average"
+    }
+  ],
+  
+  "target_audience": "Students planning to study abroad, particularly from India seeking education loans for universities in USA, UK, Canada, Australia, and Europe",
+  
+  "contact": {
+    "support_email": "support@eduloan.com",
+    "phone": "+91-XXXX-XXXXXX",
+    "availability": "24/7 support available"
+  }
+}

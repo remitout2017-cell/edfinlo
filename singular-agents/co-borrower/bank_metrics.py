@@ -130,7 +130,7 @@ def _to_txns(raw_txns: List[Dict]) -> List[Txn]:
 
 # Detection keywords
 EMI_KEYWORDS = re.compile(
-    r"\bEMI\b|NACH|ECS|ACH|AUTO\s*DEBIT|INSTAL|INSTALL|LOAN|FINANCE|HOME\s*FIN|PL\b|HL\b",
+    r"\bEMI\b|\bLOAN\b|\bINSTAL|\bINSTALLMENT\b|\bAUTO\s*DEBIT\b|\bNACH\b|\bECS\b",
     re.IGNORECASE
 )
 
@@ -168,41 +168,34 @@ def detect_salary_credits(txns: List[Txn], employer_name: Optional[str] = None) 
 
 
 def detect_emi_debits(txns: List[Txn]) -> List[Txn]:
-    """Detect EMI debits using keywords and recurrence patterns"""
-    candidates = [t for t in txns if t.debit >
-                  0 and EMI_KEYWORDS.search(t.narration or "")]
+    """Detect EMI debits with sanity filtering"""
+
+    candidates = []
+    for t in txns:
+        if t.debit <= 0:
+            continue
+        if t.debit < 500:  # Ignore noise
+            continue
+        if EMI_KEYWORDS.search(t.narration or ""):
+            candidates.append(t)
 
     if not candidates:
-        candidates = [t for t in txns if t.debit > 0 and re.search(
-            r"NACH|ECS|ACH", t.narration or "", re.I)]
+        return []
 
-    by_amount_months: Dict[int, set] = defaultdict(set)
-    by_amount: Dict[int, List[Txn]] = defaultdict(list)
+    by_amount = defaultdict(list)
+    by_month = defaultdict(set)
+
     for t in candidates:
         amt = int(round(t.debit))
-        by_amount_months[amt].add(_month_key(t.txn_date))
         by_amount[amt].append(t)
+        by_month[amt].add(_month_key(t.txn_date))
 
-    recurring_amounts = {amt for amt,
-                         months in by_amount_months.items() if len(months) >= 3}
-    strong: List[Txn] = []
-    for amt in recurring_amounts:
-        strong.extend(by_amount[amt])
+    recurring = []
+    for amt, months in by_month.items():
+        if len(months) >= 3:  # Must repeat ≥3 months
+            recurring.extend(by_amount[amt])
 
-    if not strong:
-        strong = candidates
-
-    # Deduplicate
-    seen = set()
-    uniq = []
-    for t in strong:
-        key = (t.txn_date, int(round(t.debit)), _norm_text(t.narration))
-        if key not in seen:
-            seen.add(key)
-            uniq.append(t)
-
-    uniq.sort(key=lambda x: x.txn_date)
-    return uniq
+    return recurring
 
 
 def detect_bounce_incidents(txns: List[Txn]) -> Dict[str, int]:

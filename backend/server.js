@@ -11,6 +11,8 @@ const path = require("path");
 const corsOptions = require("./config/cors");
 const config = require("./config/config");
 const connectDB = require("./config/database");
+const vectorStoreManager = require("./chatbot/config/vectorStore");
+
 const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 const academicRoutes = require("./routes/students/academic.routes");
 const workExperienceRoutes = require("./routes/students/workexperience.routes"); // ✅ ADD THIS
@@ -145,6 +147,24 @@ app.use(errorHandler);
 
 // DB connect after middleware setup is fine, but ensure it's called once
 connectDB();
+// After connectDB(), add:
+(async () => {
+  try {
+    console.log("🤖 Initializing AI chatbot...");
+    const vectorStoreManager = require("./chatbot/config/vectorStore");
+    const chatbot = require("./chatbot/agents/chatbotGraph");
+    
+    await vectorStoreManager.initialize();
+    await chatbot.initialize();
+    
+    console.log("✅ AI chatbot ready!");
+  } catch (error) {
+    console.error("❌ Chatbot initialization failed:", error);
+    console.log("⚠️ Server will continue without chatbot features");
+  }
+})();
+
+app.use("/api/chatbot", require("./chatbot/routes/chatbot.routes"));
 
 cron.schedule("0 * * * *", async () => {
   // Every hour at minute 0

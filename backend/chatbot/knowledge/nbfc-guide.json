@@ -1,0 +1,15 @@
+{
+  "role": "NBFCs review student applications and make loan approval decisions",
+  "platform_access": {
+    "application_review": "Access complete student profiles with all documents",
+    "document_verification": "View verified documents uploaded by students",
+    "communication": "Direct chat with students/consultants for clarifications",
+    "decision_tracking": "Manage your approval pipeline efficiently"
+  },
+  "best_practices": [
+    "Review applications within 48 hours for best student experience",
+    "Request additional documents if needed rather than rejecting outright",
+    "Provide clear rejection reasons to help students improve",
+    "Maintain professional communication at all times"
+  ]
+}

@@ -288,3 +288,31 @@ def chunk_list(lst: list, chunk_size: int) -> list:
         list: List of chunks
     """
     return [lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size)]
+
+
+def resolve_monthly_income(
+    salary_data,
+    bank_data,
+    itr_data
+):
+    """
+    Decide the most reliable monthly income source.
+    Priority:
+    1. Salary slips (>=3 months)
+    2. Bank salary credits (>=3 months)
+    3. ITR average income
+    """
+
+    # Salary slip = highest trust
+    if salary_data and salary_data.salary_consistency_months >= 3:
+        return float(salary_data.average_net_salary), "salary_slip"
+
+    # Bank salary = second priority
+    if bank_data and bank_data.salary_consistency_months >= 3:
+        return float(bank_data.average_monthly_salary), "bank_salary"
+
+    # ITR fallback
+    if itr_data and itr_data.average_monthly_income > 0:
+        return float(itr_data.average_monthly_income), "itr"
+
+    return 0.0, "unknown"
