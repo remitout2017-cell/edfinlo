@@ -1,4 +1,5 @@
 // config/config.js
+
 const path = require("path");
 const dotenv = require("dotenv");
 
@@ -14,12 +15,15 @@ module.exports = {
   env: env.NODE_ENV || "development",
   isDev,
   port: Number(env.PORT) || 5000,
-
   academicurl: env.ACADEMIC_URL,
+
+  // ✅ Python AI Agent URLs
   pythonFinancialServerUrl:
     process.env.PYTHON_FINANCIAL_SERVER_URL ||
     "http://localhost:8000/api/analyze",
-  kycServerUrl: process.env.KYC_SERVER_URL || "http://localhost:8001",
+
+  kycServerUrl:
+    process.env.KYC_SERVER_URL || "http://localhost:5001/api/kyc/process", // ✅ FIXED: Kept only this one with full path
 
   ai: {
     openaiApiKey: env.OPENAI_API_KEY,
@@ -40,8 +44,7 @@ module.exports = {
     geminiTemperature: Number(env.GEMINI_TEMPERATURE) || 0.05,
     groqTemperature: Number(env.GROQ_TEMPERATURE) || 0.1,
   },
-  kycServerUrl:
-    process.env.KYC_SERVER_URL || "http://localhost:5001/api/kyc/process",
+
   rateLimit: {
     windowMinutes: Number(env.RATE_LIMIT_WINDOW) || 15,
     maxRequests: Number(env.RATE_LIMIT_MAX_REQUESTS) || 100,
@@ -68,6 +71,7 @@ module.exports = {
     templateId: env.OTP_DEV_TEMPLATE_ID,
     codeLength: Number(env.OTP_CODE_LENGTH || 4),
   },
+
   redis: {
     url: env.REDIS_URL || "redis://localhost:6379",
     host: process.env.REDIS_HOST || "127.0.0.1",

@@ -1,5 +1,5 @@
 // chatbot/config/vectorStore.js
-const { HNSWLib } = require("langchain/vectorstores/hnswlib");
+const { HNSWLib } = require("@langchain/community/vectorstores/hnswlib");
 const { Document } = require("@langchain/core/documents");
 const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
 const embeddings = require("./embeddings");

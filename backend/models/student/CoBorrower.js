@@ -10,26 +10,21 @@ const kycDataSchema = new mongoose.Schema(
     aadhaarBackUrl: String,
     panFrontUrl: String,
     passportUrl: String,
-
     aadhaarFrontPublicId: { type: String, select: false },
     aadhaarBackPublicId: { type: String, select: false },
     panFrontPublicId: { type: String, select: false },
     passportPublicId: { type: String, select: false },
-
     aadhaarFrontResourceType: { type: String, select: false },
     aadhaarBackResourceType: { type: String, select: false },
     panFrontResourceType: { type: String, select: false },
     passportResourceType: { type: String, select: false },
-
     aadhaarFrontType: { type: String, select: false },
     aadhaarBackType: { type: String, select: false },
     panFrontType: { type: String, select: false },
     passportType: { type: String, select: false },
-
     aadhaarNumber: { type: String, select: false },
     panNumber: { type: String, select: false },
     passportNumber: { type: String, select: false },
-
     aadhaarName: String,
     aadhaarDOB: String,
     aadhaarGender: String,
@@ -38,7 +33,6 @@ const kycDataSchema = new mongoose.Schema(
     panFatherName: String,
     panDOB: String,
     passportName: String,
-
     verificationScore: Number,
     verificationMethod: String,
     verificationReason: String,
@@ -174,7 +168,6 @@ const CoBorrowerSchema = new mongoose.Schema(
     email: { type: String, trim: true, lowercase: true, sparse: true },
     phoneNumber: { type: String, trim: true, sparse: true },
     dateOfBirth: Date,
-
     kycStatus: {
       type: String,
       enum: ["pending", "verified", "rejected"],
@@ -184,7 +177,6 @@ const CoBorrowerSchema = new mongoose.Schema(
     kycVerifiedAt: Date,
     kycRejectedAt: Date,
     kycData: kycDataSchema,
-
     financialDocuments: financialDocumentsSchema,
     financialVerificationStatus: {
       type: String,
@@ -192,24 +184,21 @@ const CoBorrowerSchema = new mongoose.Schema(
       default: "pending",
       index: true,
     },
-
     financialVerifiedAt: Date,
     financialVerificationConfidence: { type: Number, min: 0, max: 1 },
     financialVerificationErrors: [String],
     financialAnalysis: financialAnalysisSchema,
-
     financialSummary: {
       avgMonthlySalary: Number,
       avgMonthlyIncome: Number,
       estimatedAnnualIncome: Number,
       totalExistingEmi: Number,
+      avgBankBalance: Number, // ✅ ADDED
+      minBankBalance: Number, // ✅ ADDED
+      bounceCount: Number, // ✅ ADDED
+      dishonorCount: Number, // ✅ ADDED
+      insufficientFundIncidents: Number, // ✅ ADDED
       foir: Number,
-      // ✅ ADD THESE 5 FIELDS:
-      avgBankBalance: Number,
-      minBankBalance: Number,
-      bounceCount: Number,
-      dishonorCount: Number,
-      insufficientFundIncidents: Number,
       foirStatus: String,
       cibilEstimate: Number,
       cibilRiskLevel: String,
@@ -227,7 +216,6 @@ const CoBorrowerSchema = new mongoose.Schema(
       lastUpdated: Date,
       nextAction: String,
     },
-
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: Date,
   },
@@ -244,7 +232,6 @@ const CoBorrowerSchema = new mongoose.Schema(
 CoBorrowerSchema.index({ student: 1, createdAt: -1 });
 CoBorrowerSchema.index({ student: 1, kycStatus: 1 });
 CoBorrowerSchema.index({ student: 1, financialVerificationStatus: 1 });
-
 CoBorrowerSchema.index(
   { student: 1, email: 1 },
   {
@@ -256,7 +243,6 @@ CoBorrowerSchema.index(
     },
   }
 );
-
 CoBorrowerSchema.index(
   { student: 1, phoneNumber: 1 },
   {
@@ -287,7 +273,6 @@ CoBorrowerSchema.virtual("age").get(function () {
 // ============================================================================
 CoBorrowerSchema.pre("save", function (next) {
   this.updatedAt = new Date();
-
   if (
     this.financialAnalysis &&
     (this.isNew || this.isModified("financialAnalysis"))
@@ -298,7 +283,6 @@ CoBorrowerSchema.pre("save", function (next) {
       console.error("Error updating financial summary:", error);
     }
   }
-
   next();
 });
 
@@ -311,18 +295,15 @@ CoBorrowerSchema.statics.checkDuplicateEmail = async function (
   excludeId = null
 ) {
   if (!email || email.trim() === "") return null;
-
   const query = {
     student: studentId,
     email: email.toLowerCase().trim(),
     isDeleted: false,
     kycStatus: "verified",
   };
-
   if (excludeId) {
     query._id = { $ne: excludeId };
   }
-
   return await this.findOne(query).select("firstName lastName email kycStatus");
 };
 
@@ -332,18 +313,15 @@ CoBorrowerSchema.statics.checkDuplicatePhone = async function (
   excludeId = null
 ) {
   if (!phoneNumber || phoneNumber.trim() === "") return null;
-
   const query = {
     student: studentId,
     phoneNumber: phoneNumber.trim(),
     isDeleted: false,
     kycStatus: "verified",
   };
-
   if (excludeId) {
     query._id = { $ne: excludeId };
   }
-
   return await this.findOne(query).select(
     "firstName lastName phoneNumber kycStatus"
   );
@@ -356,7 +334,6 @@ CoBorrowerSchema.statics.checkDuplicateName = async function (
   excludeId = null
 ) {
   if (!firstName || !lastName) return null;
-
   const query = {
     student: studentId,
     firstName: firstName.trim(),
@@ -364,16 +341,17 @@ CoBorrowerSchema.statics.checkDuplicateName = async function (
     isDeleted: false,
     kycStatus: "verified",
   };
-
   if (excludeId) {
     query._id = { $ne: excludeId };
   }
-
   return await this.findOne(query).select(
     "firstName lastName email phoneNumber kycStatus"
   );
 };
 
+// ============================================================================
+// ✅ FIXED: updateFinancialSummary Method
+// ============================================================================
 CoBorrowerSchema.methods.updateFinancialSummary = function () {
   if (!this.financialAnalysis) return;
 
@@ -381,36 +359,38 @@ CoBorrowerSchema.methods.updateFinancialSummary = function () {
   const foir = analysis.foir || {};
   const cibil = analysis.cibil || {};
   const extracted = analysis.extractedData || {};
-  const salary = extracted.salary_slips || {};
+
+  // Support both snake_case (Python) and camelCase (existing)
+  const salary = extracted.salarySlips || extracted.salary_slips || {};
   const itr = extracted.itr || {};
-  const bank = extracted.bank_statement || {};
+  const bank = extracted.bankStatement || extracted.bank_statement || {};
 
   this.financialSummary = {
     avgMonthlySalary: salary.average_net_salary || 0,
     avgMonthlyIncome: itr.average_monthly_income || 0,
     estimatedAnnualIncome: itr.average_annual_income || 0,
-    totalExistingEmi: bank.average_monthly_emi || foir.total_monthly_emi || 0,
+    totalExistingEmi: bank.average_monthly_emi || foir.totalMonthlyEmi || 0,
 
-    // ✅ ADD THESE 5 MAPPINGS:
+    // ✅ ADDED: 5 new bank metrics
     avgBankBalance: bank.average_monthly_balance || 0,
     minBankBalance: bank.minimum_balance || 0,
     bounceCount: bank.bounce_count || 0,
     dishonorCount: bank.dishonor_count || 0,
     insufficientFundIncidents: bank.insufficient_fund_incidents || 0,
 
-    foir: foir.foir_percentage || 0,
-    foirStatus: foir.foir_status || "unknown",
-    cibilEstimate: cibil.estimated_score || cibil.estimatedScore || 0,
-    cibilRiskLevel: cibil.risk_level || cibil.riskLevel || "unknown",
+    foir: foir.foirPercentage || 0,
+    foirStatus: foir.foirStatus || "unknown",
+    cibilEstimate: cibil.estimatedScore || cibil.estimated_score || 0,
+    cibilRiskLevel: cibil.riskLevel || cibil.risk_level || "unknown",
     incomeStability:
-      salary.salary_consistency_months > 0 ? "stable" : "unstable",
-    overallScore: analysis.quality?.overall_confidence || 0,
+      (salary.salary_consistency_months || 0) > 0 ? "stable" : "unstable",
+    overallScore: analysis.quality?.overallConfidence || 0,
     documentCompleteness: {
       hasKYC: this.kycStatus === "verified",
-      hasSalarySlips: analysis.documents_processed?.salary_slips || false,
-      hasBankStatement: analysis.documents_processed?.bank_statement || false,
-      hasITR: analysis.documents_processed?.itr1 || false,
-      hasForm16: analysis.documents_processed?.form16 || false,
+      hasSalarySlips: analysis.documentsProcessed?.salarySlips || false,
+      hasBankStatement: analysis.documentsProcessed?.bankStatement || false,
+      hasITR: analysis.documentsProcessed?.itr1 || false,
+      hasForm16: analysis.documentsProcessed?.form16 || false,
       completenessScore: this.calculateCompletenessScore(),
     },
     verificationStatus: this.financialVerificationStatus,

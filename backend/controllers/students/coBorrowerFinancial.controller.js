@@ -1,4 +1,5 @@
 // controllers/students/coBorrowerFinancial.controller.js (ENHANCED VERSION)
+
 const axios = require("axios");
 const FormData = require("form-data");
 const fs = require("fs");
@@ -12,6 +13,7 @@ const {
 } = require("../../services/imageService");
 
 // ============================ Helpers ============================
+
 function safePublicId(userId, docKey) {
   const rnd = crypto.randomBytes(8).toString("hex");
   return `coborrower_${userId}/${docKey}_${Date.now()}_${rnd}`;
@@ -248,7 +250,6 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
   // ====================================================================
   const pythonUrl =
     config.pythonFinancialServerUrl || "http://localhost:8000/api/analyze";
-
   const baseUrl = pythonUrl.replace("/api/analyze", "");
   const healthCheck = await checkAIHealth(baseUrl);
 
@@ -406,7 +407,6 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
       );
     } catch (err) {
       console.error(`❌ [Cloudinary] Upload failed:`, err.message);
-
       cleanupMulterFiles(files);
 
       // Rollback: delete any successfully uploaded files
@@ -543,7 +543,7 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
       }`
     );
     if (missingData.length > 0) {
-      console.log(`   ⚠️ Missing Data: ${missingData.join(", ")}`);
+      console.log(`   ⚠️  Missing Data: ${missingData.join(", ")}`);
     }
     console.log(`${"=".repeat(80)}\n`);
 
@@ -566,8 +566,14 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
         },
         cibil: {
           estimatedScore: apiResponse.cibil?.estimated_score,
+          estimatedBand: apiResponse.cibil?.estimated_band,
           riskLevel: apiResponse.cibil?.risk_level,
-          confidence: apiResponse.cibil?.confidence,
+          paymentHistoryScore: apiResponse.cibil?.payment_history_score,
+          creditUtilizationScore: apiResponse.cibil?.credit_utilization_score,
+          incomeStabilityScore: apiResponse.cibil?.income_stability_score,
+          creditMixScore: apiResponse.cibil?.credit_mix_score,
+          positiveFactors: apiResponse.cibil?.positive_factors || [],
+          negativeFactors: apiResponse.cibil?.negative_factors || [],
         },
         quality: {
           overallConfidence: apiResponse.quality?.overall_confidence,
@@ -589,7 +595,6 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
   } catch (error) {
     // This catch handles any unexpected errors not caught above
     console.error(`\n❌ [Error] Unexpected error:`, error);
-
     cleanupMulterFiles(files);
 
     // Cleanup any uploaded Cloudinary files
@@ -641,7 +646,7 @@ const resetFinancialDocuments = asyncHandler(async (req, res) => {
   if (!coBorrower) throw new AppError("Co-borrower not found", 404);
 
   console.log(
-    `\n🗑️ [Reset] Clearing financial documents for: ${coBorrower.fullName}`
+    `\n🗑️  [Reset] Clearing financial documents for: ${coBorrower.fullName}`
   );
 
   const docs = coBorrower.financialDocuments || {};

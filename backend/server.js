@@ -164,7 +164,7 @@ connectDB();
   }
 })();
 
-app.use("/api/chatbot", require("./chatbot/routes/chatbot.routes"));
+// app.use("/api/chatbot", require("./chatbot/routes/chatbot.routes"));
 
 cron.schedule("0 * * * *", async () => {
   // Every hour at minute 0
