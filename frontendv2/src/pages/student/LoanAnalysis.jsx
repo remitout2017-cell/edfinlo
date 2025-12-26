@@ -207,17 +207,15 @@ const LoanAnalysis = () => {
               >
                 <h3 className="font-semibold text-gray-800">History</h3>
                 <ChevronDown
-                  className={`lg:hidden transition ${
-                    showHistory ? "rotate-180" : ""
-                  }`}
+                  className={`lg:hidden transition ${showHistory ? "rotate-180" : ""
+                    }`}
                   size={20}
                 />
               </div>
 
               <div
-                className={`${
-                  showHistory ? "block" : "hidden"
-                } lg:block max-h-96 overflow-y-auto`}
+                className={`${showHistory ? "block" : "hidden"
+                  } lg:block max-h-96 overflow-y-auto`}
               >
                 {history.length === 0 ? (
                   <div className="p-8 text-center text-gray-500 text-sm">
@@ -229,11 +227,10 @@ const LoanAnalysis = () => {
                       <div
                         key={item._id}
                         onClick={() => handleViewDetails(item._id)}
-                        className={`p-4 hover:bg-gray-50 cursor-pointer transition ${
-                          selectedAnalysis?.analysis?._id === item._id
+                        className={`p-4 hover:bg-gray-50 cursor-pointer transition ${selectedAnalysis?.analysis?._id === item._id
                             ? "bg-purple-50 border-l-4 border-purple-500"
                             : ""
-                        }`}
+                          }`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
@@ -345,105 +342,105 @@ const LoanAnalysis = () => {
                 {/* NBFC Matches Section */}
                 {selectedAnalysis.analysis.nbfcMatches?.eligible?.length >
                   0 && (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="p-6 border-b border-gray-100 bg-gray-50">
-                      <div className="flex items-center gap-2">
-                        <Award className="text-purple-600" size={20} />
-                        <h3 className="text-lg font-bold text-gray-800">
-                          Matched Lenders (
-                          {
-                            selectedAnalysis.analysis.nbfcMatches.eligible
-                              .length
-                          }
-                          )
-                        </h3>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                      <div className="p-6 border-b border-gray-100 bg-gray-50">
+                        <div className="flex items-center gap-2">
+                          <Award className="text-purple-600" size={20} />
+                          <h3 className="text-lg font-bold text-gray-800">
+                            Matched Lenders (
+                            {
+                              selectedAnalysis.analysis.nbfcMatches.eligible
+                                .length
+                            }
+                            )
+                          </h3>
+                        </div>
                       </div>
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                      {selectedAnalysis.analysis.nbfcMatches.eligible.map(
-                        (nbfc, idx) => (
-                          <div
-                            key={idx}
-                            className="p-6 hover:bg-gray-50 transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
-                          >
-                            <div>
-                              <h4 className="font-bold text-gray-900 text-lg">
-                                {nbfc.nbfcName}
-                              </h4>
-                              <p className="text-sm text-gray-500 mb-2">
-                                {nbfc.brandName}
-                              </p>
-                              <div className="flex items-center gap-3">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  {nbfc.matchPercentage}% Match
-                                </span>
+                      <div className="divide-y divide-gray-100">
+                        {selectedAnalysis.analysis.nbfcMatches.eligible.map(
+                          (nbfc, idx) => (
+                            <div
+                              key={idx}
+                              className="p-6 hover:bg-gray-50 transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                            >
+                              <div>
+                                <h4 className="font-bold text-gray-900 text-lg">
+                                  {nbfc.nbfcName}
+                                </h4>
+                                <p className="text-sm text-gray-500 mb-2">
+                                  {nbfc.brandName}
+                                </p>
+                                <div className="flex items-center gap-3">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    {nbfc.matchPercentage}% Match
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-right w-full sm:w-auto">
+                                <p className="text-xs text-gray-500 uppercase mb-1">
+                                  Estimated Offer
+                                </p>
+                                <p className="text-lg font-bold text-gray-900">
+                                  ₹
+                                  {nbfc.estimatedLoanAmount.min?.toLocaleString()}{" "}
+                                  - ₹
+                                  {nbfc.estimatedLoanAmount.max?.toLocaleString()}
+                                </p>
                               </div>
                             </div>
-                            <div className="text-right w-full sm:w-auto">
-                              <p className="text-xs text-gray-500 uppercase mb-1">
-                                Estimated Offer
-                              </p>
-                              <p className="text-lg font-bold text-gray-900">
-                                ₹
-                                {nbfc.estimatedLoanAmount.min?.toLocaleString()}{" "}
-                                - ₹
-                                {nbfc.estimatedLoanAmount.max?.toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
-                        )
-                      )}
+                          )
+                        )}
+                      </div>
+                      <div className="p-4 bg-gray-50 text-center">
+                        <a
+                          href="/student/loan-request"
+                          className="inline-flex items-center text-purple-600 hover:text-purple-700 font-medium text-sm"
+                        >
+                          Proceed to Loan Requests{" "}
+                          <ArrowRight size={16} className="ml-1" />
+                        </a>
+                      </div>
                     </div>
-                    <div className="p-4 bg-gray-50 text-center">
-                      <a
-                        href="/student/loan-request"
-                        className="inline-flex items-center text-purple-600 hover:text-purple-700 font-medium text-sm"
-                      >
-                        Proceed to Loan Requests{" "}
-                        <ArrowRight size={16} className="ml-1" />
-                      </a>
-                    </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Improvement Actions */}
                 {selectedAnalysis.analysis.masterRecommendations
                   ?.immediateActions?.length > 0 && (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingUp className="text-amber-500" size={20} />
-                      <h3 className="text-lg font-bold text-gray-800">
-                        Recommended Actions
-                      </h3>
-                    </div>
-                    <div className="space-y-3">
-                      {selectedAnalysis.analysis.masterRecommendations.immediateActions.map(
-                        (action, idx) => (
-                          <div
-                            key={idx}
-                            className="flex gap-3 p-3 rounded-lg bg-amber-50 border border-amber-100"
-                          >
-                            <div className="min-w-[24px] pt-0.5">
-                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-200 text-amber-800 text-xs font-bold">
-                                {idx + 1}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-800 font-medium">
-                                {action.action}
-                              </p>
-                              {action.estimatedTime && (
-                                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                  <Clock size={12} /> {action.estimatedTime}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <TrendingUp className="text-amber-500" size={20} />
+                        <h3 className="text-lg font-bold text-gray-800">
+                          Recommended Actions
+                        </h3>
+                      </div>
+                      <div className="space-y-3">
+                        {selectedAnalysis.analysis.masterRecommendations.immediateActions.map(
+                          (action, idx) => (
+                            <div
+                              key={idx}
+                              className="flex gap-3 p-3 rounded-lg bg-amber-50 border border-amber-100"
+                            >
+                              <div className="min-w-[24px] pt-0.5">
+                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-200 text-amber-800 text-xs font-bold">
+                                  {idx + 1}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-800 font-medium">
+                                  {action.action}
                                 </p>
-                              )}
+                                {action.estimatedTime && (
+                                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                    <Clock size={12} /> {action.estimatedTime}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )
-                      )}
+                          )
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             ) : (
               // Empty State
@@ -467,37 +464,17 @@ const LoanAnalysis = () => {
               </div>
             )}
           </div>
-          {/* Navigation Buttons */}
-          <div className="flex items-center justify-between py-6 border-t border-gray-200">
-            <Link to="/student/admission">
-              {" "}
-              <button
-                type="button"
-                className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
-              >
-                <svg
-                  className="w-5 h-5 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-            </Link>
+        </div>
 
+        {/* Navigation Buttons */}
+        <div className="w-full max-w-6xl mt-6 flex items-center justify-between py-6 border-t border-gray-200">
+          <Link to="/student/admission">
             <button
               type="button"
-              onClick={() => (window.location.href = "/student/loan-request")}
-              className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
+              className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
             >
               <svg
-                className="w-5 h-5 text-white"
+                className="w-5 h-5 text-gray-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -506,11 +483,31 @@ const LoanAnalysis = () => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9 5l7 7-7 7"
+                  d="M15 19l-7-7 7-7"
                 />
               </svg>
             </button>
-          </div>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => (window.location.href = "/student/loan-request")}
+            className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
+          >
+            <svg
+              className="w-5 h-5 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
         </div>
       </div>
     </DashboardLayout>

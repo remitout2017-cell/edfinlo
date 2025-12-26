@@ -20,7 +20,10 @@ import {
   TrendingUp,
   CreditCard,
   Activity,
+  ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const CoBorrower = () => {
   const {
@@ -42,6 +45,7 @@ const CoBorrower = () => {
   const [selectedCoBorrower, setSelectedCoBorrower] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   // Form States
   const [formData, setFormData] = useState({
@@ -333,215 +337,240 @@ const CoBorrower = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50 p-6">
-        <StepperExample />
+      <div className="flex items-center justify-center flex-col min-h-screen">
+        <StepperExample currentStep={6} />
 
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-              <Users className="mr-3 text-blue-600" />
-              Co-Borrowers
-            </h1>
-            <p className="text-gray-600 mt-2">
+        <div className="w-full max-w-4xl mt-4 bg-white rounded-2xl shadow-lg p-6 md:p-8">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-2xl font-semibold text-gray-800">
+                Co-Borrowers
+              </h2>
+              <button
+                onClick={() => {
+                  resetForm();
+                  setSelectedCoBorrower(null);
+                  setShowAddModal(true);
+                }}
+                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium"
+              >
+                <Plus size={18} className="mr-1" />
+                Add Co-Borrower
+              </button>
+            </div>
+            <p className="text-gray-600">
               Add co-borrowers to strengthen your loan application
             </p>
           </div>
-          <button
-            onClick={() => {
-              resetForm();
-              setSelectedCoBorrower(null);
-              setShowAddModal(true);
-            }}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center hover:bg-blue-700 transition-colors shadow-md"
-          >
-            <Plus className="mr-2" size={20} />
-            Add Co-Borrower
-          </button>
-        </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-600 mt-4">Loading co-borrowers...</p>
-          </div>
-        )}
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-600 mt-4">Loading co-borrowers...</p>
+            </div>
+          )}
 
-        {/* Empty State */}
-        {!loading && coBorrowers.length === 0 && (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <Users className="mx-auto text-gray-400 mb-4" size={64} />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No Co-Borrowers Added
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Add a co-borrower to strengthen your loan application
-            </p>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg inline-flex items-center hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="mr-2" size={20} />
-              Add Your First Co-Borrower
-            </button>
-          </div>
-        )}
-
-        {/* Co-Borrowers List */}
-        {!loading && coBorrowers.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {coBorrowers.map((cb) => (
-              <div
-                key={cb._id}
-                className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow p-6 border border-gray-200"
+          {/* Empty State */}
+          {!loading && coBorrowers.length === 0 && (
+            <div className="bg-white rounded-lg shadow-md p-12 text-center">
+              <Users className="mx-auto text-gray-400 mb-4" size={64} />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No Co-Borrowers Added
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Add a co-borrower to strengthen your loan application
+              </p>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg inline-flex items-center hover:bg-blue-700 transition-colors"
               >
-                {/* Header */}
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900">
-                      {cb.fullName}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {cb.relationToStudent}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(cb._id, cb.fullName)}
-                    className="text-red-600 hover:text-red-800 transition-colors"
-                    title="Delete co-borrower"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                </div>
+                <Plus className="mr-2" size={20} />
+                Add Your First Co-Borrower
+              </button>
+            </div>
+          )}
 
-                {/* Contact Info */}
-                {(cb.email || cb.phoneNumber) && (
-                  <div className="mb-4 space-y-1">
-                    {cb.email && (
-                      <p className="text-sm text-gray-600">📧 {cb.email}</p>
-                    )}
-                    {cb.phoneNumber && (
+          {/* Co-Borrowers List */}
+          {!loading && coBorrowers.length > 0 && (
+            <div className="space-y-4">
+              {coBorrowers.map((cb) => (
+                <div
+                  key={cb._id}
+                  className="border border-gray-200 rounded-xl p-4 md:p-6 bg-gray-50"
+                >
+                  {/* Header */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {cb.fullName}
+                      </h3>
                       <p className="text-sm text-gray-600">
-                        📱 {cb.phoneNumber}
+                        {cb.relationToStudent}
                       </p>
-                    )}
-                  </div>
-                )}
-
-                {/* KYC Status */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">
-                      KYC Status
-                    </span>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-                        cb.kycStatus
-                      )}`}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(cb._id, cb.fullName)}
+                      className="text-red-600 hover:text-red-800 transition-colors"
+                      title="Delete co-borrower"
                     >
-                      {cb.kycStatus?.toUpperCase()}
-                    </span>
+                      <Trash2 size={20} />
+                    </button>
                   </div>
 
-                  {cb.kycStatus === "rejected" && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
-                      <p className="text-sm text-red-800 font-semibold mb-2">
-                        <XCircle className="inline mr-1" size={16} />
-                        KYC Verification Failed
-                      </p>
-                      <p className="text-xs text-red-700 mb-3">
-                        Please re-upload better quality documents
-                      </p>
-                      <button
-                        onClick={() => handleReverifyKyc(cb)}
-                        className="text-xs bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center"
-                      >
-                        <RefreshCw className="mr-1" size={14} />
-                        Re-verify KYC
-                      </button>
+                  {/* Contact Info */}
+                  {(cb.email || cb.phoneNumber) && (
+                    <div className="mb-4 space-y-1">
+                      {cb.email && (
+                        <p className="text-sm text-gray-600">📧 {cb.email}</p>
+                      )}
+                      {cb.phoneNumber && (
+                        <p className="text-sm text-gray-600">
+                          📱 {cb.phoneNumber}
+                        </p>
+                      )}
                     </div>
                   )}
-                </div>
 
-                {/* Financial Status */}
-                {cb.kycStatus === "verified" && (
+                  {/* KYC Status */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">
-                        Financial Status
+                        KYC Status
                       </span>
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-                          cb.financialStatus
+                          cb.kycStatus
                         )}`}
                       >
-                        {cb.financialStatus?.toUpperCase() || "PENDING"}
+                        {cb.kycStatus?.toUpperCase()}
                       </span>
                     </div>
 
-                    {cb.financialStatus === "verified" && (
-                      <button
-                        onClick={() => handleViewAnalysis(cb)}
-                        className="w-full mt-2 bg-green-50 text-green-700 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors flex items-center justify-center text-sm font-medium"
-                      >
-                        <FileText className="mr-2" size={16} />
-                        View Analysis
-                      </button>
-                    )}
-
-                    {(!cb.financialStatus ||
-                      cb.financialStatus === "pending") && (
-                      <button
-                        onClick={() => {
-                          setSelectedCoBorrower(cb);
-                          setShowFinancialModal(true);
-                        }}
-                        className="w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center text-sm font-medium"
-                      >
-                        <Upload className="mr-2" size={16} />
-                        Upload Financial Documents
-                      </button>
-                    )}
-
-                    {(cb.financialStatus === "failed" ||
-                      cb.financialStatus === "partial") && (
-                      <div className="mt-2 space-y-2">
+                    {cb.kycStatus === "rejected" && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                        <p className="text-sm text-red-800 font-semibold mb-2">
+                          <XCircle className="inline mr-1" size={16} />
+                          KYC Verification Failed
+                        </p>
+                        <p className="text-xs text-red-700 mb-3">
+                          Please re-upload better quality documents
+                        </p>
                         <button
-                          onClick={() =>
-                            handleResetFinancial(cb._id, cb.fullName)
-                          }
-                          className="w-full bg-orange-50 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-100 transition-colors flex items-center justify-center text-sm font-medium"
+                          onClick={() => handleReverifyKyc(cb)}
+                          className="text-xs bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center"
                         >
-                          <RefreshCw className="mr-2" size={16} />
-                          Reset & Re-upload
+                          <RefreshCw className="mr-1" size={14} />
+                          Re-verify KYC
                         </button>
-                        {cb.financialStatus === "partial" && (
-                          <button
-                            onClick={() => handleViewAnalysis(cb)}
-                            className="w-full bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center text-sm font-medium"
-                          >
-                            <FileText className="mr-2" size={16} />
-                            View Partial Analysis
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {cb.financialStatus === "processing" && (
-                      <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <div className="flex items-center text-sm text-blue-800">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                          Processing documents... (2-5 min)
-                        </div>
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* Financial Status */}
+                  {cb.kycStatus === "verified" && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Financial Status
+                        </span>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
+                            cb.financialStatus
+                          )}`}
+                        >
+                          {cb.financialStatus?.toUpperCase() || "PENDING"}
+                        </span>
+                      </div>
+
+                      {cb.financialStatus === "verified" && (
+                        <button
+                          onClick={() => handleViewAnalysis(cb)}
+                          className="w-full mt-2 bg-green-50 text-green-700 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors flex items-center justify-center text-sm font-medium"
+                        >
+                          <FileText className="mr-2" size={16} />
+                          View Analysis
+                        </button>
+                      )}
+
+                      {(!cb.financialStatus ||
+                        cb.financialStatus === "pending") && (
+                          <button
+                            onClick={() => {
+                              setSelectedCoBorrower(cb);
+                              setShowFinancialModal(true);
+                            }}
+                            className="w-full mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center text-sm font-medium"
+                          >
+                            <Upload className="mr-2" size={16} />
+                            Upload Financial Documents
+                          </button>
+                        )}
+
+                      {(cb.financialStatus === "failed" ||
+                        cb.financialStatus === "partial") && (
+                          <div className="mt-2 space-y-2">
+                            <button
+                              onClick={() =>
+                                handleResetFinancial(cb._id, cb.fullName)
+                              }
+                              className="w-full bg-orange-50 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-100 transition-colors flex items-center justify-center text-sm font-medium"
+                            >
+                              <RefreshCw className="mr-2" size={16} />
+                              Reset & Re-upload
+                            </button>
+                            {cb.financialStatus === "partial" && (
+                              <button
+                                onClick={() => handleViewAnalysis(cb)}
+                                className="w-full bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center text-sm font-medium"
+                              >
+                                <FileText className="mr-2" size={16} />
+                                View Partial Analysis
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                      {cb.financialStatus === "processing" && (
+                        <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <div className="flex items-center text-sm text-blue-800">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                            Processing documents... (2-5 min)
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between pt-6 border-t border-gray-200 mt-6">
+            <button
+              onClick={() => navigate("/student/work-experience")}
+              className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+
+            <button
+              onClick={() => navigate("/student/admission")}
+              className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
+            >
+              <ArrowRight className="w-5 h-5 text-white" />
+            </button>
           </div>
-        )}
+
+        </div> {/* Close Card */}
+
+        {/* Footer */}
+        <div className="flex gap-6 mt-8 text-gray-500 text-sm">
+          <button className="hover:text-gray-700 transition">Support</button>
+          <button className="hover:text-gray-700 transition">Help</button>
+        </div>
 
         {/* Add/Edit KYC Modal */}
         {showAddModal && (
@@ -975,13 +1004,12 @@ const CoBorrower = () => {
                       <div className="bg-white p-4 rounded-lg shadow-sm">
                         <div className="text-sm text-gray-600 mb-1">FOIR %</div>
                         <div
-                          className={`text-3xl font-bold ${
-                            analysisData.analysis.foir.percentage <= 40
-                              ? "text-green-600"
-                              : analysisData.analysis.foir.percentage <= 50
+                          className={`text-3xl font-bold ${analysisData.analysis.foir.percentage <= 40
+                            ? "text-green-600"
+                            : analysisData.analysis.foir.percentage <= 50
                               ? "text-yellow-600"
                               : "text-red-600"
-                          }`}
+                            }`}
                         >
                           {analysisData.analysis.foir.percentage?.toFixed(1)}%
                         </div>
@@ -1044,14 +1072,13 @@ const CoBorrower = () => {
                           Estimated Score
                         </div>
                         <div
-                          className={`text-3xl font-bold ${
-                            analysisData.analysis.cibil.estimatedScore >= 750
-                              ? "text-green-600"
-                              : analysisData.analysis.cibil.estimatedScore >=
-                                650
+                          className={`text-3xl font-bold ${analysisData.analysis.cibil.estimatedScore >= 750
+                            ? "text-green-600"
+                            : analysisData.analysis.cibil.estimatedScore >=
+                              650
                               ? "text-yellow-600"
                               : "text-red-600"
-                          }`}
+                            }`}
                         >
                           {analysisData.analysis.cibil.estimatedScore || "N/A"}
                         </div>
@@ -1067,14 +1094,13 @@ const CoBorrower = () => {
                           Risk Level
                         </div>
                         <div
-                          className={`text-lg font-semibold ${
-                            analysisData.analysis.cibil.riskLevel === "low"
-                              ? "text-green-600"
-                              : analysisData.analysis.cibil.riskLevel ===
-                                "medium"
+                          className={`text-lg font-semibold ${analysisData.analysis.cibil.riskLevel === "low"
+                            ? "text-green-600"
+                            : analysisData.analysis.cibil.riskLevel ===
+                              "medium"
                               ? "text-yellow-600"
                               : "text-red-600"
-                          }`}
+                            }`}
                         >
                           {analysisData.analysis.cibil.riskLevel?.toUpperCase() ||
                             "N/A"}
@@ -1130,38 +1156,38 @@ const CoBorrower = () => {
                     {/* Positive Factors */}
                     {analysisData.analysis.cibil.positiveFactors?.length >
                       0 && (
-                      <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-3">
-                        <div className="text-sm font-semibold text-green-800 mb-2 flex items-center">
-                          <CheckCircle className="mr-2" size={16} />
-                          Positive Factors
+                        <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-3">
+                          <div className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                            <CheckCircle className="mr-2" size={16} />
+                            Positive Factors
+                          </div>
+                          <ul className="text-sm text-green-700 space-y-1">
+                            {analysisData.analysis.cibil.positiveFactors.map(
+                              (factor, idx) => (
+                                <li key={idx}>• {factor}</li>
+                              )
+                            )}
+                          </ul>
                         </div>
-                        <ul className="text-sm text-green-700 space-y-1">
-                          {analysisData.analysis.cibil.positiveFactors.map(
-                            (factor, idx) => (
-                              <li key={idx}>• {factor}</li>
-                            )
-                          )}
-                        </ul>
-                      </div>
-                    )}
+                      )}
 
                     {/* Negative Factors */}
                     {analysisData.analysis.cibil.negativeFactors?.length >
                       0 && (
-                      <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                        <div className="text-sm font-semibold text-red-800 mb-2 flex items-center">
-                          <AlertCircle className="mr-2" size={16} />
-                          Risk Factors
+                        <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                          <div className="text-sm font-semibold text-red-800 mb-2 flex items-center">
+                            <AlertCircle className="mr-2" size={16} />
+                            Risk Factors
+                          </div>
+                          <ul className="text-sm text-red-700 space-y-1">
+                            {analysisData.analysis.cibil.negativeFactors.map(
+                              (factor, idx) => (
+                                <li key={idx}>• {factor}</li>
+                              )
+                            )}
+                          </ul>
                         </div>
-                        <ul className="text-sm text-red-700 space-y-1">
-                          {analysisData.analysis.cibil.negativeFactors.map(
-                            (factor, idx) => (
-                              <li key={idx}>• {factor}</li>
-                            )
-                          )}
-                        </ul>
-                      </div>
-                    )}
+                      )}
                   </div>
                 )}
 
@@ -1189,38 +1215,38 @@ const CoBorrower = () => {
 
                       {analysisData.analysis.quality.dataSourcesUsed?.length >
                         0 && (
-                        <div>
-                          <div className="text-sm text-gray-700 mb-2">
-                            Data Sources Used:
+                          <div>
+                            <div className="text-sm text-gray-700 mb-2">
+                              Data Sources Used:
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {analysisData.analysis.quality.dataSourcesUsed.map(
+                                (source, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
+                                  >
+                                    {source}
+                                  </span>
+                                )
+                              )}
+                            </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            {analysisData.analysis.quality.dataSourcesUsed.map(
-                              (source, idx) => (
-                                <span
-                                  key={idx}
-                                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
-                                >
-                                  {source}
-                                </span>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      )}
+                        )}
 
                       {analysisData.analysis.quality.missingData?.length >
                         0 && (
-                        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                          <div className="text-sm font-semibold text-yellow-800 mb-2">
-                            Missing Data:
+                          <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                            <div className="text-sm font-semibold text-yellow-800 mb-2">
+                              Missing Data:
+                            </div>
+                            <div className="text-sm text-yellow-700">
+                              {analysisData.analysis.quality.missingData.join(
+                                ", "
+                              )}
+                            </div>
                           </div>
-                          <div className="text-sm text-yellow-700">
-                            {analysisData.analysis.quality.missingData.join(
-                              ", "
-                            )}
-                          </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </div>
                 )}
@@ -1233,18 +1259,21 @@ const CoBorrower = () => {
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                       {Object.entries(analysisData.summary).map(
-                        ([key, value]) => (
-                          <div key={key}>
-                            <div className="text-gray-600 capitalize">
-                              {key.replace(/([A-Z])/g, " $1").trim()}
+                        ([key, value]) => {
+                          if (typeof value === "object" && value !== null) return null;
+                          return (
+                            <div key={key}>
+                              <div className="text-gray-600 capitalize">
+                                {key.replace(/([A-Z])/g, " $1").trim()}
+                              </div>
+                              <div className="font-semibold text-gray-900">
+                                {typeof value === "number"
+                                  ? value.toLocaleString("en-IN")
+                                  : value || "N/A"}
+                              </div>
                             </div>
-                            <div className="font-semibold text-gray-900">
-                              {typeof value === "number"
-                                ? value.toLocaleString("en-IN")
-                                : value || "N/A"}
-                            </div>
-                          </div>
-                        )
+                          );
+                        }
                       )}
                     </div>
                   </div>

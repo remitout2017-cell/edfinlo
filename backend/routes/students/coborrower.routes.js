@@ -49,6 +49,7 @@ router.post(
     { name: "itr_pdf_1", maxCount: 1 },
     { name: "itr_pdf_2", maxCount: 1 },
     { name: "form16_pdf", maxCount: 1 },
+    { name: "cibil_pdf", maxCount: 1 },
   ]),
   financialController.uploadFinancialDocuments
 );
