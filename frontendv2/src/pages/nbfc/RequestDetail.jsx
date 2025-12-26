@@ -24,7 +24,11 @@ import {
     CheckCircle,
 } from "lucide-react";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// Use environment variable with fallback
+const rawBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = rawBaseUrl.endsWith("/api")
+    ? rawBaseUrl.slice(0, -4)
+    : rawBaseUrl.replace(/\/$/, "");
 
 const RequestDetail = () => {
     const { requestId } = useParams();

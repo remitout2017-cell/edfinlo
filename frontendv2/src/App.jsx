@@ -60,6 +60,10 @@ import NotFound from "./pages/NotFound";
 // ==================== NBFC PAGES ====================
 import NBFCDashboard from "./pages/nbfc/Dashboard";
 import NBFCRequestDetail from "./pages/nbfc/RequestDetail";
+import NBFCQuestionnaire from "./pages/nbfc/Questionnaire";
+import NBFCAcceptedStudents from "./pages/nbfc/AcceptedStudents";
+import NBFCForgotPassword from "./pages/nbfc/ForgotPassword";
+import NBFCResetPassword from "./pages/nbfc/ResetPassword";
 
 function App() {
   return (
@@ -260,7 +264,25 @@ function App() {
                           path="/nbfc/requests/:requestId"
                           element={<NBFCRequestDetail />}
                         />
+                        <Route
+                          path="/nbfc/questionnaire"
+                          element={<NBFCQuestionnaire />}
+                        />
+                        <Route
+                          path="/nbfc/students"
+                          element={<NBFCAcceptedStudents />}
+                        />
                       </Route>
+
+                      {/* NBFC Public Routes (no auth needed) */}
+                      <Route
+                        path="/nbfc/forgot-password"
+                        element={<NBFCForgotPassword />}
+                      />
+                      <Route
+                        path="/nbfc/reset-password"
+                        element={<NBFCResetPassword />}
+                      />
 
                       {/* ==================== 404 ==================== */}
                       <Route path="*" element={<NotFound />} />
