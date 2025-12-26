@@ -17,7 +17,7 @@ router.post(
   kyc.submitKyc
 );
 
-router.get("/kyc/me", auth, kyc.getMyKyc);
-router.delete("/kyc/me", auth, kyc.deleteKYC);
+router.get("/me", auth, kyc.getMyKyc);
+router.delete("/me", auth, kyc.deleteKYC);
 
 module.exports = router;

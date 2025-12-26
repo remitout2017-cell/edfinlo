@@ -77,11 +77,7 @@ app.use("/api/auth", authLimiter, require("./routes/students/auth.routes"));
 
 // User routes use apiLimiter (100 requests/15 min)
 app.use("/api/user", apiLimiter, require("./routes/students/userRoutes"));
-app.use(
-  "/api/user/educationplanet",
-  apiLimiter,
-  require("./routes/students/studentEducationPlanRoutes")
-);
+app.use("/api/user/educationplan", apiLimiter, require("./routes/students/studentEducationPlanRoutes"));
 app.use("/api/user/kyc", apiLimiter, require("./routes/students/kyc.routes"));
 app.use("/api/user/academics", apiLimiter, academicRoutes);
 app.use("/api/user/admission", apiLimiter, admissionRoutes);

@@ -61,7 +61,7 @@ exports.register = async (req, res, next) => {
         .update(emailOTP)
         .digest("hex");
       student.emailVerificationExpire = Date.now() + 10 * 60 * 1000;
-      await student.save();
+      await student.save({ validateBeforeSave: false });
 
       try {
         await sendOTPEmail(email, emailOTP, "email");
@@ -75,7 +75,7 @@ exports.register = async (req, res, next) => {
       try {
         await sendSMSOTP(phoneNumber);
         student.phoneVerificationExpire = Date.now() + 10 * 60 * 1000;
-        await student.save();
+        await student.save({ validateBeforeSave: false });
       } catch (err) {
         console.error("Failed to send SMS OTP:", err);
       }

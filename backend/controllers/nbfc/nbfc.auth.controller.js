@@ -100,7 +100,7 @@ exports.login = async (req, res, next) => {
 
     // Update last login
     nbfc.lastLogin = new Date();
-    await nbfc.save();
+    await nbfc.save({ validateBeforeSave: false });
 
     // Generate token
     const token = generateToken(nbfc._id, nbfc.role);
@@ -157,7 +157,7 @@ exports.forgotPassword = async (req, res, next) => {
       .update(otp)
       .digest("hex");
     nbfc.passwordResetOTPExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
-    await nbfc.save();
+    await nbfc.save({ validateBeforeSave: false });
 
     // Send OTP via email
     try {
@@ -217,7 +217,7 @@ exports.resetPassword = async (req, res, next) => {
     nbfc.password = newPassword;
     nbfc.passwordResetOTP = undefined;
     nbfc.passwordResetOTPExpire = undefined;
-    await nbfc.save();
+    await nbfc.save({ validateBeforeSave: false });
 
     res.status(200).json({
       success: true,
@@ -259,7 +259,7 @@ exports.resendOTP = async (req, res, next) => {
       .update(otp)
       .digest("hex");
     nbfc.passwordResetOTPExpire = Date.now() + 10 * 60 * 1000;
-    await nbfc.save();
+    await nbfc.save({ validateBeforeSave: false });
 
     // Send OTP
     await sendOTPEmail(nbfc.email, otp, "password reset");

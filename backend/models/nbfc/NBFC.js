@@ -39,9 +39,10 @@ const NBFCSchema = new mongoose.Schema(
     },
 
     isActive: { type: Boolean, default: true },
+    questionnaireCompleted: { type: Boolean, default: false },
 
-    passwordResetToken: { type: String, select: false },
-    passwordResetExpire: { type: Date, select: false },
+    passwordResetOTP: { type: String, select: false },
+    passwordResetOTPExpire: { type: Date, select: false },
 
     // ===== LOAN PARAMETERS CONFIGURATION =====
     loanConfig: {
@@ -170,11 +171,13 @@ NBFCSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-
-
 // Generate verification token (for password reset)
 NBFCSchema.methods.generateVerificationToken = function () {
   return crypto.randomBytes(32).toString("hex");
+};
+
+NBFCSchema.methods.generateOTP = function () {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 // Generate email verification token
