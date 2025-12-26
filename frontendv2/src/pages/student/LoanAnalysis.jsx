@@ -1,515 +1,574 @@
 // src/pages/LoanAnalysis.jsx
 
-import React, { useState, useEffect } from "react";
-import { loanAnalysisAPI } from "../../services/api";
+import { useState, useEffect } from "react";
+import { useUserData } from "../../context/UserDataContext";
+import axios from "axios";
+import {
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Loader,
+  TrendingUp,
+  Clock,
+  FileText,
+  ArrowRight,
+} from "lucide-react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import StepperExample from "../../components/common/stepper";
-import toast from "react-hot-toast";
-import {
-  Activity,
-  TrendingUp,
-  Award,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
-  FileText,
-  BarChart2,
-  Trash2,
-} from "lucide-react";
-import { Link } from "react-router-dom";
+// ✅ FIX: Use environment variable with fallback
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const LoanAnalysis = () => {
+  const { completeness, refreshUserData, getAuthHeaders } = useUserData();
+  const [loading, setLoading] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [analyzing, setAnalyzing] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
-  const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [stats, setStats] = useState({
+    totalAnalyses: 0,
+    highestScore: 0,
+    lastRunDate: null,
+  });
 
+  // ✅ FIX: Add retry state
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 2;
+
+  // Fetch analysis history on mount
   useEffect(() => {
-    fetchHistory();
-  }, [page]);
+    fetchAnalysisHistory();
+    refreshUserData();
+  }, []);
 
-  const fetchHistory = async () => {
+  const fetchAnalysisHistory = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      const response = await loanAnalysisAPI.getHistory(page, 10);
-      if (response.data.success) {
-        const analyses = response.data.data?.analyses || [];
-        setHistory(analyses);
-        setStats(response.data.data?.stats || null);
-        setPagination(response.data.data?.pagination || null);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/student/loan-matching/history`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
 
-        // Auto-select latest analysis if none selected
-        if (analyses.length > 0 && !selectedAnalysis) {
-          handleViewDetails(analyses[0]._id);
+      if (response.data.success) {
+        const historyData = response.data.history || [];
+        setHistory(historyData);
+
+        // Calculate stats
+        if (historyData.length > 0) {
+          const highestScore = Math.max(
+            ...historyData.map((h) => h.overallSummary?.topMatchPercentage || 0)
+          );
+          setStats({
+            totalAnalyses: historyData.length,
+            highestScore: Math.round(highestScore),
+            lastRunDate: historyData[0]?.createdAt,
+          });
+
+          // Auto-select most recent
+          setSelectedAnalysis(historyData[0]);
         }
       }
-    } catch (error) {
-      if (error.response?.status !== 404) {
-        toast.error("Failed to load analysis history");
-      }
+    } catch (err) {
+      console.error("❌ Failed to fetch history:", err);
+      setError(
+        err.response?.data?.message || "Failed to load analysis history"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAnalyze = async (type = "enhanced") => {
-    setAnalyzing(true);
+  // ✅ FIX: Add retry logic and better loading states
+  const handleRunAnalysis = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Please log in to run analysis");
+      return;
+    }
+
+    if (!completeness.readyForAnalysis) {
+      setError(
+        "Please complete all required documents before running analysis"
+      );
+      return;
+    }
+
+    setAnalysisLoading(true);
+    setError(null);
+    setRetryCount(0);
+
     try {
-      const response =
-        type === "enhanced"
-          ? await loanAnalysisAPI.analyzeEnhanced()
-          : await loanAnalysisAPI.analyze();
+      console.log("🚀 Starting NBFC matching analysis...");
+      const response = await axios.post(
+        `${API_BASE_URL}/api/student/loan-matching/analyze`,
+        {},
+        {
+          headers: getAuthHeaders(),
+          timeout: 30000, // ✅ FIX: 30 second timeout
+        }
+      );
 
-      toast.success("Analysis completed successfully");
-      await fetchHistory();
+      if (response.data.success) {
+        console.log("✅ Analysis completed successfully");
+        setSelectedAnalysis({
+          _id: response.data.analysisId,
+          ...response.data.results,
+          createdAt: new Date().toISOString(),
+          overallSummary: response.data.results.summary,
+        });
 
-      if (response.data.historyId) {
-        handleViewDetails(response.data.historyId);
+        // Refresh history
+        await fetchAnalysisHistory();
+        setRetryCount(0);
       }
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to analyze eligibility"
+    } catch (err) {
+      console.error("❌ Analysis failed:", err);
+
+      // ✅ FIX: Retry logic
+      if (retryCount < MAX_RETRIES) {
+        console.log(`⏳ Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+        setRetryCount((prev) => prev + 1);
+        setTimeout(() => handleRunAnalysis(), 2000);
+        return;
+      }
+
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to run analysis. Please try again."
       );
     } finally {
-      setAnalyzing(false);
-    }
-  };
-
-  const handleViewDetails = async (id) => {
-    try {
-      const response = await loanAnalysisAPI.getById(id);
-      setSelectedAnalysis(response.data.data);
-      setShowHistory(false); // Close history on mobile/view switch
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (error) {
-      toast.error("Failed to fetch details");
-    }
-  };
-
-  const handleDelete = async (id, e) => {
-    e.stopPropagation();
-    if (!window.confirm("Delete this analysis record?")) return;
-
-    try {
-      await loanAnalysisAPI.delete(id);
-      toast.success("Record deleted");
-      await fetchHistory();
-      if (selectedAnalysis?.analysis?._id === id) {
-        setSelectedAnalysis(null);
+      if (retryCount >= MAX_RETRIES || error) {
+        setAnalysisLoading(false);
       }
-    } catch (error) {
-      toast.error("Delete failed");
     }
   };
 
-  const getScoreColor = (score) => {
-    if (score >= 80) return "text-emerald-600";
-    if (score >= 60) return "text-blue-600";
-    if (score >= 40) return "text-amber-600";
-    return "text-rose-600";
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "eligible":
+        return <CheckCircle className="text-green-500" size={20} />;
+      case "borderline":
+        return <AlertCircle className="text-yellow-500" size={20} />;
+      case "not_eligible":
+        return <XCircle className="text-red-500" size={20} />;
+      default:
+        return <AlertCircle className="text-gray-400" size={20} />;
+    }
   };
 
-  const getScoreBg = (score) => {
-    if (score >= 80) return "bg-emerald-50 border-emerald-200";
-    if (score >= 60) return "bg-blue-50 border-blue-200";
-    if (score >= 40) return "bg-amber-50 border-amber-200";
-    return "bg-rose-50 border-rose-200";
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case "eligible":
+        return "Eligible";
+      case "borderline":
+        return "Borderline";
+      case "not_eligible":
+        return "Not Eligible";
+      default:
+        return "Unknown";
+    }
   };
 
-  if (loading && !history.length) {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "eligible":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "borderline":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "not_eligible":
+        return "bg-red-100 text-red-800 border-red-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  // ✅ FIX: Better loading state with progress indicator
+  if (analysisLoading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          Loading your analysis...
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-4">
+          <Loader className="animate-spin mx-auto text-blue-600" size={48} />
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">
+              Analyzing Your Profile...
+            </h3>
+            <p className="text-gray-600 mt-2">Matching against active NBFCs</p>
+            <p className="text-sm text-gray-500 mt-1">
+              This usually takes 8-15 seconds
+            </p>
+            {retryCount > 0 && (
+              <p className="text-sm text-yellow-600 mt-2">
+                Retrying... ({retryCount}/{MAX_RETRIES})
+              </p>
+            )}
+          </div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col items-center min-h-screen  pb-12">
-        <StepperExample currentStep={8} />
+      <StepperExample currentStep={8} />
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Loan Eligibility Analysis
+          </h1>
+          <p className="text-gray-600">
+            Check your current loan eligibility based on updated profile data.
+          </p>
+        </div>
 
-        <div className="w-full max-w-6xl mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column: Actions & History */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Action Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-2">
-                New Analysis
-              </h2>
-              <p className="text-sm text-gray-600 mb-6">
-                Check your current loan eligibility based on updated profile
-                data.
-              </p>
-
-              <div className="space-y-3">
-                <button
-                  onClick={() => handleAnalyze("enhanced")}
-                  disabled={analyzing}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition disabled:opacity-50 font-medium shadow-sm hover:shadow-md"
-                >
-                  {analyzing ? (
-                    "Analyzing..."
-                  ) : (
-                    <>
-                      <Activity size={18} /> Run Enhanced Analysis
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => handleAnalyze("basic")}
-                  disabled={analyzing}
-                  className="w-full py-3 bg-white text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition text-sm font-medium"
-                >
-                  Run Basic Check
-                </button>
-              </div>
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start">
+            <XCircle
+              className="text-red-500 mr-3 flex-shrink-0 mt-0.5"
+              size={20}
+            />
+            <div>
+              <h3 className="font-semibold text-red-900">Error</h3>
+              <p className="text-red-700 text-sm">{error}</p>
             </div>
+          </div>
+        )}
 
-            {/* Stats Card */}
-            {stats && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-                  Overview
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 bg-gray-50 rounded-xl">
-                    <p className="text-xs text-gray-500 mb-1">Highest Score</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stats.highestScore}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-xl">
-                    <p className="text-xs text-gray-500 mb-1">Total Runs</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stats.totalAnalyses}
-                    </p>
-                  </div>
+        {/* Document Completeness Card */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Document Completeness
+            </h2>
+            <span className="text-2xl font-bold text-blue-600">
+              {completeness.percentage}%
+            </span>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+            <div
+              className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+              style={{ width: `${completeness.percentage}%` }}
+            ></div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="text-sm">
+              <span className="text-gray-600">Completed Fields:</span>
+              <span className="font-semibold text-gray-900 ml-2">
+                {completeness.completedFields} / {completeness.totalFields}
+              </span>
+            </div>
+            <div className="text-sm">
+              <span className="text-gray-600">Next Action:</span>
+              <span className="font-semibold text-gray-900 ml-2">
+                {completeness.nextAction}
+              </span>
+            </div>
+          </div>
+
+          {/* ✅ FIX: Better button state handling */}
+          <button
+            onClick={handleRunAnalysis}
+            disabled={!completeness.readyForAnalysis || analysisLoading}
+            className={`w-full py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center ${
+              completeness.readyForAnalysis
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            <TrendingUp className="mr-2" size={20} />
+            {analysisLoading
+              ? "Analyzing..."
+              : completeness.readyForAnalysis
+              ? "Run New Analysis"
+              : "Complete Profile First"}
+          </button>
+
+          {!completeness.readyForAnalysis && (
+            <p className="text-sm text-amber-600 mt-2 text-center">
+              Complete all required documents to unlock analysis
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left: Analysis History */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Analysis History
+              </h2>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">Highest Score</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {stats.highestScore}%
+                  </p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Runs</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {stats.totalAnalyses}
+                  </p>
                 </div>
               </div>
-            )}
 
-            {/* History List (Mobile Collapsible / Desktop Always) */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div
-                className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center cursor-pointer lg:cursor-default"
-                onClick={() => setShowHistory(!showHistory)}
-              >
-                <h3 className="font-semibold text-gray-800">History</h3>
-                <ChevronDown
-                  className={`lg:hidden transition ${
-                    showHistory ? "rotate-180" : ""
-                  }`}
-                  size={20}
-                />
-              </div>
-
-              <div
-                className={`${
-                  showHistory ? "block" : "hidden"
-                } lg:block max-h-96 overflow-y-auto`}
-              >
-                {history.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500 text-sm">
-                    No history yet.
+              {/* History List */}
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {loading ? (
+                  <div className="text-center py-8">
+                    <Loader className="animate-spin mx-auto text-gray-400" />
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText
+                      className="mx-auto mb-2 text-gray-400"
+                      size={40}
+                    />
+                    <p className="text-sm">No analyses yet</p>
+                    <p className="text-xs mt-1">
+                      Run your first analysis above
+                    </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-100">
-                    {history.map((item) => (
-                      <div
-                        key={item._id}
-                        onClick={() => handleViewDetails(item._id)}
-                        className={`p-4 hover:bg-gray-50 cursor-pointer transition ${
-                          selectedAnalysis?.analysis?._id === item._id
-                            ? "bg-purple-50 border-l-4 border-purple-500"
-                            : ""
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {new Date(item.createdAt).toLocaleDateString()}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span
-                                className={`text-xs font-bold ${getScoreColor(
-                                  item.overallScore
-                                )}`}
-                              >
-                                Score: {item.overallScore}
-                              </span>
-                              <span className="text-xs text-gray-400">•</span>
-                              <span className="text-xs text-gray-500 capitalize">
-                                {item.analysisType}
-                              </span>
-                            </div>
-                          </div>
-                          <button
-                            onClick={(e) => handleDelete(item._id, e)}
-                            className="text-gray-400 hover:text-red-500 p-1"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                  history.map((item) => (
+                    <div
+                      key={item._id}
+                      onClick={() => setSelectedAnalysis(item)}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        selectedAnalysis?._id === item._id
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 bg-white hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-900">
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="text-xs text-gray-500 flex items-center">
+                          <Clock size={12} className="mr-1" />
+                          {new Date(item.createdAt).toLocaleTimeString()}
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-600">
+                          {item.overallSummary?.eligibleCount || 0} Eligible
+                        </span>
+                        <span className="text-sm font-bold text-blue-600">
+                          {item.overallSummary?.topMatchPercentage || 0}%
+                        </span>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right Column: Detailed Analysis View */}
+          {/* Right: Analysis Details */}
           <div className="lg:col-span-2">
             {selectedAnalysis ? (
               <div className="space-y-6">
-                {/* Score Header */}
-                <div
-                  className={`rounded-2xl p-8 text-center border ${getScoreBg(
-                    selectedAnalysis.analysis.overallScore
-                  )}`}
-                >
-                  <p className="text-gray-600 font-medium mb-2">
-                    Overall Eligibility Score
-                  </p>
-                  <div className="flex items-center justify-center gap-2">
-                    <span
-                      className={`text-6xl font-bold ${getScoreColor(
-                        selectedAnalysis.analysis.overallScore
-                      )}`}
-                    >
-                      {selectedAnalysis.analysis.overallScore}
-                    </span>
-                    <span className="text-2xl text-gray-400 font-light">
-                      /100
-                    </span>
+                {/* Overall Summary */}
+                <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    Analysis Results
+                  </h2>
+
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <p className="text-3xl font-bold text-green-600">
+                        {selectedAnalysis.overallSummary?.eligibleCount || 0}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Eligible</p>
+                    </div>
+                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                      <p className="text-3xl font-bold text-yellow-600">
+                        {selectedAnalysis.overallSummary?.borderlineCount || 0}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Borderline</p>
+                    </div>
+                    <div className="text-center p-4 bg-red-50 rounded-lg">
+                      <p className="text-3xl font-bold text-red-600">
+                        {selectedAnalysis.overallSummary?.notEligibleCount || 0}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Not Eligible</p>
+                    </div>
                   </div>
 
-                  {selectedAnalysis.comparison?.hasPrevious && (
-                    <div className="mt-4 inline-flex items-center gap-1 px-3 py-1 bg-white/60 rounded-full text-sm font-medium">
-                      {selectedAnalysis.comparison.scoreChange >= 0 ? (
-                        <TrendingUp size={16} className="text-green-600" />
-                      ) : (
-                        <TrendingUp
-                          size={16}
-                          className="text-red-600 rotate-180"
-                        />
-                      )}
-                      <span
-                        className={
-                          selectedAnalysis.comparison.scoreChange >= 0
-                            ? "text-green-700"
-                            : "text-red-700"
-                        }
-                      >
-                        {Math.abs(selectedAnalysis.comparison.scoreChange)}{" "}
-                        points since last check
-                      </span>
+                  {selectedAnalysis.overallSummary?.topMatchNBFC && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-gray-600 mb-1">Top Match</p>
+                      <p className="text-lg font-bold text-blue-900">
+                        {selectedAnalysis.overallSummary.topMatchNBFC}
+                      </p>
+                      <p className="text-2xl font-bold text-blue-600 mt-1">
+                        {selectedAnalysis.overallSummary.topMatchPercentage}%
+                        Match
+                      </p>
                     </div>
                   )}
                 </div>
 
-                {/* Section Scores Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {Object.entries(
-                    selectedAnalysis.analysis.sectionScores || {}
-                  ).map(([key, value]) => (
-                    <div
-                      key={key}
-                      className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
-                    >
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                        {key.replace(/([A-Z])/g, " $1").trim()}
-                      </p>
-                      <p
-                        className={`text-xl font-bold ${getScoreColor(
-                          value.score
-                        )}`}
-                      >
-                        {value.score || 0}%
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                {/* ✅ FIX: Display NBFCs by category */}
+                {["eligible", "borderline", "notEligible"].map((category) => {
+                  const nbfcs =
+                    selectedAnalysis.nbfcMatches?.[category] ||
+                    selectedAnalysis[category] ||
+                    [];
+                  if (nbfcs.length === 0) return null;
 
-                {/* NBFC Matches Section */}
-                {selectedAnalysis.analysis.nbfcMatches?.eligible?.length >
-                  0 && (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="p-6 border-b border-gray-100 bg-gray-50">
-                      <div className="flex items-center gap-2">
-                        <Award className="text-purple-600" size={20} />
-                        <h3 className="text-lg font-bold text-gray-800">
-                          Matched Lenders (
-                          {
-                            selectedAnalysis.analysis.nbfcMatches.eligible
-                              .length
-                          }
-                          )
-                        </h3>
-                      </div>
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                      {selectedAnalysis.analysis.nbfcMatches.eligible.map(
-                        (nbfc, idx) => (
+                  const categoryLabels = {
+                    eligible: "Eligible NBFCs",
+                    borderline: "Borderline NBFCs",
+                    notEligible: "Not Eligible NBFCs",
+                  };
+
+                  return (
+                    <div
+                      key={category}
+                      className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
+                    >
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        {categoryLabels[category]} ({nbfcs.length})
+                      </h3>
+
+                      <div className="space-y-4">
+                        {nbfcs.map((nbfc, idx) => (
                           <div
                             key={idx}
-                            className="p-6 hover:bg-gray-50 transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                           >
-                            <div>
-                              <h4 className="font-bold text-gray-900 text-lg">
-                                {nbfc.nbfcName}
-                              </h4>
-                              <p className="text-sm text-gray-500 mb-2">
-                                {nbfc.brandName}
-                              </p>
-                              <div className="flex items-center gap-3">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  {nbfc.matchPercentage}% Match
-                                </span>
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <h4 className="font-semibold text-gray-900 text-lg">
+                                  {nbfc.nbfcName}
+                                </h4>
+                                {nbfc.nbfcEmail && (
+                                  <p className="text-sm text-gray-600">
+                                    {nbfc.nbfcEmail}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-blue-600">
+                                  {nbfc.matchPercentage}%
+                                </div>
+                                <div
+                                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mt-2 ${getStatusColor(
+                                    nbfc.eligibilityStatus
+                                  )}`}
+                                >
+                                  {getStatusIcon(nbfc.eligibilityStatus)}
+                                  <span className="ml-1">
+                                    {getStatusLabel(nbfc.eligibilityStatus)}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                            <div className="text-right w-full sm:w-auto">
-                              <p className="text-xs text-gray-500 uppercase mb-1">
-                                Estimated Offer
-                              </p>
-                              <p className="text-lg font-bold text-gray-900">
-                                ₹
-                                {nbfc.estimatedLoanAmount.min?.toLocaleString()}{" "}
-                                - ₹
-                                {nbfc.estimatedLoanAmount.max?.toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
-                        )
-                      )}
-                    </div>
-                    <div className="p-4 bg-gray-50 text-center">
-                      <a
-                        href="/student/loan-request"
-                        className="inline-flex items-center text-purple-600 hover:text-purple-700 font-medium text-sm"
-                      >
-                        Proceed to Loan Requests{" "}
-                        <ArrowRight size={16} className="ml-1" />
-                      </a>
-                    </div>
-                  </div>
-                )}
 
-                {/* Improvement Actions */}
-                {selectedAnalysis.analysis.masterRecommendations
-                  ?.immediateActions?.length > 0 && (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <TrendingUp className="text-amber-500" size={20} />
-                      <h3 className="text-lg font-bold text-gray-800">
-                        Recommended Actions
-                      </h3>
-                    </div>
-                    <div className="space-y-3">
-                      {selectedAnalysis.analysis.masterRecommendations.immediateActions.map(
-                        (action, idx) => (
-                          <div
-                            key={idx}
-                            className="flex gap-3 p-3 rounded-lg bg-amber-50 border border-amber-100"
-                          >
-                            <div className="min-w-[24px] pt-0.5">
-                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-200 text-amber-800 text-xs font-bold">
-                                {idx + 1}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-800 font-medium">
-                                {action.action}
-                              </p>
-                              {action.estimatedTime && (
-                                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                  <Clock size={12} /> {action.estimatedTime}
-                                </p>
-                              )}
-                            </div>
+                            {/* Analysis Details */}
+                            {nbfc.analysis && (
+                              <div className="mt-4 space-y-3">
+                                {/* Strengths */}
+                                {nbfc.analysis.strengths?.length > 0 && (
+                                  <div>
+                                    <p className="text-sm font-semibold text-green-700 mb-1">
+                                      ✓ Strengths:
+                                    </p>
+                                    <ul className="text-sm text-gray-700 space-y-1">
+                                      {nbfc.analysis.strengths.map((s, i) => (
+                                        <li
+                                          key={i}
+                                          className="flex items-start"
+                                        >
+                                          <span className="mr-2">•</span>
+                                          <span>{s}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                {/* Gaps */}
+                                {nbfc.analysis.gaps?.length > 0 && (
+                                  <div>
+                                    <p className="text-sm font-semibold text-red-700 mb-1">
+                                      ⚠ Gaps:
+                                    </p>
+                                    <ul className="text-sm text-gray-700 space-y-1">
+                                      {nbfc.analysis.gaps.map((g, i) => (
+                                        <li
+                                          key={i}
+                                          className="flex items-start"
+                                        >
+                                          <span className="mr-2">•</span>
+                                          <span>{g}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                {/* ROI */}
+                                {nbfc.analysis.estimatedROI && (
+                                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded">
+                                    <span className="text-sm text-gray-600">
+                                      Estimated Interest Rate:
+                                    </span>
+                                    <span className="font-semibold text-gray-900">
+                                      {nbfc.analysis.estimatedROI.min}% -{" "}
+                                      {nbfc.analysis.estimatedROI.max}%
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Send Request Button */}
+                                {category === "eligible" && (
+                                  <button
+                                    onClick={() =>
+                                      (window.location.href = `/loan-requests?nbfc=${nbfc.nbfcId}`)
+                                    }
+                                    className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center"
+                                  >
+                                    Send Loan Request
+                                    <ArrowRight className="ml-2" size={16} />
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        )
-                      )}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })}
               </div>
             ) : (
-              // Empty State
-              <div className="h-full min-h-[400px] flex flex-col items-center justify-center bg-white rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center">
-                <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-4">
-                  <BarChart2 className="text-purple-400" size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">
+              <div className="bg-white rounded-lg shadow-md p-12 border border-gray-200 text-center">
+                <FileText className="mx-auto text-gray-300 mb-4" size={64} />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   No Analysis Selected
                 </h3>
-                <p className="text-gray-500 max-w-md">
+                <p className="text-gray-600">
                   Select an analysis from your history or run a new one to see
                   detailed insights about your loan eligibility.
                 </p>
-                <button
-                  onClick={() => handleAnalyze("enhanced")}
-                  className="mt-6 px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                >
-                  Start New Analysis
-                </button>
               </div>
             )}
-          </div>
-          {/* Navigation Buttons */}
-          <div className="flex items-center justify-between py-6 border-t border-gray-200">
-            <Link to="/student/admission">
-              {" "}
-              <button
-                type="button"
-                className="flex items-center justify-center w-12 h-12 rounded-full border border-gray-300 hover:bg-gray-50 transition"
-              >
-                <svg
-                  className="w-5 h-5 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => (window.location.href = "/student/loan-request")}
-              className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-700 transition"
-            >
-              <svg
-                className="w-5 h-5 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
           </div>
         </div>
       </div>

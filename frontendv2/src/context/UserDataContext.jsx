@@ -1,4 +1,5 @@
 // src/context/UserDataContext.jsx
+
 import {
   createContext,
   useContext,
@@ -10,7 +11,8 @@ import axios from "axios";
 
 const UserDataContext = createContext(null);
 
-const API_BASE_URL = "http://localhost:5000";
+// ✅ FIX: Use environment variable with fallback
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export const useUserData = () => {
   const ctx = useContext(UserDataContext);
@@ -54,14 +56,36 @@ export const UserDataProvider = ({ children }) => {
   // Academic records state
   const [academicData, setAcademicData] = useState(null);
 
-  // ✅ NEW: Test scores state
+  // Test scores state
   const [testScoresData, setTestScoresData] = useState(null);
 
-  // ✅ NEW: Admission data state
+  // Admission data state
   const [admissionData, setAdmissionData] = useState(null);
 
   const isAuthenticated = !!localStorage.getItem("token");
   const userType = localStorage.getItem("userType") || "student";
+
+  // ✅ FIX: Add token expiry check
+  const isTokenExpired = useCallback(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return true;
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.exp * 1000 < Date.now();
+    } catch {
+      return true;
+    }
+  }, []);
+
+  // ✅ FIX: Add request interceptor for consistent headers
+  const getAuthHeaders = useCallback(() => {
+    const token = localStorage.getItem("token");
+    return {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+  }, []);
 
   // Fetch fresh user data from API
   const fetchUserData = useCallback(async () => {
@@ -71,8 +95,19 @@ export const UserDataProvider = ({ children }) => {
       return null;
     }
 
+    // ✅ FIX: Check token expiry before making request
+    if (isTokenExpired()) {
+      console.warn("⚠️ Token expired, clearing auth...");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("userType");
+      setUserData(null);
+      return null;
+    }
+
     setLoading(true);
     setError(null);
+
     try {
       let endpoint = `${API_BASE_URL}/api/auth/me`;
       if (userType === "consultant") {
@@ -82,10 +117,7 @@ export const UserDataProvider = ({ children }) => {
       }
 
       const response = await axios.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
       });
 
       if (response.data.success) {
@@ -114,7 +146,7 @@ export const UserDataProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [userType]);
+  }, [userType, isTokenExpired, getAuthHeaders]);
 
   // Fetch document completeness
   const fetchCompleteness = useCallback(async () => {
@@ -125,10 +157,7 @@ export const UserDataProvider = ({ children }) => {
       const response = await axios.get(
         `${API_BASE_URL}/api/loan-analysis/completeness`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          headers: getAuthHeaders(),
         }
       );
 
@@ -142,7 +171,7 @@ export const UserDataProvider = ({ children }) => {
       console.error("❌ Failed to fetch completeness:", err);
     }
     return null;
-  }, [userType]);
+  }, [userType, getAuthHeaders]);
 
   // Fetch KYC data
   const fetchKyc = useCallback(async () => {
@@ -151,10 +180,7 @@ export const UserDataProvider = ({ children }) => {
 
     try {
       const response = await axios.get(`${API_BASE_URL}/api/user/kyc/kyc/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
       });
 
       const data = response.data;
@@ -172,7 +198,7 @@ export const UserDataProvider = ({ children }) => {
       }
       return null;
     }
-  }, [userType]);
+  }, [userType, getAuthHeaders]);
 
   // Fetch academic records
   const fetchAcademicRecords = useCallback(async () => {
@@ -183,10 +209,7 @@ export const UserDataProvider = ({ children }) => {
       const response = await axios.get(
         `${API_BASE_URL}/api/user/academics/records`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          headers: getAuthHeaders(),
         }
       );
 
@@ -204,19 +227,16 @@ export const UserDataProvider = ({ children }) => {
       }
       return null;
     }
-  }, [userType]);
+  }, [userType, getAuthHeaders]);
 
-  // ✅ NEW: Fetch test scores
+  // Fetch test scores
   const fetchTestScores = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token || userType !== "student") return null;
 
     try {
       const response = await axios.get(`${API_BASE_URL}/api/user/testscores`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
       });
 
       if (response.data.success) {
@@ -233,9 +253,9 @@ export const UserDataProvider = ({ children }) => {
       }
       return null;
     }
-  }, [userType]);
+  }, [userType, getAuthHeaders]);
 
-  // ✅ NEW: Fetch admission data
+  // Fetch admission data
   const fetchAdmission = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token || userType !== "student") return null;
@@ -244,10 +264,7 @@ export const UserDataProvider = ({ children }) => {
       const response = await axios.get(
         `${API_BASE_URL}/api/user/admission/me`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          headers: getAuthHeaders(),
         }
       );
 
@@ -265,12 +282,11 @@ export const UserDataProvider = ({ children }) => {
       }
       return null;
     }
-  }, [userType]);
+  }, [userType, getAuthHeaders]);
 
   // Refresh all user data
   const refreshUserData = useCallback(async () => {
     const userData = await fetchUserData();
-
     if (userType === "student") {
       await Promise.all([
         fetchCompleteness(),
@@ -307,17 +323,38 @@ export const UserDataProvider = ({ children }) => {
     setAcademicData(null);
     setTestScoresData(null);
     setAdmissionData(null);
+    setCompleteness({
+      percentage: 0,
+      completedFields: 0,
+      totalFields: 13,
+      sections: {},
+      nextAction: "",
+      readyForAnalysis: false,
+    });
+    setKyc({
+      kycStatus: null,
+      kycData: null,
+      kycVerifiedAt: null,
+      kycRejectedAt: null,
+    });
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     localStorage.removeItem("userType");
   }, []);
 
+  // ✅ FIX: Check token expiry on mount and periodically
+  useEffect(() => {
+    if (isAuthenticated && isTokenExpired()) {
+      clearUserData();
+    }
+  }, [isAuthenticated, isTokenExpired, clearUserData]);
+
   // Fetch fresh data when component mounts
   useEffect(() => {
-    if (isAuthenticated && !userData) {
+    if (isAuthenticated && !userData && !loading) {
       fetchUserData();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userData, loading, fetchUserData]);
 
   // Context value
   const value = {
@@ -341,6 +378,7 @@ export const UserDataProvider = ({ children }) => {
     setAcademicData,
     setTestScoresData,
     setAdmissionData,
+    getAuthHeaders,
 
     // State data
     completeness,

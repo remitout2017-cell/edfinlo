@@ -1,16 +1,32 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const Stepper = ({ currentStep = 1, steps = [] }) => {
   const defaultSteps = [
-    { id: 1, title: "Personal Info", label: "01" },
-    { id: 2, title: "KYC", label: "02" },
-    { id: 3, title: "Academic", label: "03" },
-    { id: 4, title: "Education", label: "04" },
-    { id: 5, title: "Work Experience", label: "05" },
-    { id: 6, title: "Co-borrower", label: "06" },
-    { id: 7, title: "Admission", label: "07" },
-    { id: 8, title: "Analysis", label: "08" },
-    { id: 9, title: "NbFC Matches", label: "09" },
+    { id: 1, title: "Personal Info", label: "01", path: "/student/profile" },
+    { id: 2, title: "KYC", label: "02", path: "/student/kyc" },
+    {
+      id: 3,
+      title: "Academic",
+      label: "03",
+      path: "/student/academic-records",
+    },
+    { id: 4, title: "Education", label: "04", path: "/student/education-plan" },
+    {
+      id: 5,
+      title: "Work Experience",
+      label: "05",
+      path: "/student/work-experience",
+    },
+    { id: 6, title: "Co-borrower", label: "06", path: "/student/coborrower" },
+    { id: 7, title: "Admission", label: "07", path: "/student/admission" },
+    { id: 8, title: "Analysis", label: "08", path: "/student/loan-analysis" },
+    {
+      id: 9,
+      title: "NbFC Matches",
+      label: "09",
+      path: "/student/loan-request",
+    },
   ];
 
   const stepsList = steps.length > 0 ? steps : defaultSteps;
@@ -66,30 +82,32 @@ const Stepper = ({ currentStep = 1, steps = [] }) => {
                 zIndex: stepsList.length - index,
               }}
             >
-              <div
-                className={`
+              <Link to={step.path || "#"} className="block">
+                <div
+                  className={`
                   relative h-10 sm:h-11 md:h-12 lg:h-14 flex items-center justify-center
-                  transition-all duration-300
+                  transition-all duration-300 cursor-pointer hover:opacity-90
                   ${getStepStyles(step)}
                 `}
-                style={{
-                  clipPath:
-                    index === 0
-                      ? `polygon(0% 0%, calc(100% - ${DESKTOP_ARROW}px) 0%, 100% 50%, calc(100% - ${DESKTOP_ARROW}px) 100%, 0% 100%)`
-                      : `polygon(0% 0%, calc(100% - ${DESKTOP_ARROW}px) 0%, 100% 50%, calc(100% - ${DESKTOP_ARROW}px) 100%, 0% 100%, ${DESKTOP_ARROW}px 50%)`,
+                  style={{
+                    clipPath:
+                      index === 0
+                        ? `polygon(0% 0%, calc(100% - ${DESKTOP_ARROW}px) 0%, 100% 50%, calc(100% - ${DESKTOP_ARROW}px) 100%, 0% 100%)`
+                        : `polygon(0% 0%, calc(100% - ${DESKTOP_ARROW}px) 0%, 100% 50%, calc(100% - ${DESKTOP_ARROW}px) 100%, 0% 100%, ${DESKTOP_ARROW}px 50%)`,
 
-                  paddingLeft:
-                    index === 0 ? "1rem" : `calc(1rem + ${DESKTOP_ARROW}px)`,
-                  paddingRight: "1rem",
-                }}
-              >
-                {/* Shine Effect */}
-                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                    paddingLeft:
+                      index === 0 ? "1rem" : `calc(1rem + ${DESKTOP_ARROW}px)`,
+                    paddingRight: "1rem",
+                  }}
+                >
+                  {/* Shine Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
 
-                <span className="text-xs sm:text-xs md:text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
-                  {step.title}
-                </span>
-              </div>
+                  <span className="text-xs sm:text-xs md:text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
+                    {step.title}
+                  </span>
+                </div>
+              </Link>
             </div>
           ))}
         </div>
@@ -106,26 +124,28 @@ const Stepper = ({ currentStep = 1, steps = [] }) => {
                 zIndex: stepsList.length - index,
               }}
             >
-              <div
-                className={`
+              <Link to={step.path || "#"} className="block">
+                <div
+                  className={`
                   relative h-8 flex items-center justify-center
-                  transition-all duration-300
+                  transition-all duration-300 cursor-pointer hover:opacity-90
                   ${getStepStyles(step)}
                 `}
-                style={{
-                  clipPath:
-                    index === 0
-                      ? `polygon(0% 0%, calc(100% - ${MOBILE_ARROW}px) 0%, 100% 50%, calc(100% - ${MOBILE_ARROW}px) 100%, 0% 100%)`
-                      : `polygon(0% 0%, calc(100% - ${MOBILE_ARROW}px) 0%, 100% 50%, calc(100% - ${MOBILE_ARROW}px) 100%, 0% 100%, ${MOBILE_ARROW}px 50%)`,
+                  style={{
+                    clipPath:
+                      index === 0
+                        ? `polygon(0% 0%, calc(100% - ${MOBILE_ARROW}px) 0%, 100% 50%, calc(100% - ${MOBILE_ARROW}px) 100%, 0% 100%)`
+                        : `polygon(0% 0%, calc(100% - ${MOBILE_ARROW}px) 0%, 100% 50%, calc(100% - ${MOBILE_ARROW}px) 100%, 0% 100%, ${MOBILE_ARROW}px 50%)`,
 
-                  paddingLeft: index === 0 ? "0" : `${MOBILE_ARROW}px`,
-                }}
-              >
-                {/* Shine Effect */}
-                <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                    paddingLeft: index === 0 ? "0" : `${MOBILE_ARROW}px`,
+                  }}
+                >
+                  {/* Shine Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
 
-                <span className="text-xs font-bold">{step.label}</span>
-              </div>
+                  <span className="text-xs font-bold">{step.label}</span>
+                </div>
+              </Link>
             </div>
           ))}
         </div>
@@ -137,15 +157,30 @@ const Stepper = ({ currentStep = 1, steps = [] }) => {
 // --- Example Wrapper - NOW ACCEPTS currentStep PROP ---
 const StepperExample = ({ currentStep = 1 }) => {
   const steps = [
-    { id: 1, title: "Education", label: "01" },
-    { id: 2, title: "KYC", label: "02" },
-    { id: 3, title: "Academic", label: "03" },
-    { id: 4, title: "Test Scores", label: "04" },
-    { id: 5, title: "Work Experience", label: "05" },
-    { id: 6, title: "Co-borrower", label: "06" },
-    { id: 7, title: "Admission", label: "07" },
-    { id: 8, title: "Analysis", label: "08" },
-    { id: 9, title: "NbFC Matches", label: "09" },
+    { id: 1, title: "Education", label: "01", path: "/student/education-plan" },
+    { id: 2, title: "KYC", label: "02", path: "/student/kyc" },
+    {
+      id: 3,
+      title: "Academic",
+      label: "03",
+      path: "/student/academic-records",
+    },
+    { id: 4, title: "Test Scores", label: "04", path: "/student/test-scores" },
+    {
+      id: 5,
+      title: "Work Experience",
+      label: "05",
+      path: "/student/work-experience",
+    },
+    { id: 6, title: "Co-borrower", label: "06", path: "/student/co-borrower" },
+    { id: 7, title: "Admission", label: "07", path: "/student/admission" },
+    { id: 8, title: "Analysis", label: "08", path: "/student/loan-analysis" },
+    {
+      id: 9,
+      title: "NbFC Matches",
+      label: "09",
+      path: "/student/loan-request",
+    },
   ];
 
   return <Stepper currentStep={currentStep} steps={steps} />;
