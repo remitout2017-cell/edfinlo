@@ -131,6 +131,9 @@ app.use(
   require("./routes/nbfc/loanRequest.routes")
 );
 
+// ✅ Chatbot routes (must come BEFORE error handlers)
+app.use("/api/chatbot", apiLimiter, require("./chatbot/routes/chatbot.routes"));
+
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -153,18 +156,16 @@ connectDB();
     console.log("🤖 Initializing AI chatbot...");
     const vectorStoreManager = require("./chatbot/config/vectorStore");
     const chatbot = require("./chatbot/agents/chatbotGraph");
-    
+
     await vectorStoreManager.initialize();
     await chatbot.initialize();
-    
+
     console.log("✅ AI chatbot ready!");
   } catch (error) {
     console.error("❌ Chatbot initialization failed:", error);
     console.log("⚠️ Server will continue without chatbot features");
   }
 })();
-
-app.use("/api/chatbot", require("./chatbot/routes/chatbot.routes"));
 
 cron.schedule("0 * * * *", async () => {
   // Every hour at minute 0

@@ -11,8 +11,11 @@ import axios from "axios";
 
 const UserDataContext = createContext(null);
 
-// ✅ FIX: Use environment variable with fallback
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// ✅ FIX: Use environment variable with fallback and ensure no trailing /api
+const rawBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = rawBaseUrl.endsWith("/api")
+  ? rawBaseUrl.slice(0, -4)
+  : rawBaseUrl.replace(/\/$/, "");
 
 export const useUserData = () => {
   const ctx = useContext(UserDataContext);

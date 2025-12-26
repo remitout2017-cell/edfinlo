@@ -3,7 +3,7 @@ const asyncHandler = require("express-async-handler");
 const chatbot = require("../agents/chatbotGraph");
 const ChatHistory = require("../models/ChatHistory");
 const { RATE_LIMITS } = require("../config/chatbotConfig");
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require("uuid");
 
 // @desc    Send message to chatbot
 // @route   POST /api/chatbot/message
@@ -12,26 +12,28 @@ const sendMessage = asyncHandler(async (req, res) => {
   const { message, sessionId } = req.body;
   const startTime = Date.now();
 
-  if (!message || message.trim() === '') {
+  if (!message || message.trim() === "") {
     res.status(400);
     throw new Error("Message is required");
   }
 
   // Determine user role and model
-  const userRole = req.user.role || 'student';
-  const userId = req.user._id;
-  
-  let userModel = 'User';
-  if (userRole === 'consultant') userModel = 'Consultant';
-  if (userRole === 'nbfc') userModel = 'NBFC';
+  const userRole = req.user.role || "student";
+  const userId = req.user.id;
+
+  let userModel = "User";
+  if (userRole === "consultant") userModel = "Consultant";
+  if (userRole === "nbfc") userModel = "NBFC";
 
   // Rate limiting check
   const limits = RATE_LIMITS[userRole];
   const hourlyCount = await ChatHistory.getMessageCount(userId, 60 * 60 * 1000);
-  
+
   if (hourlyCount >= limits.maxMessagesPerHour) {
     res.status(429);
-    throw new Error(`Rate limit exceeded. Maximum ${limits.maxMessagesPerHour} messages per hour.`);
+    throw new Error(
+      `Rate limit exceeded. Maximum ${limits.maxMessagesPerHour} messages per hour.`
+    );
   }
 
   // Session management
@@ -40,7 +42,7 @@ const sendMessage = asyncHandler(async (req, res) => {
   let chatHistory = await ChatHistory.findOne({
     userId,
     sessionId: currentSessionId,
-    isActive: true
+    isActive: true,
   });
 
   if (!chatHistory) {
@@ -49,16 +51,16 @@ const sendMessage = asyncHandler(async (req, res) => {
       userModel,
       userRole,
       sessionId: currentSessionId,
-      messages: []
+      messages: [],
     });
   }
 
   // Convert to conversation history
   const conversationHistory = chatHistory.messages
     .slice(-6) // Keep last 6 messages
-    .map(msg => ({
-      role: msg.role === 'user' ? 'human' : 'ai',
-      content: msg.content
+    .map((msg) => ({
+      role: msg.role === "user" ? "human" : "ai",
+      content: msg.content,
     }));
 
   // Get chatbot response
@@ -67,19 +69,19 @@ const sendMessage = asyncHandler(async (req, res) => {
 
   // Save to history
   chatHistory.messages.push({
-    role: 'user',
+    role: "user",
     content: message,
     timestamp: new Date(),
     intent: result.intent,
-    metadata: { responseTime: 0 }
+    metadata: { responseTime: 0 },
   });
 
   chatHistory.messages.push({
-    role: 'assistant',
+    role: "assistant",
     content: result.response,
     timestamp: new Date(),
     fromCache: result.fromCache || false,
-    metadata: { responseTime }
+    metadata: { responseTime },
   });
 
   chatHistory.messageCount = chatHistory.messages.length;
@@ -94,7 +96,7 @@ const sendMessage = asyncHandler(async (req, res) => {
       intent: result.intent,
       fromCache: result.fromCache,
       responseTime,
-    }
+    },
   });
 });
 
@@ -102,12 +104,12 @@ const sendMessage = asyncHandler(async (req, res) => {
 // @route   GET /api/chatbot/greeting
 // @access  Private
 const getGreeting = asyncHandler(async (req, res) => {
-  const userRole = req.user.role || 'student';
+  const userRole = req.user.role || "student";
   const greeting = chatbot.getGreeting(userRole);
 
   res.status(200).json({
     success: true,
-    data: { greeting }
+    data: { greeting },
   });
 });
 
@@ -116,12 +118,12 @@ const getGreeting = asyncHandler(async (req, res) => {
 // @access  Private
 const getChatHistory = asyncHandler(async (req, res) => {
   const { sessionId } = req.params;
-  const userId = req.user._id;
+  const userId = req.user.id;
 
   const chatHistory = await ChatHistory.findOne({
     userId,
     sessionId,
-    isActive: true
+    isActive: true,
   });
 
   if (!chatHistory) {
@@ -131,7 +133,7 @@ const getChatHistory = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: chatHistory
+    data: chatHistory,
   });
 });
 
@@ -139,20 +141,20 @@ const getChatHistory = asyncHandler(async (req, res) => {
 // @route   GET /api/chatbot/sessions
 // @access  Private
 const getUserSessions = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
+  const userId = req.user.id;
 
   const sessions = await ChatHistory.find({
     userId,
-    isActive: true
+    isActive: true,
   })
     .sort({ lastMessageAt: -1 })
-    .select('sessionId lastMessageAt messageCount')
+    .select("sessionId lastMessageAt messageCount")
     .limit(20);
 
   res.status(200).json({
     success: true,
     count: sessions.length,
-    data: sessions
+    data: sessions,
   });
 });
 
@@ -161,11 +163,11 @@ const getUserSessions = asyncHandler(async (req, res) => {
 // @access  Private
 const clearSession = asyncHandler(async (req, res) => {
   const { sessionId } = req.params;
-  const userId = req.user._id;
+  const userId = req.user.id;
 
   const chatHistory = await ChatHistory.findOne({
     userId,
-    sessionId
+    sessionId,
   });
 
   if (!chatHistory) {
@@ -178,7 +180,7 @@ const clearSession = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: "Chat session cleared successfully"
+    message: "Chat session cleared successfully",
   });
 });
 
@@ -196,7 +198,7 @@ const getCacheStats = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: stats
+    data: stats,
   });
 });
 
