@@ -57,6 +57,9 @@ import TestScores from "./pages/student/TestScores";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
+// ==================== NBFC PAGES ====================
+import NBFCDashboard from "./pages/nbfc/Dashboard";
+
 function App() {
   return (
     <div>
@@ -67,7 +70,7 @@ function App() {
               <StudentEducationPlanProvider>
                 <WorkExperienceProvider>
                   <ConsultantDataProvider>
-                  <Toaster position="top-right" />
+                    <Toaster position="top-right" />
                     <Routes>
                       {/* ==================== PUBLIC ROUTES ==================== */}
                       <Route path="/" element={<Home />} />
@@ -98,9 +101,9 @@ function App() {
                       <Route path="/verify-email" element={<VerifyEmail />} />
                       <Route path="/verify-phone" element={<VerifyPhone />} />
                       <Route
-                      path="/forgot-password"
-                      element={<ForgotPassword />}
-                    />
+                        path="/forgot-password"
+                        element={<ForgotPassword />}
+                      />
                       <Route path="/reset-password" element={<ResetPassword />} />
                       <Route path="/unauthorized" element={<Unauthorized />} />
 
@@ -162,8 +165,8 @@ function App() {
                         <Route
                           path="/consultant"
                           element={
-                          <Navigate to="/consultant/dashboard" replace />
-                        }
+                            <Navigate to="/consultant/dashboard" replace />
+                          }
                         />
                         <Route
                           path="/consultant/dashboard"
@@ -224,27 +227,41 @@ function App() {
                           element={<AdminDashboard />}
                         />
                         <Route
-                        path="/admin/students"
-                        element={<AdminStudents />}
-                      />
+                          path="/admin/students"
+                          element={<AdminStudents />}
+                        />
                         <Route path="/admin/nbfcs" element={<AdminNBFCs />} />
                       </Route>
 
-                    {/* ==================== SUPERADMIN ONLY ==================== */}
-                    <Route
-                      element={<ProtectedRoute allowedRoles={["superadmin"]} />}
-                    >
+                      {/* ==================== SUPERADMIN ONLY ==================== */}
                       <Route
-                        path="/admin/sub-admins"
-                        element={<AdminSubAdmins />}
-                      />
-                    </Route>
+                        element={<ProtectedRoute allowedRoles={["superadmin"]} />}
+                      >
+                        <Route
+                          path="/admin/sub-admins"
+                          element={<AdminSubAdmins />}
+                        />
+                      </Route>
+
+                      {/* ==================== NBFC ROUTES ==================== */}
+                      <Route
+                        element={<ProtectedRoute allowedRoles={["nbfc"]} />}
+                      >
+                        <Route
+                          path="/nbfc"
+                          element={<Navigate to="/nbfc/dashboard" replace />}
+                        />
+                        <Route
+                          path="/nbfc/dashboard"
+                          element={<NBFCDashboard />}
+                        />
+                      </Route>
 
                       {/* ==================== 404 ==================== */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </ConsultantDataProvider>
-              </WorkExperienceProvider>
+                </WorkExperienceProvider>
               </StudentEducationPlanProvider>
             </CoBorrowerProvider>
           </UserDataProvider>

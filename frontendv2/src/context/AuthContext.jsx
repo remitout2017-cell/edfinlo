@@ -96,6 +96,8 @@ export const AuthProvider = ({ children }) => {
         endpoint = `${API_BASE_URL}/api/consultant/auth/login`;
       } else if (userType === "admin") {
         endpoint = `${API_BASE_URL}/api/admin/auth/login`;
+      } else if (userType === "nbfc") {
+        endpoint = `${API_BASE_URL}/api/nbfc/auth/login`;
       }
 
       const response = await axios.post(
@@ -125,6 +127,12 @@ export const AuthProvider = ({ children }) => {
               response.data.data?.admin?.role ||
               response.data.admin?.role ||
               "admin",
+          };
+        } else if (userType === "nbfc") {
+          newToken = response.data.data?.token || response.data.token;
+          userData = {
+            ...(response.data.data?.nbfc || response.data.nbfc),
+            role: "nbfc",
           };
         }
 
@@ -209,6 +217,27 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Consultant register error:", error);
+      const message = error.response?.data?.message || "Registration failed";
+      return { success: false, message };
+    }
+  };
+
+  // ==================== NBFC REGISTER ====================
+  const registerNBFC = async (formData) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/nbfc/auth/register`,
+        formData,
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      if (response.data.success) {
+        return { success: true, data: response.data };
+      } else {
+        return { success: false, message: response.data.message };
+      }
+    } catch (error) {
+      console.error("NBFC register error:", error);
       const message = error.response?.data?.message || "Registration failed";
       return { success: false, message };
     }
@@ -404,6 +433,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     registerConsultant,
+    registerNBFC,
     logout,
 
     // Verification methods
