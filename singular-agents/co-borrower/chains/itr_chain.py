@@ -1,146 +1,157 @@
 """
-ITR Chain - FIXED PROMPT
-✅ Explicit instructions to extract yearly_data array
-✅ Better year detection
+ITR Extraction Chain - PRODUCTION READY
 """
 
 import logging
-import asyncio
 from pathlib import Path
 from typing import List
+import json
+import re
 
-from langchain_core.prompts import PromptTemplate
 from chains.base_chain import BaseChain
-from config import Config
+from schemas import ITRData
 from processors.pdf_processor import PDFProcessor
-from schemas import ITRData, ITRExtraction
+from config import Config
 
 logger = logging.getLogger(__name__)
 
 
 class ITRChain(BaseChain):
-    """ITR extraction with improved prompt"""
-
-    # ✅ IMPROVED PROMPT
-    EXTRACTION_PROMPT = PromptTemplate.from_template("""You are extracting Income Tax Return (ITR) data for loan application analysis.
-
-**CRITICAL**: You MUST populate the yearly_data array with data for EACH year present in the ITR documents.
-
-Extract the following information:
-
-1. **Taxpayer Details**:
-   - taxpayer_name: Full name as per PAN
-   - pan_number: PAN number (10 characters)
-
-2. **Yearly Data Array** (FOR EACH ASSESSMENT YEAR):
-   For EACH year in the ITR documents, add an entry to yearly_data with:
-   - assessment_year: e.g., "2023-24", "2022-23" (MUST be in this format)
-   - gross_total_income: Total income before deductions
-   - total_income_after_deductions: Taxable income after deductions
-   - tax_paid: Total tax paid (including TDS, advance tax)
-   - filing_date: Date of filing (YYYY-MM-DD format)
-   - filing_status: "filed" or "verified"
-   - salary_income: Income from salary (if applicable)
-   - business_income: Income from business/profession (if applicable)
-   - other_income: Other sources of income
-
-**EXAMPLE of yearly_data**:
-```json
-[
-  {
-    "assessment_year": "2023-24",
-    "gross_total_income": 1200000.0,
-    "total_income_after_deductions": 1000000.0,
-    "tax_paid": 150000.0,
-    "filing_date": "2024-07-31",
-    "filing_status": "verified",
-    "salary_income": 1200000.0,
-    "business_income": 0.0,
-    "other_income": 0.0
-  },
-  {
-    "assessment_year": "2022-23",
-    "gross_total_income": 1100000.0,
-    ...
-  }
-]
-```
-
-**IMPORTANT RULES**:
-- yearly_data MUST NOT be empty - extract ALL years present
-- If 2 ITR PDFs are provided, extract data for BOTH years
-- assessment_year format: "YYYY-YY" (e.g., "2023-24")
-- All income amounts should be > 0 if visible in the document
-- Use 0.0 only if the field is genuinely not applicable
-
-**NOTE**: The system will automatically calculate:
-- years_filed (count of years)
-- average_annual_income (average of gross_total_income)
-- average_monthly_income (average_annual_income / 12)
-- income_trend (increasing/stable/decreasing)
-
-Do NOT set these fields yourself - just provide the yearly_data array with ALL years.
-
-The system will validate your response automatically.""")
+    """Extract structured data from ITR documents"""
 
     def __init__(self):
-        super().__init__(model_name="gemini-2.0-flash-exp", temperature=0.0)
+        super().__init__(model_name=Config.GEMINI_VISION_MODEL)
 
-    async def process_async(self, itr_pdfs: List[str]) -> ITRData:
-        """ASYNC processing with parallel PDF loading"""
-        logger.info(f"📄 [ASYNC] Processing {len(itr_pdfs)} ITR document(s)")
+    def create_extraction_prompt(self) -> str:
+        """Create detailed ITR extraction prompt"""
+        return """EXTRACT ITR DATA FOR LOAN APPLICATION - Return ONLY valid JSON
 
-        # Load PDFs in parallel
-        async def load_pdf(pdf_path: str):
-            return await asyncio.to_thread(
-                PDFProcessor.process_pdf_for_gemini,
-                pdf_path,
-                max_pages=Config.MAX_PDF_PAGES
-            )
+Extract data from TWO YEARS of ITR documents. Return ONLY the JSON object, NO markdown, NO explanations.
 
-        all_images_lists = await asyncio.gather(*[load_pdf(pdf) for pdf in itr_pdfs])
+# FIELDS TO EXTRACT:
+- applicant_name, pan_number
+- assessment_year_1 (e.g., "2023-24"), assessment_year_2 (e.g., "2022-23")
+- gross_total_income_year1, deductions_year1, taxable_income_year1, tax_paid_year1
+- gross_total_income_year2, deductions_year2, taxable_income_year2, tax_paid_year2
+- average_annual_income, average_monthly_income, income_growth_rate
+- itr_form_type (ITR-1, ITR-2, etc.), filing_status
+- extraction_confidence (0.0-1.0), extraction_notes (list)
 
-        # Flatten images
-        all_images = []
-        for images in all_images_lists:
-            all_images.extend(images)
-            logger.info(f"   ✅ Loaded {len(images)} pages")
+# OUTPUT FORMAT (exact structure required):
+{
+  "applicant_name": "string",
+  "pan_number": null,
+  "assessment_year_1": "2023-24",
+  "assessment_year_2": "2022-23",
+  "gross_total_income_year1": 0.0,
+  "deductions_year1": 0.0,
+  "taxable_income_year1": 0.0,
+  "tax_paid_year1": 0.0,
+  "gross_total_income_year2": 0.0,
+  "deductions_year2": 0.0,
+  "taxable_income_year2": 0.0,
+  "tax_paid_year2": 0.0,
+  "average_annual_income": 0.0,
+  "average_monthly_income": 0.0,
+  "income_growth_rate": 0.0,
+  "itr_form_type": "ITR-1",
+  "filing_status": "e-verified",
+  "extraction_confidence": 0.0,
+  "extraction_notes": []
+}
 
-        prompt = self.EXTRACTION_PROMPT.format()
+Analyze the ITR documents and return ONLY the JSON:"""
+
+    def process(self, itr_pdfs: List[str]) -> ITRData:
+        """Process ITR documents"""
+        logger.info(f"📊 Processing {len(itr_pdfs)} ITR document(s)")
 
         try:
+            # Process all PDFs
+            all_images = []
+            for pdf_path in itr_pdfs:
+                logger.info(f"   📄 Processing: {Path(pdf_path).name}")
+                images = PDFProcessor.process_pdf_for_gemini(
+                    pdf_path, max_pages=10)
+                all_images.extend(images)
+
+            logger.info(f"   ✅ Total pages to analyze: {len(all_images)}")
+
+            # Create prompt
+            prompt = self.create_extraction_prompt()
+
+            # FIXED: Use proper Gemini content format
             messages = self.create_gemini_content(prompt, all_images)
 
-            # Async invocation
-            extraction = await self.ainvoke_structured_with_retry(
-                messages,
-                schema=ITRExtraction
-            )
+            # Invoke model
+            logger.info("   🤖 Analyzing ITR documents with Gemini...")
+            response = self.llm.invoke(messages)
 
-            # ✅ The @model_validator in ITRExtraction will auto-calculate metrics
-            logger.info(f"   ✅ Extracted {len(extraction.yearly_data)} year(s)")
-            logger.info(f"   💰 Average Annual Income: ₹{extraction.average_annual_income:,.2f}")
-            logger.info(f"   📊 Income Trend: {extraction.income_trend.value}")
+            # Parse response
+            logger.info("   📝 Parsing structured output...")
+            parsed_data = self._parse_response(response.content)
 
-            itr_data = ITRData(
-                taxpayer_name=extraction.taxpayer_name,
-                pan_number=extraction.pan_number,
-                yearly_data=extraction.yearly_data,
-                years_filed=extraction.years_filed,
-                average_annual_income=extraction.average_annual_income,
-                average_monthly_income=extraction.average_monthly_income,
-                income_trend=extraction.income_trend,
-                tax_compliance_score=extraction.tax_compliance_score,
-                extraction_confidence=extraction.extraction_confidence,
-                extraction_notes=extraction.extraction_notes
-            )
+            logger.info(f"   ✅ ITR extraction complete!")
+            logger.info(f"      Applicant: {parsed_data.applicant_name}")
+            logger.info(
+                f"      Average Annual Income: ₹{parsed_data.average_annual_income:,.2f}")
+            logger.info(
+                f"      Average Monthly Income: ₹{parsed_data.average_monthly_income:,.2f}")
+            logger.info(
+                f"      Confidence: {parsed_data.extraction_confidence:.0%}")
 
-            return itr_data
+            return parsed_data
 
         except Exception as e:
             logger.error(f"   ❌ ITR extraction failed: {e}")
-            raise
+            logger.exception("Full traceback:")
+            # Return minimal structure
+            return ITRData(
+                applicant_name="Extraction Failed",
+                assessment_year_1="2023-24",
+                assessment_year_2="2022-23",
+                gross_total_income_year1=0.0,
+                taxable_income_year1=0.0,
+                gross_total_income_year2=0.0,
+                taxable_income_year2=0.0,
+                average_annual_income=0.0,
+                average_monthly_income=0.0,
+                income_growth_rate=0.0,
+                itr_form_type="Unknown",
+                filing_status="Unknown",
+                extraction_confidence=0.0,
+                extraction_notes=[f"Error: {str(e)}"]
+            )
 
-    def process(self, itr_pdfs: List[str]) -> ITRData:
-        """Sync wrapper"""
-        return asyncio.run(self.process_async(itr_pdfs))
+    def _parse_response(self, response_text: str) -> ITRData:
+        """Parse LLM response into ITRData"""
+        try:
+            # Clean response
+            cleaned = response_text.strip()
+            if cleaned.startswith("```json"):
+                cleaned = cleaned[7:]
+            if cleaned.startswith("```"):
+                cleaned = cleaned[3:]
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3]
+            cleaned = cleaned.strip()
+
+            # Extract JSON boundaries
+            start = cleaned.find('{')
+            end = cleaned.rfind('}')
+            if start != -1 and end != -1:
+                cleaned = cleaned[start:end+1]
+
+            # Fix common JSON issues
+            cleaned = re.sub(r',(\s*[}\]])', r'\1', cleaned)
+
+            # Parse JSON
+            data = json.loads(cleaned)
+
+            # Create ITRData object
+            return ITRData(**data)
+
+        except Exception as e:
+            logger.error(f"      ❌ Failed to parse response: {e}")
+            logger.error(f"      📝 Response text: {response_text[:500]}...")
+            raise

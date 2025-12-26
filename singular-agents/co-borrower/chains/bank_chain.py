@@ -1,23 +1,18 @@
 """
-Bank Statement Chain - ULTRA OPTIMIZED
-✅ Async batch processing
-✅ Image caching (avoid reprocessing)
-✅ Larger batch size (fewer API calls)
-✅ Better memory management
+Bank Statement Chain - Extracts transactions via LLM, computes metrics deterministically
+CORRECTED: Fixed JSON parsing regex
 """
-
 from __future__ import annotations
+import json
 import logging
-import asyncio
+import re
 from pathlib import Path
-from typing import List, Optional
-from functools import lru_cache
+from typing import Any, Dict, List
 
-from langchain_core.prompts import PromptTemplate
 from chains.base_chain import BaseChain
 from config import Config
 from processors.pdf_processor import PDFProcessor
-from schemas import BankStatementData, BankTransaction, BankStatementExtraction
+from schemas import BankStatementData, BankTransaction
 from bank_metrics import compute_bank_metrics
 
 logger = logging.getLogger(__name__)
@@ -25,143 +20,203 @@ logger = logging.getLogger(__name__)
 
 class BankStatementChain(BaseChain):
     """
-    OPTIMIZED: 50% faster with async + larger batches + caching
+    LLM job: extract header + raw transaction rows.
+    Python job: compute EMI/salary/avg balance precisely from those rows.
     """
 
-    # ✅ Class-level prompt template (reusable, not recreated each time)
-    EXTRACTION_PROMPT = PromptTemplate.from_template("""You are extracting bank statement data for loan application analysis.
+    def __init__(self):
+        super().__init__(model_name=Config.GEMINI_VISION_MODEL, temperature=0.0)
 
-Extract ALL information accurately:
+    def _prompt_transactions_only(self) -> str:
+        return """You are extracting bank statement data for loan application analysis.
 
-1. **Account Details**: holder name, bank name, account number, account type
-2. **Statement Period**: start and end dates (YYYY-MM-DD format)
-3. **Balances**: opening and closing balance
-4. **ALL Transactions**: Extract EVERY transaction from ALL pages with:
-   - date (DD-MM-YYYY or DD/MM/YYYY format)
-   - narration (exact description, don't summarize)
-   - debit amount (0.0 if none)
-   - credit amount (0.0 if none)
-   - balance after transaction
+Return ONLY valid JSON with EXACT structure below. Do NOT add markdown fences or extra text.
+
+{
+  "account_holder_name": "string",
+  "bank_name": "string",
+  "account_number": "string",
+  "account_type": "string",
+  "statement_period_start": "YYYY-MM-DD",
+  "statement_period_end": "YYYY-MM-DD",
+  "opening_balance": 0.0,
+  "closing_balance": 0.0,
+  "transactions": [
+    {
+      "date": "DD-MM-YYYY or DD/MM/YYYY",
+      "narration": "exact transaction description",
+      "debit": 0.0,
+      "credit": 0.0,
+      "balance": 0.0
+    }
+  ],
+  "extraction_confidence": 0.9,
+  "extraction_notes": ["any observations"]
+}
 
 CRITICAL RULES:
-- Extract ALL transactions, don't skip any
-- Keep narrations EXACTLY as shown
-- Use 0.0 for missing amounts, never null
-- Be thorough and accurate
+- Extract ALL transactions from ALL pages provided
+- If a field is empty/null, use 0.0 for numbers, "" for strings
+- Keep narration exactly as shown (don't summarize)
+- Date format: DD-MM-YYYY preferred
+- Never output null values
+- Return pure JSON only (no markdown fences)"""
 
-The system will validate your response automatically.""")
+    def _parse_json(self, text: str) -> Dict[str, Any]:
+        """Parse JSON from LLM response with multiple fallback strategies - CORRECTED"""
+        cleaned = (text or "").strip()
 
-    def __init__(self):
-        super().__init__(model_name="gemini-2.0-flash-exp", temperature=0.0)
-        self._image_cache = {}  # ✅ Cache for processed images
+        # Strategy 1: direct parse
+        try:
+            return json.loads(cleaned)
+        except Exception:
+            pass
 
-    # ✅ Cache PDF images to avoid reprocessing
-    @lru_cache(maxsize=10)
-    def _process_pdf_cached(self, pdf_path: str) -> tuple:
-        """Cache processed images"""
-        images = PDFProcessor.process_pdf_for_gemini(
-            pdf_path, max_pages=Config.MAX_PDF_PAGES
-        )
-        # Make hashable for cache
-        return tuple(tuple(img.items()) for img in images)
+        # Strategy 2: remove fenced block if any - FIXED REGEX
+        matches = re.findall(r"```json\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
+        if matches:
+            try:
+                return json.loads(matches[0].strip())
+            except Exception:
+                pass
 
-    async def process_async(
-        self,
-        bank_statement_pdf: str,
-        employer_name: Optional[str] = None
-    ) -> BankStatementData:
+        # Strategy 2b: Try without json keyword
+        matches = re.findall(r"```\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
+        if matches:
+            try:
+                return json.loads(matches[0].strip())
+            except Exception:
+                pass
+
+        # Strategy 3: find JSON boundaries
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start != -1 and end != -1 and start < end:
+            s = cleaned[start:end + 1]
+            # Fix trailing commas
+            s = re.sub(r",(\s*[}\]])", r"\1", s)
+            try:
+                return json.loads(s)
+            except Exception as e:
+                logger.warning(f"   ⚠️  JSON parse attempt failed: {e}")
+                pass
+
+        raise ValueError("Could not parse JSON from bank response")
+
+    def process(self, bank_statement_pdf: str, employer_name: str | None = None) -> BankStatementData:
         """
-        ✅ ASYNC version - 2x faster!
+        Process bank statement PDF and compute precise metrics.
+
+        Args:
+            bank_statement_pdf: Path to bank statement PDF
+            employer_name: Optional employer name for better salary detection
+
+        Returns:
+            BankStatementData with deterministic metrics
         """
         logger.info(
-            f"🏦 [ASYNC] Processing bank statement: {Path(bank_statement_pdf).name}")
+            f"🏦 Processing bank statement: {Path(bank_statement_pdf).name}")
 
-        # Convert PDF to images (cached)
-        try:
-            cached_images = self._process_pdf_cached(bank_statement_pdf)
-            images = [dict(img) for img in cached_images]
-        except:
-            # Fallback if caching fails
-            images = PDFProcessor.process_pdf_for_gemini(
-                bank_statement_pdf, max_pages=Config.MAX_PDF_PAGES
-            )
-
+        # Convert PDF to images
+        images = PDFProcessor.process_pdf_for_gemini(
+            bank_statement_pdf, max_pages=Config.MAX_PDF_PAGES)
         logger.info(f"   ✅ Loaded {len(images)} pages")
 
-        # ✅ OPTIMIZATION: Larger batch size (10 instead of 5) = 50% fewer API calls
-        batch_size = 10
-        batches = [images[i:i + batch_size]
-                   for i in range(0, len(images), batch_size)]
+        # Process in batches to manage API limits
+        batches: List[List[Dict[str, Any]]] = []
+        batch_size = 5
+        for i in range(0, len(images), batch_size):
+            batches.append(images[i:i + batch_size])
 
-        all_transactions = []
-        header_data = None
-        extraction_notes = []
+        # Merged data structure
+        merged: Dict[str, Any] = {
+            "account_holder_name": "",
+            "bank_name": "",
+            "account_number": "",
+            "account_type": "",
+            "statement_period_start": "",
+            "statement_period_end": "",
+            "opening_balance": 0.0,
+            "closing_balance": 0.0,
+            "transactions": [],
+            "extraction_confidence": 0.0,
+            "extraction_notes": [],
+        }
 
-        # ✅ Process batches in parallel using asyncio
-        prompt = self.EXTRACTION_PROMPT.format()
+        prompt = self._prompt_transactions_only()
 
-        async def process_batch(bi: int, batch: List[dict]):
-            """Process single batch async"""
+        # Process each batch
+        for bi, batch in enumerate(batches, start=1):
+            logger.info(
+                f"   🤖 Extracting transactions batch {bi}/{len(batches)}...")
+
             try:
-                logger.info(
-                    f"   🤖 [ASYNC] Extracting batch {bi}/{len(batches)}...")
-
+                # Create proper multimodal content using BaseChain method
                 messages = self.create_gemini_content(prompt, batch)
 
-                # ✅ Use async invocation
-                extraction = await self.ainvoke_structured_with_retry(
-                    messages,
-                    schema=BankStatementExtraction
-                )
+                # Invoke Gemini with retry logic
+                resp = self.invoke_with_retry(messages)
+                data = self._parse_json(resp.content)
 
-                logger.info(
-                    f"   ✅ Batch {bi} extracted {len(extraction.transactions)} transactions")
-                return extraction
+                # Merge header fields (take first non-empty)
+                for k in ("account_holder_name", "bank_name", "account_number", "account_type",
+                          "statement_period_start", "statement_period_end"):
+                    if not merged.get(k) and data.get(k):
+                        merged[k] = data.get(k)
+
+                # Balances: take first opening, last closing
+                if merged.get("opening_balance", 0.0) == 0.0 and data.get("opening_balance") not in (None, 0, 0.0):
+                    merged["opening_balance"] = data.get(
+                        "opening_balance", 0.0)
+                if data.get("closing_balance") not in (None, 0, 0.0):
+                    merged["closing_balance"] = data.get(
+                        "closing_balance", merged.get("closing_balance", 0.0))
+
+                # Accumulate transactions
+                txns = data.get("transactions") or []
+                merged["transactions"].extend(txns)
+
+                # Track confidence and notes
+                merged["extraction_confidence"] = max(
+                    float(merged.get("extraction_confidence") or 0.0),
+                    float(data.get("extraction_confidence") or 0.0),
+                )
+                merged["extraction_notes"].extend(
+                    data.get("extraction_notes") or [])
 
             except Exception as e:
-                logger.error(f"   ❌ Batch {bi} failed: {e}")
-                return None
+                logger.error(f"   ❌ Batch {bi} extraction failed: {e}")
+                merged["extraction_notes"].append(
+                    f"Batch {bi} failed: {str(e)}")
+                continue
 
-        # ✅ Process all batches in parallel (FAST!)
-        tasks = [process_batch(bi, batch)
-                 for bi, batch in enumerate(batches, 1)]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        # Validate and coerce transactions to BankTransaction schema
+        txn_objs = []
+        for t in merged["transactions"]:
+            try:
+                txn_objs.append(BankTransaction(**t).model_dump())
+            except Exception as e:
+                logger.warning(f"   ⚠️  Skipping invalid transaction: {e}")
+                continue
 
-        # Collect results
-        for bi, result in enumerate(results, 1):
-            if result and not isinstance(result, Exception):
-                if bi == 1:
-                    header_data = result
+        logger.info(f"   ✅ Extracted {len(txn_objs)} valid transactions")
 
-                all_transactions.extend([t.model_dump()
-                                        for t in result.transactions])
-                extraction_notes.extend(result.extraction_notes)
-            elif isinstance(result, Exception):
-                logger.error(f"   ❌ Batch {bi} exception: {result}")
-                extraction_notes.append(f"Batch {bi} failed: {str(result)}")
+        # Compute deterministic metrics from transactions
+        logger.info(f"   🧮 Computing deterministic bank metrics...")
+        metrics = compute_bank_metrics(txn_objs, employer_name=employer_name)
 
-        logger.info(
-            f"   ✅ Total transactions extracted: {len(all_transactions)}")
-
-        # Compute metrics
-        logger.info(f"   🧮 Computing bank metrics...")
-        metrics = compute_bank_metrics(
-            all_transactions, employer_name=employer_name)
-
-        # Build final data
+        # Build final BankStatementData with computed metrics
         bank = BankStatementData(
-            account_holder_name=header_data.account_holder_name if header_data else "Not Found",
-            bank_name=header_data.bank_name if header_data else "Not Found",
-            account_number=header_data.account_number if header_data else "Not Found",
-            account_type=header_data.account_type if header_data else "Not Found",
-            statement_period_start=header_data.statement_period_start if header_data else "1970-01-01",
-            statement_period_end=header_data.statement_period_end if header_data else "1970-01-01",
-            opening_balance=float(
-                header_data.opening_balance if header_data else 0.0),
-            closing_balance=float(
-                header_data.closing_balance if header_data else 0.0),
+            account_holder_name=merged["account_holder_name"] or "Not Found",
+            bank_name=merged["bank_name"] or "Not Found",
+            account_number=merged["account_number"] or "Not Found",
+            account_type=merged["account_type"] or "Not Found",
+            statement_period_start=merged["statement_period_start"] or "1970-01-01",
+            statement_period_end=merged["statement_period_end"] or "1970-01-01",
+            opening_balance=float(merged.get("opening_balance") or 0.0),
+            closing_balance=float(merged.get("closing_balance") or 0.0),
 
-            # Metrics
+            # Computed metrics (deterministic)
             average_monthly_balance=float(metrics["average_monthly_balance"]),
             minimum_balance=float(metrics["minimum_balance"]),
             salary_credits_detected=int(metrics["salary_credits_detected"]),
@@ -179,27 +234,28 @@ The system will validate your response automatically.""")
             debit_count=int(metrics["debit_count"]),
             average_monthly_spending=float(
                 metrics["average_monthly_spending"]),
-            bounce_count=int(metrics["bounce_count"]),
-            dishonor_count=int(metrics["dishonor_count"]),
-            insufficient_fund_incidents=int(
-                metrics["insufficient_fund_incidents"]),
 
-            transactions=[BankTransaction(**t) for t in all_transactions],
+            # Keep raw transactions for audit trail
+            transactions=[BankTransaction(**t) for t in txn_objs],
+
+            # Placeholder fields (can be enhanced later)
             red_flags=[],
             positive_indicators=[],
+            bounce_count=0,
+            dishonor_count=0,
+            insufficient_fund_incidents=0,
+
             extraction_confidence=float(
-                header_data.extraction_confidence if header_data else 0.0),
-            extraction_notes=extraction_notes,
+                merged.get("extraction_confidence") or 0.0),
+            extraction_notes=merged.get("extraction_notes") or [],
         )
 
         logger.info("   ✅ Bank statement processing complete")
-        logger.info(f"   💰 Avg Monthly EMI: ₹{bank.average_monthly_emi:,.2f}")
         logger.info(
-            f"   💵 Avg Monthly Salary: ₹{bank.average_monthly_salary:,.2f}")
+            f"      💰 Avg Monthly EMI: ₹{bank.average_monthly_emi:,.2f}")
+        logger.info(
+            f"      💵 Avg Monthly Salary (detected): ₹{bank.average_monthly_salary:,.2f}")
+        logger.info(
+            f"      🏦 Avg Monthly Balance: ₹{bank.average_monthly_balance:,.2f}")
 
         return bank
-
-    # ✅ Sync wrapper for backward compatibility
-    def process(self, bank_statement_pdf: str, employer_name: Optional[str] = None) -> BankStatementData:
-        """Sync wrapper - runs async version"""
-        return asyncio.run(self.process_async(bank_statement_pdf, employer_name))
