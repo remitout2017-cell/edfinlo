@@ -1,4 +1,5 @@
 // chatbot/routes/chatbot.routes.js
+
 const express = require("express");
 const router = express.Router();
 const {
@@ -9,11 +10,13 @@ const {
   clearSession,
   getCacheStats,
 } = require("../controllers/chatbot.controller");
-const { protect } = require("../../middleware/authMiddleware");
+
+// Change this line - use default import instead of named import
+const authMiddleware = require("../../middleware/authMiddleware");
 const { apiLimiter } = require("../../middleware/rateLimit");
 
 // All routes require authentication
-router.use(protect);
+router.use(authMiddleware); // Changed from protect to authMiddleware
 
 // Chatbot routes
 router.post("/message", apiLimiter, sendMessage);
