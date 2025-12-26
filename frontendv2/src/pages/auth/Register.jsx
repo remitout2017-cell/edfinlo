@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import axios from "axios";
 import ConsultantRegister from "./ConsultantRegister";
+import NBFCRegister from "./NBFCRegister";
 import {
   Mail,
   Lock,
@@ -14,6 +15,7 @@ import {
   ArrowRight,
   GraduationCap,
   Briefcase,
+  Building2,
 } from "lucide-react";
 
 const Register = () => {
@@ -24,7 +26,7 @@ const Register = () => {
   const modeFromUrl = searchParams.get("mode"); // 'consultant' to open that tab directly
 
   const [activeTab, setActiveTab] = useState(
-    modeFromUrl === "consultant" ? "consultant" : "student"
+    modeFromUrl === "consultant" ? "consultant" : modeFromUrl === "nbfc" ? "nbfc" : "student"
   );
 
   const [formData, setFormData] = useState({
@@ -87,7 +89,7 @@ const Register = () => {
       if (response.data.success) {
         toast.success(
           response.data.message ||
-            "Registration successful! Please verify your email."
+          "Registration successful! Please verify your email."
         );
 
         // Store token if you want to auto-login
@@ -128,7 +130,7 @@ const Register = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-400/40 bg-slate-900/40 backdrop-blur">
             <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-medium text-emerald-100">
-              One platform, two roles
+              One platform, three roles
             </span>
           </div>
 
@@ -144,7 +146,7 @@ const Register = () => {
             onboard and guide students through admission and finance workflows.
           </p>
 
-          <div className="grid grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-3 gap-4 text-xs">
             <div className="rounded-2xl border border-emerald-500/40 bg-slate-900/40 p-4 space-y-2">
               <div className="inline-flex items-center gap-2 text-emerald-200">
                 <GraduationCap className="h-4 w-4" />
@@ -167,6 +169,17 @@ const Register = () => {
                 <li>• Collaborate with NBFC partners</li>
               </ul>
             </div>
+            <div className="rounded-2xl border border-orange-500/40 bg-slate-900/40 p-4 space-y-2">
+              <div className="inline-flex items-center gap-2 text-orange-200">
+                <Building2 className="h-4 w-4" />
+                <span className="font-semibold">NBFC account</span>
+              </div>
+              <ul className="space-y-1 text-slate-200/80">
+                <li>• Receive loan requests</li>
+                <li>• Send proposals to students</li>
+                <li>• Manage disbursements</li>
+              </ul>
+            </div>
           </div>
 
           {inviteEmail && (
@@ -185,15 +198,14 @@ const Register = () => {
       <div className="flex-1 flex items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
         <div className="w-full max-w-md space-y-6">
           {/* Tabs */}
-          <div className="grid grid-cols-2 gap-2 text-xs bg-slate-900/80 border border-slate-700 rounded-2xl p-1">
+          <div className="grid grid-cols-3 gap-2 text-xs bg-slate-900/80 border border-slate-700 rounded-2xl p-1">
             <button
               type="button"
               onClick={() => setActiveTab("student")}
               className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition
-                ${
-                  activeTab === "student"
-                    ? "bg-emerald-500 text-slate-900 font-semibold"
-                    : "text-slate-200 hover:bg-slate-800"
+                ${activeTab === "student"
+                  ? "bg-emerald-500 text-slate-900 font-semibold"
+                  : "text-slate-200 hover:bg-slate-800"
                 }`}
             >
               <GraduationCap className="h-3.5 w-3.5" />
@@ -203,14 +215,25 @@ const Register = () => {
               type="button"
               onClick={() => setActiveTab("consultant")}
               className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition
-                ${
-                  activeTab === "consultant"
-                    ? "bg-sky-500 text-slate-900 font-semibold"
-                    : "text-slate-200 hover:bg-slate-800"
+                ${activeTab === "consultant"
+                  ? "bg-sky-500 text-slate-900 font-semibold"
+                  : "text-slate-200 hover:bg-slate-800"
                 }`}
             >
               <Briefcase className="h-3.5 w-3.5" />
               Consultant
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("nbfc")}
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition
+                ${activeTab === "nbfc"
+                  ? "bg-orange-500 text-slate-900 font-semibold"
+                  : "text-slate-200 hover:bg-slate-800"
+                }`}
+            >
+              <Building2 className="h-3.5 w-3.5" />
+              NBFC
             </button>
           </div>
 
@@ -373,21 +396,12 @@ const Register = () => {
                     Log in
                   </Link>
                 </div>
-                <div>
-                  Want to onboard students instead?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("consultant")}
-                    className="font-semibold text-sky-300 hover:text-sky-200"
-                  >
-                    Switch to consultant registration
-                  </button>
-                </div>
               </div>
             </form>
-          ) : (
-            // Use your existing ConsultantRegister but it will sit in the same right panel
+          ) : activeTab === "consultant" ? (
             <ConsultantRegister />
+          ) : (
+            <NBFCRegister />
           )}
         </div>
       </div>

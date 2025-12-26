@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Briefcase,
   Shield,
+  Building2,
 } from "lucide-react";
 
 const Login = () => {
@@ -72,6 +73,9 @@ const Login = () => {
             break;
           case "admin":
             window.location.href = "/admin/dashboard";
+            break;
+          case "nbfc":
+            window.location.href = "/nbfc/dashboard";
             break;
           default:
             window.location.href = "/dashboard";
@@ -155,6 +159,17 @@ const Login = () => {
                 <li>• User management</li>
               </ul>
             </div>
+            <div className="rounded-2xl border border-orange-500/40 bg-slate-900/40 p-4 space-y-2">
+              <div className="inline-flex items-center gap-2 text-orange-200">
+                <Building2 className="h-4 w-4" />
+                <span className="font-semibold">For NBFCs</span>
+              </div>
+              <ul className="space-y-1 text-slate-200/80">
+                <li>• View loan requests</li>
+                <li>• Send proposals</li>
+                <li>• Manage disbursements</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -173,15 +188,15 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="mt-4 space-y-6">
             {/* User Type Toggle - Updated with Admin */}
-            <div className="grid grid-cols-3 gap-2 text-xs bg-slate-900/80 border border-slate-700 rounded-2xl p-1">
+            <div className="grid grid-cols-4 gap-2 text-xs bg-slate-900/80 border border-slate-700 rounded-2xl p-1">
               <button
                 type="button"
                 onClick={() =>
                   setFormData({ ...formData, userType: "student" })
                 }
                 className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "student"
-                    ? "bg-emerald-500 text-slate-900 font-semibold"
-                    : "text-slate-200 hover:bg-slate-800"
+                  ? "bg-emerald-500 text-slate-900 font-semibold"
+                  : "text-slate-200 hover:bg-slate-800"
                   }`}
               >
                 <GraduationCap className="h-3.5 w-3.5" />
@@ -193,8 +208,8 @@ const Login = () => {
                   setFormData({ ...formData, userType: "consultant" })
                 }
                 className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "consultant"
-                    ? "bg-sky-500 text-slate-900 font-semibold"
-                    : "text-slate-200 hover:bg-slate-800"
+                  ? "bg-sky-500 text-slate-900 font-semibold"
+                  : "text-slate-200 hover:bg-slate-800"
                   }`}
               >
                 <Briefcase className="h-3.5 w-3.5" />
@@ -204,12 +219,23 @@ const Login = () => {
                 type="button"
                 onClick={() => setFormData({ ...formData, userType: "admin" })}
                 className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "admin"
-                    ? "bg-purple-500 text-slate-900 font-semibold"
-                    : "text-slate-200 hover:bg-slate-800"
+                  ? "bg-purple-500 text-slate-900 font-semibold"
+                  : "text-slate-200 hover:bg-slate-800"
                   }`}
               >
                 <Shield className="h-3.5 w-3.5" />
                 Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, userType: "nbfc" })}
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "nbfc"
+                  ? "bg-orange-500 text-slate-900 font-semibold"
+                  : "text-slate-200 hover:bg-slate-800"
+                  }`}
+              >
+                <Building2 className="h-3.5 w-3.5" />
+                NBFC
               </button>
             </div>
 
