@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { ChevronDown, Menu, X, Home } from "lucide-react";
+import Chatbot from "../Chatbot"; // ✅ LINE 1 ADDED - Import Chatbot
 
 const DashboardLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -12,21 +13,18 @@ const DashboardLayout = ({ children }) => {
 
   const getNavigationItems = () => {
     const role = user?.role?.toLowerCase();
-
     switch (role) {
       case "student":
         return [
           { name: "Dashboard", href: "/student/dashboard" },
           { name: "Profile", href: "/student/profile" },
         ];
-
       case "nbfc":
         return [
           { name: "Dashboard", href: "/nbfc/dashboard" },
           { name: "Loan Requests", href: "/nbfc/requests" },
           { name: "Profile", href: "/nbfc/profile" },
         ];
-
       case "admin":
       case "superadmin":
       case "subadmin":
@@ -38,14 +36,12 @@ const DashboardLayout = ({ children }) => {
             ? [{ name: "Sub-Admins", href: "/admin/sub-admins" }]
             : []),
         ];
-
       case "consultant":
         return [
           { name: "Dashboard", href: "/consultant/dashboard" },
           { name: "My Students", href: "/consultant/students" },
           { name: "Invite Students", href: "/consultant/invite" },
         ];
-
       default:
         return [];
     }
@@ -121,9 +117,7 @@ const DashboardLayout = ({ children }) => {
                 <p className="text-sm font-medium text-gray-900">
                   {user?.firstName || user?.name || "User"}
                 </p>
-                <p className="text-xs text-gray-500 capitalize">
-                  {user?.role || ""}
-                </p>
+                <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
               </div>
               <button
                 onClick={handleLogout}
@@ -205,7 +199,7 @@ const DashboardLayout = ({ children }) => {
                           {user?.firstName || user?.name || "User"}
                         </p>
                         <p className="text-xs text-gray-500 capitalize mt-1">
-                          {user?.role || ""}
+                          {user?.role}
                         </p>
                       </div>
                       <button
@@ -224,9 +218,9 @@ const DashboardLayout = ({ children }) => {
             </div>
           </div>
         </header>
-
         {/* Page content - Full width, no margin */}
         <main className="flex-1">{children}</main>
+        <Chatbot /> {/* ✅ LINE 2 ADDED - Chatbot component */}
       </div>
     </div>
   );
