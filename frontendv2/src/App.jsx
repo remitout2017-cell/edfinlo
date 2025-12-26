@@ -59,6 +59,7 @@ import NotFound from "./pages/NotFound";
 
 // ==================== NBFC PAGES ====================
 import NBFCDashboard from "./pages/nbfc/Dashboard";
+import NBFCRequestDetail from "./pages/nbfc/RequestDetail";
 
 function App() {
   return (
@@ -254,6 +255,10 @@ function App() {
                         <Route
                           path="/nbfc/dashboard"
                           element={<NBFCDashboard />}
+                        />
+                        <Route
+                          path="/nbfc/requests/:requestId"
+                          element={<NBFCRequestDetail />}
                         />
                       </Route>
 

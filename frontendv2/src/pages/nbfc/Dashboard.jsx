@@ -38,8 +38,8 @@ const NBFCDashboard = () => {
     ];
 
     const handleView = (id, type) => {
-        console.log(`View ${type}:`, id);
-        // TODO: Navigate to detail page
+        // Navigate to request detail page
+        navigate(`/nbfc/requests/${id}`);
     };
 
     const handleReject = (id, type) => {
