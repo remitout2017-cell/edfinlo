@@ -489,7 +489,13 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
     };
 
     // Determine verification status based on confidence
-    const confidence = apiResponse.quality?.overall_confidence || 0;
+    let confidence = apiResponse.quality?.overall_confidence || 0;
+
+    // ✅ FIX: Convert percentage to decimal if needed (Python returns 0-100, DB expects 0-1)
+    if (confidence > 1) {
+      confidence = confidence / 100;
+    }
+
     const missingData = apiResponse.quality?.missing_data || [];
 
     if (confidence >= 0.8 && missingData.length === 0) {
