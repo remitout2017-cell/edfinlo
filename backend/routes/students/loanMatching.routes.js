@@ -11,6 +11,7 @@ const {
   getMyLoanRequests,
   acceptNBFCOffer,
   getAnalysisHistory,
+  deleteAnalysis,
 } = require("../../controllers/students/loanMatching.controller");
 
 const {
@@ -63,5 +64,12 @@ router.get("/completeness", getDocumentCompleteness);
  * @access Private (Student only)
  */
 router.get("/history", getAnalysisHistory);
+
+/**
+ * @route DELETE /api/student/loan-matching/history/:id
+ * @desc Delete analysis history item
+ * @access Private (Student only)
+ */
+router.delete("/history/:id", deleteAnalysis);
 
 module.exports = router;

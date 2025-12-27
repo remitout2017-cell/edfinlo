@@ -182,7 +182,7 @@ export const UserDataProvider = ({ children }) => {
     if (!token || userType !== "student") return null;
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/user/kyc/kyc/me`, {
+      const response = await axios.get(`${API_BASE_URL}/api/user/kyc/me`, {
         headers: getAuthHeaders(),
       });
 

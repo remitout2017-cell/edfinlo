@@ -295,10 +295,36 @@ const getAnalysisHistory = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * DELETE Loan Analysis History Item
+ * DELETE /api/student/loan-matching/history/:id
+ */
+const deleteAnalysis = asyncHandler(async (req, res) => {
+  const studentId = req.user?.id;
+  const { id } = req.params;
+
+  if (!studentId) throw new AppError("Unauthorized", 401);
+
+  const historyItem = await LoanAnalysisHistory.findOneAndDelete({
+    _id: id,
+    student: studentId,
+  });
+
+  if (!historyItem) {
+    throw new AppError("Analysis history item not found", 404);
+  }
+
+  return res.json({
+    success: true,
+    message: "Analysis history item deleted successfully",
+  });
+});
+
 module.exports = {
   analyzeNBFCMatches,
   sendLoanRequestToNBFC,
   getMyLoanRequests,
   acceptNBFCOffer,
   getAnalysisHistory,
+  deleteAnalysis,
 };

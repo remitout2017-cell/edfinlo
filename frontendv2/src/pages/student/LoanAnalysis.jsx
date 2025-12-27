@@ -8,13 +8,15 @@ import {
   XCircle,
   AlertCircle,
   Loader,
-  TrendingUp,
-  Clock,
-  FileText,
   ArrowRight,
+  TrendingUp,
+  Trash2,
+  FileText,
+  Clock,
 } from "lucide-react";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import StepperExample from "../../components/common/stepper";
+import toast from "react-hot-toast";
 // ✅ FIX: Use environment variable with fallback and ensure no trailing /api
 const rawBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const API_BASE_URL = rawBaseUrl.endsWith("/api")
@@ -33,10 +35,6 @@ const LoanAnalysis = () => {
     highestScore: 0,
     lastRunDate: null,
   });
-
-  // ✅ FIX: Add retry state
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 2;
 
   // Fetch analysis history on mount
   useEffect(() => {
@@ -88,7 +86,6 @@ const LoanAnalysis = () => {
     }
   };
 
-  // ✅ FIX: Add retry logic and better loading states
   const handleRunAnalysis = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -105,7 +102,7 @@ const LoanAnalysis = () => {
 
     setAnalysisLoading(true);
     setError(null);
-    setRetryCount(0);
+    // Removed retryCount reset
 
     try {
       console.log("🚀 Starting NBFC matching analysis...");
@@ -114,7 +111,7 @@ const LoanAnalysis = () => {
         {},
         {
           headers: getAuthHeaders(),
-          timeout: 30000, // ✅ FIX: 30 second timeout
+          timeout: 120000, // 120 second timeout for AI analysis
         }
       );
 
@@ -129,28 +126,62 @@ const LoanAnalysis = () => {
 
         // Refresh history
         await fetchAnalysisHistory();
-        setRetryCount(0);
       }
     } catch (err) {
       console.error("❌ Analysis failed:", err);
 
-      // ✅ FIX: Retry logic
-      if (retryCount < MAX_RETRIES) {
-        console.log(`⏳ Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
-        setRetryCount((prev) => prev + 1);
-        setTimeout(() => handleRunAnalysis(), 2000);
-        return;
+      // If timeout or any error, refresh as requested
+      if (err.code === "ECONNABORTED" || err.message.includes("timeout")) {
+        toast.error("Analysis timed out. Refreshing...");
+      } else {
+        toast.error("Analysis failed. Refreshing...");
       }
+
+      // Reload page after a short delay to let user see toast/message
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
 
       setError(
         err.response?.data?.message ||
           err.message ||
-          "Failed to run analysis. Please try again."
+          "Failed to run analysis. Page will refresh."
       );
     } finally {
-      if (retryCount >= MAX_RETRIES || error) {
-        setAnalysisLoading(false);
+      // setAnalysisLoading(false); // No need to unset if we are reloading, but good practice if reload fails/delays
+    }
+  };
+
+  const handleDeleteAnalysis = async (e, id) => {
+    e.stopPropagation(); // Prevent selecting the analysis when clicking delete
+
+    // Removed confirm dialog as requested/for validation
+    try {
+      setLoading(true);
+      const response = await axios.delete(
+        `${API_BASE_URL}/api/student/loan-matching/history/${id}`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+
+      if (response.data.success) {
+        // Remove from local state
+        setHistory((prev) => prev.filter((item) => item._id !== id));
+
+        // If the deleted one was selected, clear selection
+        if (selectedAnalysis?._id === id) {
+          setSelectedAnalysis(null);
+        }
+
+        // Refresh stats
+        fetchAnalysisHistory();
       }
+    } catch (err) {
+      console.error("❌ Failed to delete analysis:", err);
+      alert(err.response?.data?.message || "Failed to delete analysis");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -207,11 +238,6 @@ const LoanAnalysis = () => {
             <p className="text-sm text-gray-500 mt-1">
               This usually takes 8-15 seconds
             </p>
-            {retryCount > 0 && (
-              <p className="text-sm text-yellow-600 mt-2">
-                Retrying... ({retryCount}/{MAX_RETRIES})
-              </p>
-            )}
           </div>
         </div>
       </div>
@@ -370,9 +396,18 @@ const LoanAnalysis = () => {
                         <span className="text-xs text-gray-600">
                           {item.overallSummary?.eligibleCount || 0} Eligible
                         </span>
-                        <span className="text-sm font-bold text-blue-600">
-                          {item.overallSummary?.topMatchPercentage || 0}%
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-blue-600">
+                            {item.overallSummary?.topMatchPercentage || 0}%
+                          </span>
+                          <button
+                            onClick={(e) => handleDeleteAnalysis(e, item._id)}
+                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                            title="Delete Analysis"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -559,6 +594,34 @@ const LoanAnalysis = () => {
                     </div>
                   );
                 })}
+
+                {/* Improvement Tips Section */}
+                {selectedAnalysis &&
+                  selectedAnalysis.overallSummary?.eligibleCount === 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+                        <TrendingUp className="mr-2" size={20} />
+                        How to Improve Your Approval Chances
+                      </h3>
+                      <div className="text-blue-800 space-y-2 text-sm">
+                        <p>
+                          • <strong>Add a Co-borrower:</strong> Adding a
+                          financially stable co-borrower (parent/guardian)
+                          significantly boosts eligibility.
+                        </p>
+                        <p>
+                          • <strong>Complete Profile:</strong> Ensure all work
+                          experience and test scores are added. Verify your
+                          academic records.
+                        </p>
+                        <p>
+                          • <strong>Test Scores:</strong> A high GRE/GMAT score
+                          can sometimes offset lower academic percentages or
+                          gaps.
+                        </p>
+                      </div>
+                    </div>
+                  )}
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-12 border border-gray-200 text-center">

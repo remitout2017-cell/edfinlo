@@ -10,6 +10,13 @@ Your task is to analyze a student's complete profile against an NBFC's loan crit
 **NBFC Criteria:**
 {nbfcCriteria}
 
+**Critical Data Mapping for Analysis:**
+- **Income/CIBIL/FOIR**: Look in \`financialSummary\`. CIBIL score is \`avgCibilScore\`. Income is \`totalMonthlyCombinedIncome\`.
+- **Academics**: Look in \`academics\`. Check \`tenthGrade\`, \`twelfthGrade\`, and \`graduation\` percentages.
+- **Experience**: Look in \`workExperience.experiences\`.
+- **Target Country/Course**: Look in \`studyPlan\`.
+- **Admission**: Look in \`admissionLetters\`. Check university ranking in \`worldRank\`.
+
 **Analysis Instructions:**
 1. Compare each criterion systematically
 2. Identify PASS/FAIL/BORDERLINE for each parameter

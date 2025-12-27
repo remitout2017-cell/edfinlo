@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   User,
@@ -115,7 +115,7 @@ const Profile = () => {
 
       // Process KYC documents
       if (kycRes.status === "fulfilled") {
-        setKycDocs(kycRes.value.data);
+        setKycDocs(kycRes.value.data?.data || null);
       }
 
       // Process academic records
@@ -244,8 +244,9 @@ const Profile = () => {
     <div className="space-y-1">
       <p className="text-sm text-gray-600">{label}</p>
       <div
-        className={`flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg ${url ? "cursor-pointer hover:bg-gray-50" : "bg-gray-50"
-          }`}
+        className={`flex items-center justify-between px-3 py-2 border border-gray-200 rounded-lg ${
+          url ? "cursor-pointer hover:bg-gray-50" : "bg-gray-50"
+        }`}
         onClick={() => url && openPreview(url, label)}
       >
         <div className="flex items-center gap-2">
@@ -281,7 +282,6 @@ const Profile = () => {
 
   const displayUser = profile || authUser;
 
-
   if (loading) {
     return (
       <DashboardLayout>
@@ -295,8 +295,6 @@ const Profile = () => {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-center flex-col min-h-screen">
-
-
         <div className="w-full p-6">
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Left Column - My Profile */}
@@ -762,7 +760,6 @@ const Profile = () => {
                     </p>
                   )}
                 </AccordionSection>
-
               </div>
             </div>
           </div>
@@ -808,6 +805,6 @@ const Profile = () => {
       )}
     </DashboardLayout>
   );
-}
+};
 
-export default Profile
+export default Profile;

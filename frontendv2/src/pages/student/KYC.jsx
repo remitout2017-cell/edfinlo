@@ -103,7 +103,8 @@ const KYC = () => {
         toast.success("KYC verified successfully!");
       } else {
         toast.error(
-          `KYC verification failed: ${response.data.reasons?.join(", ") || "Unknown reason"
+          `KYC verification failed: ${
+            response.data.reasons?.join(", ") || "Unknown reason"
           }`
         );
       }
@@ -138,7 +139,7 @@ const KYC = () => {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`${API_BASE_URL}/api/user/kyc/kyc/me`, {
+      await axios.delete(`${API_BASE_URL}/api/user/kyc/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("KYC deleted successfully");

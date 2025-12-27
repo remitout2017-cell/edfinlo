@@ -1,19 +1,21 @@
 // src/pages/consultant/LoanAnalysis.jsx - Uses ConsultantDataContext
-import { useState, useEffect } from 'react';
-import ConsultantLayout from '../../components/layouts/ConsultantLayout';
-import { useConsultantData } from '../../context/ConsultantDataContext';
-import toast from 'react-hot-toast';
+import { useState, useEffect } from "react";
+import ConsultantLayout from "../../components/layouts/ConsultantLayout";
+import { useConsultantData } from "../../context/ConsultantDataContext";
+import toast from "react-hot-toast";
 import {
   TrendingUp,
   Award,
   DollarSign,
   Percent,
-  Clock,
-  BarChart3
-} from 'lucide-react';
+  Clock10Icon,
+  BarChart3,
+  Trash2, // Added
+} from "lucide-react";
 
 const ConsultantLoanAnalysis = () => {
-  const { getLoanAnalysis, getDashboardStats } = useConsultantData();
+  const { getLoanAnalysis, getDashboardStats, deleteAnalysis } =
+    useConsultantData();
 
   const [analyses, setAnalyses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -28,15 +30,28 @@ const ConsultantLoanAnalysis = () => {
       setLoading(true);
       const [analysisData, statsData] = await Promise.all([
         getLoanAnalysis(),
-        getDashboardStats()
+        getDashboardStats(),
       ]);
 
       setAnalyses(analysisData?.analyses || []);
       setStats(statsData || {});
     } catch (error) {
-      toast.error('Failed to load analysis data');
+      toast.error("Failed to load analysis data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id, e) => {
+    e.stopPropagation(); // Prevent card click if any
+    if (window.confirm("Are you sure you want to delete this analysis?")) {
+      try {
+        await deleteAnalysis(id);
+        toast.success("Analysis deleted successfully");
+        fetchAnalysisData(); // Refresh list
+      } catch (error) {
+        // toast.error('Failed to delete analysis'); // Already handled in context or redundant
+      }
     }
   };
 
@@ -49,17 +64,31 @@ const ConsultantLoanAnalysis = () => {
           </div>
           <div>
             <h4 className="font-bold text-gray-900">{analysis.studentName}</h4>
-            <p className="text-sm text-gray-600">₹{analysis.loanAmount?.toLocaleString()}</p>
+            <p className="text-sm text-gray-600">
+              ₹{analysis.loanAmount?.toLocaleString()}
+            </p>
           </div>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${analysis.recommendation === 'APPROVED'
-            ? 'bg-green-100 text-green-800'
-            : analysis.recommendation === 'REJECTED'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-yellow-100 text-yellow-800'
-          }`}>
-          {analysis.recommendation}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              analysis.recommendation === "APPROVED"
+                ? "bg-green-100 text-green-800"
+                : analysis.recommendation === "REJECTED"
+                ? "bg-red-100 text-red-800"
+                : "bg-yellow-100 text-yellow-800"
+            }`}
+          >
+            {analysis.recommendation}
+          </span>
+          <button
+            onClick={(e) => handleDelete(analysis._id, e)}
+            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+            title="Delete Analysis"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -68,7 +97,7 @@ const ConsultantLoanAnalysis = () => {
           <span>Interest: {analysis.interestRate}%</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <Clock className="h-4 w-4 text-gray-400" />
+          <Clock10Icon className="h-4 w-4 text-gray-400" />
           <span>Tenure: {analysis.loanTenure} months</span>
         </div>
       </div>
@@ -107,7 +136,9 @@ const ConsultantLoanAnalysis = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Loan Amount</p>
-                <p className="text-2xl font-bold text-gray-900">₹{stats.totalLoanAmount?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ₹{stats.totalLoanAmount?.toLocaleString() || 0}
+                </p>
               </div>
             </div>
           </div>
@@ -119,7 +150,9 @@ const ConsultantLoanAnalysis = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Approved</p>
-                <p className="text-2xl font-bold text-green-600">{stats.approvedLoans || 0}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats.approvedLoans || 0}
+                </p>
               </div>
             </div>
           </div>
@@ -131,7 +164,9 @@ const ConsultantLoanAnalysis = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Avg Credit Score</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.avgCreditScore || 0}</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {stats.avgCreditScore || 0}
+                </p>
               </div>
             </div>
           </div>
@@ -149,8 +184,12 @@ const ConsultantLoanAnalysis = () => {
           ) : analyses.length === 0 ? (
             <div className="text-center py-16 bg-white/70 backdrop-blur-xl rounded-2xl p-12 shadow-lg border border-white/50">
               <TrendingUp className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Analysis Available</h3>
-              <p className="text-gray-600 mb-6">Run loan analysis for your students to see recommendations</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No Analysis Available
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Run loan analysis for your students to see recommendations
+              </p>
             </div>
           ) : (
             analyses.map((analysis) => (

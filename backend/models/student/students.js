@@ -135,7 +135,7 @@ const StudentSchema = new mongoose.Schema(
     },
     workExperience: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Workexperience",
+      ref: "WorkExperienceRecord",
     },
 
     coBorrowers: [

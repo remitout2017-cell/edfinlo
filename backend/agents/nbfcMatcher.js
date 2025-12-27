@@ -15,6 +15,18 @@ const matchStudentWithNBFC = async (studentProfile, nbfc) => {
     const studentSummary = JSON.stringify(studentProfile, null, 2);
     const nbfcCriteria = JSON.stringify(nbfc.loanConfig, null, 2);
 
+    // ✅ DEBUG: Log profile data to verify population
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`\n📋 Matching ${nbfc.companyName} with Student Profile:`);
+      const minimalProfile = {
+        workExperience: studentProfile.workExperience?.experiences?.length || 0,
+        coBorrowers: studentProfile.coBorrowers?.length || 0,
+        testScores: studentProfile.testScores,
+        academics: studentProfile.academics ? "Present" : "Missing",
+      };
+      console.log(JSON.stringify(minimalProfile, null, 2));
+    }
+
     // Create prompt
     const prompt = NBFC_MATCHING_PROMPT.replace(
       "{studentProfile}",
