@@ -1,24 +1,27 @@
-// chatbot/agents/chatbotGraph.js
+// chatbot/agents/chatbotGraph.js - COMPLETE & VERIFIED
 const { StateGraph, END, START } = require("@langchain/langgraph");
 const { ChatGroq } = require("@langchain/groq");
 const { HumanMessage, AIMessage } = require("@langchain/core/messages");
 const vectorStoreManager = require("../config/vectorStore");
 const responseCache = require("./responseCache");
 const { ROLE_PROMPTS, GUARDRAILS } = require("../config/chatbotConfig");
+const { getUserContext } = require("../utils/userDataFetcher");
 
 class RoleBasedChatbot {
   constructor() {
+    // Primary LLM for response generation
     this.llm = new ChatGroq({
       apiKey: process.env.GROQ_API_KEY,
-      model: "groq/compound",
-      temperature: 0.9,
-      maxTokens: 800,
+      model: "llama-3.3-70b-versatile", // ✅ Best for quality
+      temperature: 0.7,
+      maxTokens: 500,
     });
 
+    // Fast LLM for intent classification
     this.fastLLM = new ChatGroq({
       apiKey: process.env.GROQ_API_KEY,
-      model: "openai/gpt-oss-120b",
-      temperature: 1,
+      model: "llama-3.1-8b-instant", // ✅ Fast for classification
+      temperature: 0.3,
       maxTokens: 50,
     });
 
@@ -28,41 +31,47 @@ class RoleBasedChatbot {
 
   async initialize() {
     if (this.isInitialized) return;
-
-    console.log("🤖 Initializing chatbot graph...");
-    this.initializeGraph();
+    console.log("🤖 Initializing enhanced chatbot graph...");
+    await this.initializeGraph();
+    // ✅ Initialize vector store on startup
+    await vectorStoreManager.initialize();
     this.isInitialized = true;
-    console.log("✅ Chatbot graph ready");
+    console.log("✅ Chatbot ready: Graph + VectorStore + UserContext");
   }
 
-  initializeGraph() {
+  async initializeGraph() {
     const workflow = new StateGraph({
       channels: {
         messages: { value: (x, y) => x.concat(y), default: () => [] },
         userRole: { value: (x, y) => y ?? x, default: () => null },
-        context: { value: (x, y) => y ?? x, default: () => [] },
+        userId: { value: (x, y) => y ?? x, default: () => null },
+        userContext: { value: (x, y) => y ?? x, default: () => null },
+        vectorContext: { value: (x, y) => y ?? x, default: () => [] },
         intent: { value: (x, y) => y ?? x, default: () => null },
         requiresEscalation: { value: (x, y) => y ?? x, default: () => false },
         offTopic: { value: (x, y) => y ?? x, default: () => false },
         cached: { value: (x, y) => y ?? x, default: () => false },
+        enhancedQuery: { value: (x, y) => y ?? x, default: () => null },
       },
     });
 
+    // ✅ Define all nodes
+    workflow.addNode("fetchUserContext", this.fetchUserContext.bind(this));
     workflow.addNode("checkCache", this.checkCache.bind(this));
     workflow.addNode("guardRails", this.guardRails.bind(this));
     workflow.addNode("classifyIntent", this.classifyIntent.bind(this));
+    workflow.addNode("enhanceQuery", this.enhanceQuery.bind(this));
     workflow.addNode("retrieveContext", this.retrieveContext.bind(this));
     workflow.addNode("generateResponse", this.generateResponse.bind(this));
 
-    workflow.addEdge(START, "checkCache");
+    // ✅ Define workflow edges
+    workflow.addEdge(START, "fetchUserContext");
+    workflow.addEdge("fetchUserContext", "checkCache");
 
     workflow.addConditionalEdges(
       "checkCache",
       (state) => (state.cached ? "end" : "continue"),
-      {
-        end: END,
-        continue: "guardRails",
-      }
+      { end: END, continue: "guardRails" }
     );
 
     workflow.addConditionalEdges(
@@ -72,29 +81,52 @@ class RoleBasedChatbot {
         if (state.requiresEscalation) return "escalate";
         return "continue";
       },
-      {
-        offTopic: END,
-        escalate: END,
-        continue: "classifyIntent",
-      }
+      { offTopic: END, escalate: END, continue: "classifyIntent" }
     );
 
-    workflow.addEdge("classifyIntent", "retrieveContext");
+    workflow.addEdge("classifyIntent", "enhanceQuery");
+    workflow.addEdge("enhanceQuery", "retrieveContext");
     workflow.addEdge("retrieveContext", "generateResponse");
     workflow.addEdge("generateResponse", END);
 
     this.graph = workflow.compile();
   }
 
+  // ========================================================================
+  // NODE 1: Fetch Real User Data
+  // ========================================================================
+  async fetchUserContext(state) {
+    if (!state.userId) {
+      return { ...state, userContext: null };
+    }
+
+    try {
+      const userContext = await getUserContext(state.userId);
+      if (userContext) {
+        console.log(
+          `📊 User: ${userContext.name} | Progress: ${userContext.completion.percentage}%`
+        );
+      }
+      return { ...state, userContext };
+    } catch (error) {
+      console.error("❌ Error fetching user context:", error.message);
+      return { ...state, userContext: null };
+    }
+  }
+
+  // ========================================================================
+  // NODE 2: Check Cache
+  // ========================================================================
   async checkCache(state) {
     const lastMessage = state.messages[state.messages.length - 1];
     const cachedResponse = responseCache.get(
       lastMessage.content,
       state.userRole,
-      null
+      state.intent
     );
 
     if (cachedResponse) {
+      console.log("💾 Cache HIT");
       return {
         ...state,
         cached: true,
@@ -105,17 +137,21 @@ class RoleBasedChatbot {
     return { ...state, cached: false };
   }
 
+  // ========================================================================
+  // NODE 3: Guard Rails
+  // ========================================================================
   async guardRails(state) {
     const lastMessage = state.messages[state.messages.length - 1];
     const content = lastMessage.content.toLowerCase();
 
+    // Check message length
     if (content.length < GUARDRAILS.minMessageLength) {
       return {
         ...state,
         offTopic: true,
         messages: [
           ...state.messages,
-          new AIMessage("Please provide a more detailed question."),
+          new AIMessage("Could you provide a bit more detail? 🤔"),
         ],
       };
     }
@@ -126,17 +162,20 @@ class RoleBasedChatbot {
         offTopic: true,
         messages: [
           ...state.messages,
-          new AIMessage("Your message is too long. Please break it down."),
+          new AIMessage(
+            "That's quite long! Can you break it into smaller questions?"
+          ),
         ],
       };
     }
 
+    // Check for off-topic keywords
     const isOffTopic = GUARDRAILS.offTopicKeywords.some((keyword) =>
       content.includes(keyword)
     );
 
     if (isOffTopic) {
-      const roleConfig = ROLE_PROMPTS[state.userRole];
+      const roleConfig = ROLE_PROMPTS[state.userRole] || ROLE_PROMPTS.student;
       return {
         ...state,
         offTopic: true,
@@ -147,6 +186,7 @@ class RoleBasedChatbot {
       };
     }
 
+    // Check for sensitive information requests
     const requestsSensitiveInfo = GUARDRAILS.sensitivePatterns.some((pattern) =>
       pattern.test(lastMessage.content)
     );
@@ -158,7 +198,7 @@ class RoleBasedChatbot {
         messages: [
           ...state.messages,
           new AIMessage(
-            "I cannot share proprietary algorithms or internal scoring logic. I can help with the loan process, documents, and NBFC information. What would you like to know?"
+            "I can't share proprietary algorithms or scoring details. But I'm happy to explain our loan process, documents, or NBFC information! 😊"
           ),
         ],
       };
@@ -167,74 +207,177 @@ class RoleBasedChatbot {
     return state;
   }
 
+  // ========================================================================
+  // NODE 4: Classify Intent
+  // ========================================================================
   async classifyIntent(state) {
     const lastMessage = state.messages[state.messages.length - 1];
 
-    const intentPrompt = `Classify this query into ONE category:
+    const intentPrompt = `Classify this query into ONE category. Reply ONLY with the category name.
 
 Query: "${lastMessage.content}"
 
-Categories: loan_process, documents, nbfc_info, eligibility, timeline, fees, status, troubleshooting, general
+Categories:
+- loan_status
+- documents
+- eligibility
+- loan_process
+- nbfc_info
+- timeline
+- fees
+- troubleshooting
+- profile_completion
+- general
 
-Reply with ONLY the category name.`;
+Category:`;
 
     try {
       const response = await this.fastLLM.invoke([
         new HumanMessage(intentPrompt),
       ]);
-      return {
-        ...state,
-        intent: response.content.trim().toLowerCase(),
-      };
+      const intent = response.content
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z_]/g, "");
+      console.log(`🎯 Intent: ${intent}`);
+      return { ...state, intent };
     } catch (error) {
-      console.error("Intent classification error:", error);
+      console.error("❌ Intent classification failed:", error.message);
       return { ...state, intent: "general" };
     }
   }
 
-  async retrieveContext(state) {
+  // ========================================================================
+  // NODE 5: Enhance Query with User Context
+  // ========================================================================
+  async enhanceQuery(state) {
     const lastMessage = state.messages[state.messages.length - 1];
+    let enhancedQuery = lastMessage.content;
+
+    // ✅ Add contextual clues for better vector search
+    if (state.userContext && state.userRole === "student") {
+      const ctx = state.userContext;
+      const contextClues = [];
+
+      // Add missing items as context
+      if (
+        state.intent === "profile_completion" ||
+        state.intent === "loan_status"
+      ) {
+        if (ctx.completion.missing.length > 0) {
+          contextClues.push(...ctx.completion.missing);
+        }
+      }
+
+      // Add document-specific context
+      if (state.intent === "documents") {
+        if (!ctx.academics.hasClass10) contextClues.push("10th marksheet");
+        if (!ctx.academics.hasClass12) contextClues.push("12th marksheet");
+        if (!ctx.admission.hasAdmission) contextClues.push("admission letter");
+      }
+
+      if (contextClues.length > 0) {
+        enhancedQuery += " " + contextClues.join(" ");
+      }
+    }
+
+    console.log(`🔍 Enhanced: "${enhancedQuery.substring(0, 80)}..."`);
+    return { ...state, enhancedQuery };
+  }
+
+  // ========================================================================
+  // NODE 6: Retrieve Vector Context
+  // ========================================================================
+  async retrieveContext(state) {
+    const query =
+      state.enhancedQuery || state.messages[state.messages.length - 1].content;
 
     try {
-      const docs = await vectorStoreManager.search(
-        lastMessage.content,
-        state.userRole,
-        4
-      );
+      const docs = await vectorStoreManager.search(query, state.userRole, 5);
 
-      return {
-        ...state,
-        context: docs.map((doc) => doc.pageContent),
-      };
+      const vectorContext = docs.map((doc) => ({
+        content: doc.pageContent,
+        source: doc.metadata.source,
+        category: doc.metadata.category,
+      }));
+
+      console.log(`📚 Retrieved ${vectorContext.length} knowledge chunks`);
+      return { ...state, vectorContext };
     } catch (error) {
-      console.error("Context retrieval error:", error);
-      return { ...state, context: [] };
+      console.error("❌ Vector retrieval failed:", error.message);
+      return { ...state, vectorContext: [] };
     }
   }
 
+  // ========================================================================
+  // NODE 7: Generate Personalized Response
+  // ========================================================================
   async generateResponse(state) {
     const lastMessage = state.messages[state.messages.length - 1];
-    const roleConfig = ROLE_PROMPTS[state.userRole];
+    const roleConfig = ROLE_PROMPTS[state.userRole] || ROLE_PROMPTS.student;
 
-    const contextStr =
-      state.context.length > 0
-        ? `\n\nRelevant Information:\n${state.context.join("\n---\n")}`
-        : "\n\n(Limited context available)";
+    // ✅ Build user-specific context
+    let userContextStr = "";
+    if (state.userContext && state.userRole === "student") {
+      const ctx = state.userContext;
 
+      userContextStr = `\n\n=== STUDENT PROFILE ===
+Name: ${ctx.name}
+KYC: ${ctx.kycVerified ? "✅ Verified" : "❌ Not verified"}
+Completion: ${ctx.completion.percentage}%
+${
+  ctx.completion.missing.length > 0
+    ? `Missing: ${ctx.completion.missing.join(", ")}`
+    : "✅ All requirements complete!"
+}
+${
+  ctx.hasEducationPlan
+    ? `Target: ${ctx.educationPlan.degreeType} in ${ctx.educationPlan.country}`
+    : "No education plan"
+}
+${
+  ctx.admission.hasAdmission
+    ? `Admission: ${ctx.admission.admissionDetails.university}, ${ctx.admission.admissionDetails.country}`
+    : "No admission yet"
+}
+Co-borrowers: ${ctx.coBorrowers.total} (${ctx.coBorrowers.verified} verified)
+Loan Applications: ${ctx.loanRequests.pending} pending, ${
+        ctx.loanRequests.approved
+      } approved`;
+    }
+
+    // ✅ Build knowledge base context
+    const vectorContextStr =
+      state.vectorContext.length > 0
+        ? `\n\n=== KNOWLEDGE BASE ===\n${state.vectorContext
+            .map((doc, i) => `[${i + 1}] ${doc.content}`)
+            .join("\n\n")}`
+        : "";
+
+    // ✅ Construct final prompt
     const prompt = `${roleConfig.system}
+${userContextStr}
+${
+  vectorContextStr ||
+  "\n(Limited knowledge available - provide general guidance)"
+}
 
-${contextStr}
+User's Question: "${lastMessage.content}"
 
-User Question: ${lastMessage.content}
+CRITICAL INSTRUCTIONS:
+- Use REAL user data when answering - be specific!
+- If user is missing something, tell them exactly what
+- Keep response under 150 words unless explaining complex topics
+- Be warm, conversational, and helpful
+- Don't just repeat knowledge base if you have their actual data
 
-Provide a helpful, natural response. Use bullet points if listing items, but otherwise write conversationally.
-
-Response:`;
+Your Response:`;
 
     try {
       const response = await this.llm.invoke([new HumanMessage(prompt)]);
       const aiResponse = response.content;
 
+      // ✅ Cache the response
       responseCache.set(
         lastMessage.content,
         state.userRole,
@@ -242,36 +385,46 @@ Response:`;
         aiResponse
       );
 
+      console.log(`✅ Response generated (${aiResponse.length} chars)`);
+
       return {
         ...state,
         messages: [...state.messages, new AIMessage(aiResponse)],
       };
     } catch (error) {
-      console.error("Response generation error:", error);
+      console.error("❌ Response generation failed:", error.message);
       return {
         ...state,
         messages: [
           ...state.messages,
           new AIMessage(
-            "I'm having trouble right now. Please try again in a moment."
+            "Sorry, I'm having trouble right now. Try again in a moment! 🔄"
           ),
         ],
       };
     }
   }
 
-  async chat(message, userRole, conversationHistory = []) {
+  // ========================================================================
+  // PUBLIC API: Chat Method
+  // ========================================================================
+  async chat(message, userRole, userId, conversationHistory = []) {
     try {
-      if (!this.isInitialized) await this.initialize();
+      if (!this.isInitialized) {
+        await this.initialize();
+      }
 
       const initialState = {
         messages: [...conversationHistory.slice(-6), new HumanMessage(message)],
         userRole,
-        context: [],
+        userId,
+        userContext: null,
+        vectorContext: [],
         intent: null,
         requiresEscalation: false,
         offTopic: false,
         cached: false,
+        enhancedQuery: null,
       };
 
       const result = await this.graph.invoke(initialState);
@@ -284,18 +437,32 @@ Response:`;
         fromCache: result.cached,
       };
     } catch (error) {
-      console.error("Chatbot error:", error);
+      console.error("❌ Chatbot error:", error);
       return {
-        response:
-          "I encountered an error. Please try again or contact support.",
+        response: "Oops! Something went wrong. Please try again! 😅",
         error: true,
       };
     }
   }
 
-  getGreeting(role) {
+  // ========================================================================
+  // PUBLIC API: Get Greeting
+  // ========================================================================
+  getGreeting(role, userName = null) {
     const roleConfig = ROLE_PROMPTS[role] || ROLE_PROMPTS.student;
-    return roleConfig.greeting;
+    let greeting = roleConfig.greeting;
+
+    if (userName && greeting.includes("{name}")) {
+      greeting = greeting.replace("{name}", userName);
+    } else if (userName) {
+      greeting = greeting.replace("there", userName);
+      greeting = greeting.replace("Hi!", `Hi ${userName}!`);
+      greeting = greeting.replace("Hello!", `Hello ${userName}!`);
+    } else {
+      greeting = greeting.replace("{name}", "there");
+    }
+
+    return greeting;
   }
 }
 
