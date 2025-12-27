@@ -10,8 +10,180 @@ const {
   verifySMSOTP,
 } = require("../../utils/phoneVerification");
 const config = require("../../config/config");
-
+const { OAuth2Client } = require("google-auth-library"); // ADD
 const isDevelopment = config.env === "development";
+
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+);
+
+// @desc Get Google OAuth2 URL for student login/register
+// @route GET /api/auth/google/url
+// @access Public
+exports.getGoogleAuthUrl = async (req, res, next) => {
+  try {
+    const rootUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+
+    const redirectUri = (process.env.GOOGLE_REDIRECT_URI || "").trim();
+    const options = {
+      redirect_uri: redirectUri,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      access_type: "offline",
+      response_type: "code",
+      prompt: "consent",
+      scope: ["openid", "profile", "email"].join(" "),
+    };
+
+    const params = new URLSearchParams(options);
+
+    return res.status(200).json({
+      success: true,
+      url: `${rootUrl}?${params.toString()}`,
+    });
+  } catch (error) {
+    console.error("Google auth URL error:", error);
+    next(error);
+  }
+};
+
+exports.googleCallback = async (req, res, next) => {
+  try {
+    console.log("🔹 STARTING GOOGLE CALLBACK");
+
+    // 1. Extract authorization code
+    let code = req.query.code;
+    if (Array.isArray(code)) code = code[0];
+
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        message: "Authorization code is required",
+      });
+    }
+
+    const redirectUri = (process.env.GOOGLE_REDIRECT_URI || "").trim();
+    console.log("🔹 Raw Code:", code.substring(0, 10) + "...");
+    console.log("🔹 Redirect URI:", redirectUri);
+
+    // 2. Exchange code for tokens
+    const { tokens } = await googleClient.getToken({
+      code,
+      redirect_uri: redirectUri,
+    });
+
+    if (!tokens.id_token) {
+      return res.status(400).json({
+        success: false,
+        message: "Google did not return an id_token",
+      });
+    }
+
+    // 3. Verify and decode token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const googleId = payload.sub;
+    const email = (payload.email || "").toLowerCase();
+    const firstName = payload.given_name || "Student";
+    const lastName = payload.family_name || "User";
+    const picture = payload.picture;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Google account has no email",
+      });
+    }
+
+    console.log("🔹 Google User:", email);
+
+    // 4. Find existing student by googleId OR email
+    let student = await Student.findOne({
+      $or: [{ googleId }, { email }],
+    });
+
+    if (!student) {
+      // CREATE NEW GOOGLE USER
+      console.log("🔹 Creating NEW Google student...");
+
+      student = new Student({
+        firstName,
+        lastName,
+        email,
+        password:
+          "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // Pre-hashed
+        isEmailVerified: true,
+        isPhoneVerified: false,
+        role: "student",
+        googleId,
+        authProvider: "google",
+        avatarUrl: picture,
+      });
+
+      await student.save({ validateBeforeSave: false });
+      console.log("✅ NEW STUDENT CREATED:", student.email);
+    } else {
+      // EXISTING USER - UPDATE GOOGLE LINK
+      console.log("🔹 Existing student found:", student.email);
+
+      // ✅ FIX: Only update if needed, skip validation
+      let needsUpdate = false;
+
+      if (!student.googleId) {
+        student.googleId = googleId;
+        needsUpdate = true;
+        console.log("🔹 Linking Google ID to existing account");
+      }
+
+      if (student.authProvider !== "google") {
+        student.authProvider = "google";
+        needsUpdate = true;
+        console.log("🔹 Updating authProvider to google");
+      }
+
+      if (needsUpdate) {
+        // ✅ CRITICAL FIX: Skip validation on existing users
+        await Student.updateOne(
+          { _id: student._id },
+          {
+            $set: {
+              googleId: student.googleId,
+              authProvider: "google",
+              avatarUrl: picture || student.avatarUrl,
+            },
+          }
+        );
+        console.log("✅ EXISTING STUDENT UPDATED");
+      } else {
+        console.log("✅ EXISTING STUDENT - NO UPDATE NEEDED");
+      }
+    }
+
+    // 5. Generate JWT token
+    const token = generateToken(student._id, student.role);
+
+    // 6. Redirect to frontend with token
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const redirectUrl = new URL("/auth/google/callback", frontendUrl);
+    redirectUrl.searchParams.set("token", token);
+
+    console.log("✅ SUCCESS - Redirecting with token");
+    return res.redirect(redirectUrl.toString());
+  } catch (error) {
+    console.error("💥 GOOGLE CALLBACK ERROR:", error);
+
+    // Send user-friendly error to frontend
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const errorUrl = new URL("/login", frontendUrl);
+    errorUrl.searchParams.set("error", "google_auth_failed");
+    return res.redirect(errorUrl.toString());
+  }
+};
 
 // @desc    Regular student registration (WITHOUT consultant invitation)
 // @route   POST /api/auth/register

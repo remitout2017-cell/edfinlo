@@ -13,7 +13,11 @@ const config = require("./config/config");
 const connectDB = require("./config/database");
 const vectorStoreManager = require("./chatbot/config/vectorStore");
 
-const { errorHandler, notFound,requestTimeout } = require("./middleware/errorMiddleware");
+const {
+  errorHandler,
+  notFound,
+  requestTimeout,
+} = require("./middleware/errorMiddleware");
 const academicRoutes = require("./routes/students/academic.routes");
 const workExperienceRoutes = require("./routes/students/workexperience.routes"); // ✅ ADD THIS
 const testScoresRoutes = require("./routes/students/testscores.routes"); // ✅ NEW
@@ -45,8 +49,8 @@ app.use(
   })
 );
 
-app.use(mongoSanitize());
-app.use(xss());
+// app.use(mongoSanitize());
+// app.use(xss());
 app.use(cors(corsOptions));
 app.use(requestTimeout(180000)); // 3 minutes
 

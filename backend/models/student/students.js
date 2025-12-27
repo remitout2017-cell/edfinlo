@@ -174,6 +174,12 @@ const StudentSchema = new mongoose.Schema(
         type: String,
         select: false, // Don't send in normal queries
       },
+      googleId: { type: String, index: true, sparse: true },
+      authProvider: {
+        type: String,
+        enum: ["local", "google"],
+        default: "local",
+      },
       lastDocumentUpdate: {
         type: Date,
         default: null,

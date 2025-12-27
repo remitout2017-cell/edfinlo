@@ -40,15 +40,24 @@ async function cleanupOldTempFiles() {
 
         // Delete if file is older than MAX_AGE_MINUTES
         if (ageMinutes > MAX_AGE_MINUTES) {
-          await fsPromises.unlink(filePath);
-          deletedCount++;
-          totalSizeFreed += stats.size;
+          if (stats.isFile()) {
+            await fsPromises.unlink(filePath);
+            deletedCount++;
+            totalSizeFreed += stats.size;
 
-          console.log(
-            `🗑️ Deleted: ${file} (${ageMinutes.toFixed(
-              0
-            )}m old, ${fileSizeMB.toFixed(2)}MB)`
-          );
+            console.log(
+              `🗑️ Deleted: ${file} (${ageMinutes.toFixed(
+                0
+              )}m old, ${fileSizeMB.toFixed(2)}MB)`
+            );
+          } else if (stats.isDirectory()) {
+            // For directories, we might want to use rm recursive, but for now let's skip to avoid EPERM
+            // or maybe recursively delete if it's old?
+            // Safest is to skip regular unlink.
+            // If aggressive cleanup is needed, we can use fsPromises.rm(filePath, { recursive: true, force: true })
+            // But let's just avoid the crash first.
+            // console.log(`Skipping directory: ${file}`);
+          }
         }
       } catch (err) {
         errorCount++;
@@ -130,9 +139,13 @@ async function emergencyCleanup() {
     for (const file of files) {
       try {
         const filePath = path.join(UPLOADS_DIR, file);
-        await fsPromises.unlink(filePath);
-        deleted++;
-        console.log(`🚨 Emergency delete: ${file}`);
+        const stats = await fsPromises.stat(filePath);
+
+        if (stats.isFile()) {
+          await fsPromises.unlink(filePath);
+          deleted++;
+          console.log(`🚨 Emergency delete: ${file}`);
+        }
       } catch (err) {
         console.error(`🚨 Failed emergency delete for ${file}:`, err.message);
       }

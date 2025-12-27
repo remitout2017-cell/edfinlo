@@ -12,6 +12,8 @@ const {
   forgotPassword,
   resetPassword,
   resendResetOTP,
+  getGoogleAuthUrl, // ADD
+  googleCallback,
   getMe,
 } = require("../../controllers/students/auth.controller");
 const authMiddleware = require("../../middleware/authMiddleware");
@@ -33,7 +35,8 @@ router.post("/resend-email-otp", resendEmailOTP);
 // Phone Verification
 router.post("/verify-phone", verifyPhone);
 router.post("/resend-phone-otp", resendPhoneOTP);
-
+router.get("/google/url", getGoogleAuthUrl);
+router.get("/google/callback", googleCallback);
 // Password Reset
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);

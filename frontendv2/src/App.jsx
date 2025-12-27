@@ -10,6 +10,7 @@ import { WorkExperienceProvider } from "./context/WorkExperienceContext";
 import { StudentEducationPlanProvider } from "./context/StudentEducationPlanContext";
 import { ConsultantDataProvider } from "./context/ConsultantDataContext";
 import RegisterFromInvite from "./pages/auth/RegisterFromInvite";
+import GoogleCallback from "./pages/auth/GoogleCallback"; // ADD THIS
 
 // ==================== AUTH PAGES ====================
 import Login from "./pages/auth/Login";
@@ -90,6 +91,11 @@ function App() {
                         }
                       />
                       <Route
+                        path="/auth/google/callback"
+                        element={<GoogleCallback />}
+                      />
+
+                      <Route
                         path="/register/invite"
                         element={<RegisterFromInvite />}
                       />
@@ -109,7 +115,10 @@ function App() {
                         path="/forgot-password"
                         element={<ForgotPassword />}
                       />
-                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route
+                        path="/reset-password"
+                        element={<ResetPassword />}
+                      />
                       <Route path="/unauthorized" element={<Unauthorized />} />
 
                       {/* ==================== STUDENT ROUTES ==================== */}
@@ -165,7 +174,9 @@ function App() {
 
                       {/* ==================== CONSULTANT ROUTES ==================== */}
                       <Route
-                        element={<ProtectedRoute allowedRoles={["consultant"]} />}
+                        element={
+                          <ProtectedRoute allowedRoles={["consultant"]} />
+                        }
                       >
                         <Route
                           path="/consultant"
@@ -240,7 +251,9 @@ function App() {
 
                       {/* ==================== SUPERADMIN ONLY ==================== */}
                       <Route
-                        element={<ProtectedRoute allowedRoles={["superadmin"]} />}
+                        element={
+                          <ProtectedRoute allowedRoles={["superadmin"]} />
+                        }
                       >
                         <Route
                           path="/admin/sub-admins"

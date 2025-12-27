@@ -22,6 +22,7 @@ const Login = () => {
     userType: "student",
   });
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false); // ✅ NEW
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -33,7 +34,6 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       // Use AuthContext login method - handles all user types
       const result = await login(
@@ -45,16 +45,14 @@ const Login = () => {
       if (result.success) {
         toast.success("Login successful!");
 
-        // Check verification status for students
+        // Check verification status for students (email/pass flow only)
         if (formData.userType === "student") {
           const student = result.data?.user;
-
           if (student && !student.isEmailVerified) {
             toast.error("Please verify your email first");
             navigate("/verify-email", { state: { email: formData.email } });
             return;
           }
-
           if (student?.phoneNumber && !student.isPhoneVerified) {
             toast.error("Please verify your phone number");
             navigate("/verify-phone");
@@ -95,202 +93,211 @@ const Login = () => {
     }
   };
 
+  // ✅ NEW: Google OAuth login (students only)
+  const handleGoogleLogin = async () => {
+    if (formData.userType !== "student") {
+      toast.error("Google login is available for students only.");
+      return;
+    }
+    try {
+      setGoogleLoading(true);
+      const response = await fetch("http://localhost:5000/api/auth/google/url");
+      const data = await response.json();
+      if (data.success && data.url) {
+        window.location.href = data.url; // redirect to Google
+      } else {
+        toast.error(data.message || "Failed to start Google login.");
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
+      toast.error("Google login failed. Please try again.");
+    } finally {
+      // do not reset here if redirecting, but safe for error cases
+      setGoogleLoading(false);
+    }
+  };
+
   if (loading) {
-    return <span className="loading loading-infinity loading-lg"></span>;
+    return null;
   }
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white">
-      {/* Left Hero - Updated with Admin */}
-      <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/30 via-sky-500/20 to-indigo-500/30 mix-blend-screen" />
-        <div className="absolute -top-32 -right-20 w-80 h-80 bg-emerald-500/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-32 -left-20 w-80 h-80 bg-sky-500/20 rounded-full blur-3xl" />
-        <div className="relative z-10 max-w-xl space-y-8 px-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-400/40 bg-slate-900/40 backdrop-blur">
-            <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-medium text-emerald-100">
-              Smart education loan orchestration
+    <div className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center px-4 py-8">
+      <div className="max-w-5xl w-full grid md:grid-cols-2 gap-8 items-center">
+        {/* Left side - Marketing / description */}
+        <div className="space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/60 border border-slate-800">
+            <Shield className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-medium text-slate-300">
+              Secure education finance platform
             </span>
           </div>
-          <h1 className="text-4xl xl:text-5xl font-semibold tracking-tight">
-            Welcome back to{" "}
-            <span className="block mt-1 bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-400 bg-clip-text text-transparent">
-              EduLoan Intelligence
-            </span>
-          </h1>
-          <p className="text-slate-200/80 text-sm leading-relaxed">
-            Log in as a student, consultant or admin to manage education
-            journeys, loan workflows, and platform operations.
-          </p>
 
-          {/* Updated with Admin card */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-            <div className="rounded-2xl border border-emerald-500/40 bg-slate-900/40 p-4 space-y-2">
-              <div className="inline-flex items-center gap-2 text-emerald-200">
-                <GraduationCap className="h-4 w-4" />
-                <span className="font-semibold">For Students</span>
-              </div>
-              <ul className="space-y-1 text-slate-200/80">
-                <li>• Centralized KYC profile</li>
-                <li>• Multi-NBFC loan comparison</li>
-                <li>• Consultant guided workflows</li>
-              </ul>
-            </div>
-            <div className="rounded-2xl border border-sky-500/40 bg-slate-900/40 p-4 space-y-2">
-              <div className="inline-flex items-center gap-2 text-sky-200">
-                <Briefcase className="h-4 w-4" />
-                <span className="font-semibold">For Consultants</span>
-              </div>
-              <ul className="space-y-1 text-slate-200/80">
-                <li>• Student onboarding invites</li>
-                <li>• Loan request monitoring</li>
-                <li>• Real-time notifications</li>
-              </ul>
-            </div>
-            <div className="rounded-2xl border border-purple-500/40 bg-slate-900/40 p-4 space-y-2">
-              <div className="inline-flex items-center gap-2 text-purple-200">
-                <Shield className="h-4 w-4" />
-                <span className="font-semibold">For Admins</span>
-              </div>
-              <ul className="space-y-1 text-slate-200/80">
-                <li>• Platform oversight</li>
-                <li>• NBFC approvals</li>
-                <li>• User management</li>
-              </ul>
-            </div>
-            <div className="rounded-2xl border border-orange-500/40 bg-slate-900/40 p-4 space-y-2">
-              <div className="inline-flex items-center gap-2 text-orange-200">
-                <Building2 className="h-4 w-4" />
-                <span className="font-semibold">For NBFCs</span>
-              </div>
-              <ul className="space-y-1 text-slate-200/80">
-                <li>• View loan requests</li>
-                <li>• Send proposals</li>
-                <li>• Manage disbursements</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Form */}
-      <div className="flex-1 flex items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-semibold tracking-tight text-white">
-              Log in to your account
-            </h2>
-            <p className="text-xs text-slate-300/80">
-              Use your registered email and password to continue.
+          <div className="space-y-4">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Log into your <span className="text-emerald-400">EduFinance</span>{" "}
+              account
+            </h1>
+            <p className="text-slate-400 text-sm md:text-base max-w-md">
+              Log in as a student, consultant or admin to manage education
+              journeys, loan workflows, and platform operations.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-4 space-y-6">
-            {/* User Type Toggle - Updated with Admin */}
-            <div className="grid grid-cols-4 gap-2 text-xs bg-slate-900/80 border border-slate-700 rounded-2xl p-1">
-              <button
-                type="button"
-                onClick={() =>
-                  setFormData({ ...formData, userType: "student" })
-                }
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "student"
-                  ? "bg-emerald-500 text-slate-900 font-semibold"
-                  : "text-slate-200 hover:bg-slate-800"
-                  }`}
-              >
-                <GraduationCap className="h-3.5 w-3.5" />
-                Student
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setFormData({ ...formData, userType: "consultant" })
-                }
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "consultant"
-                  ? "bg-sky-500 text-slate-900 font-semibold"
-                  : "text-slate-200 hover:bg-slate-800"
-                  }`}
-              >
-                <Briefcase className="h-3.5 w-3.5" />
-                Consultant
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, userType: "admin" })}
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "admin"
-                  ? "bg-purple-500 text-slate-900 font-semibold"
-                  : "text-slate-200 hover:bg-slate-800"
-                  }`}
-              >
-                <Shield className="h-3.5 w-3.5" />
-                Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, userType: "nbfc" })}
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition ${formData.userType === "nbfc"
-                  ? "bg-orange-500 text-slate-900 font-semibold"
-                  : "text-slate-200 hover:bg-slate-800"
-                  }`}
-              >
-                <Building2 className="h-3.5 w-3.5" />
-                NBFC
-              </button>
+          <div className="grid sm:grid-cols-3 gap-3 text-xs">
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <GraduationCap className="w-4 h-4 text-emerald-400" />
+              <span className="text-slate-300">Student loan workflows</span>
             </div>
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <Briefcase className="w-4 h-4 text-emerald-400" />
+              <span className="text-slate-300">Consultant operations</span>
+            </div>
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <Building2 className="w-4 h-4 text-emerald-400" />
+              <span className="text-slate-300">NBFC management</span>
+            </div>
+          </div>
 
-            {/* Email & Password fields */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-200">
-                Email
-              </label>
+          <p className="text-xs text-slate-500">
+            Use your registered email and password to continue.
+          </p>
+        </div>
+
+        {/* Right side - Login form */}
+        <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl">
+          <div className="space-y-2 mb-6">
+            <h2 className="text-xl font-semibold text-slate-50">
+              Welcome back
+            </h2>
+            <p className="text-sm text-slate-400">
+              Choose your role and log in to continue.
+            </p>
+          </div>
+
+          {/* User type toggle */}
+          <div className="grid grid-cols-4 gap-2 mb-6">
+            {["student", "consultant", "admin", "nbfc"].map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, userType: type }))
+                }
+                className={`text-xs px-2 py-2 rounded-lg border transition-colors ${
+                  formData.userType === type
+                    ? "border-emerald-400 bg-emerald-500/10 text-emerald-300"
+                    : "border-slate-800 bg-slate-900/80 text-slate-400 hover:border-slate-700"
+                }`}
+              >
+                {type === "student"
+                  ? "Student"
+                  : type === "consultant"
+                  ? "Consultant"
+                  : type === "admin"
+                  ? "Admin"
+                  : "NBFC"}
+              </button>
+            ))}
+          </div>
+
+          {/* ✅ Google login button - only meaningful for student, but visible for all */}
+          {formData.userType === "student" && (
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={googleLoading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 transition text-sm text-slate-100 disabled:opacity-60"
+              >
+                {googleLoading ? (
+                  <span className="text-xs">Redirecting to Google...</span>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      />
+                    </svg>
+                    <span>Continue with Google</span>
+                  </>
+                )}
+              </button>
+              <p className="mt-1 text-[11px] text-slate-500">
+                No email/phone OTP needed when signing in with Google.
+              </p>
+            </div>
+          )}
+
+          {/* Divider */}
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-slate-800" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-2 bg-slate-900 text-slate-500">
+                Or continue with email
+              </span>
+            </div>
+          </div>
+
+          {/* Email/password form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-3">
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
                 <input
                   type="email"
                   name="email"
+                  placeholder="Email address"
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                  placeholder="you@example.com"
+                  className="w-full bg-slate-950/80 border border-slate-800 text-slate-100 rounded-lg px-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-200">
-                Password
-              </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
+                  placeholder="Password"
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 px-9 pr-9 py-2 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                  placeholder="••••••••"
+                  className="w-full bg-slate-950/80 border border-slate-800 text-slate-100 rounded-lg px-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="w-4 h-4" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="w-4 h-4" />
                   )}
                 </button>
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between text-xs">
               <Link
                 to="/forgot-password"
-                className="text-xs font-medium text-emerald-300 hover:text-emerald-200"
+                className="text-emerald-400 hover:text-emerald-300"
               >
                 Forgot password?
               </Link>
@@ -298,43 +305,23 @@ const Login = () => {
 
             <button
               type="submit"
-              disabled={loading || !formData.email || !formData.password}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 hover:from-emerald-400 hover:to-sky-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-medium py-2.5 rounded-lg text-sm transition disabled:opacity-60"
             >
-              {loading ? (
-                <>
-                  <span className="h-3 w-3 rounded-full border-2 border-slate-900 border-b-transparent animate-spin" />
-                  <span>Signing in...</span>
-                </>
-              ) : (
-                <>
-                  Continue
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
+              <span>Sign in</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
-          <div className="space-y-2 text-center text-xs text-slate-300/90 pt-1">
-            <div>
-              New student?{" "}
-              <Link
-                to="/register"
-                className="font-semibold text-emerald-300 hover:text-emerald-200"
-              >
-                Create student account
-              </Link>
-            </div>
-            <div>
-              Want to onboard students?{" "}
-              <Link
-                to="/register?mode=consultant"
-                className="font-semibold text-sky-300 hover:text-sky-200"
-              >
-                Register as consultant
-              </Link>
-            </div>
-          </div>
+          <p className="mt-4 text-xs text-slate-500 text-center">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="text-emerald-400 hover:text-emerald-300 font-medium"
+            >
+              Create one
+            </Link>
+          </p>
         </div>
       </div>
     </div>
