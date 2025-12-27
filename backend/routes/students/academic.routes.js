@@ -7,6 +7,7 @@ const {
   extractComplete,
   getAcademicRecords,
   deleteAcademicRecord,
+  checkAcademicCompleteness,
   healthCheck,
 } = require("../../controllers/students/academic.controller");
 const authMiddleware = require("../../middleware/authMiddleware"); // ✅ Fixed import
@@ -28,6 +29,8 @@ router.post(
   upload.fields([{ name: "pdf_10th", maxCount: 1 }]),
   extractClass10
 );
+
+router.get("/:studentId/completeness", checkAcademicCompleteness);
 
 /**
  * @route   POST /api/academic/extract/class12

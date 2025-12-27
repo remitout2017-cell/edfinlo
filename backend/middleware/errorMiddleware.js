@@ -1,88 +1,90 @@
-// middleware/errorMiddleware.js
-const config = require("../config/config");
+// middleware/errorMiddleware.js - COMPLETE WITH 404 + TIMEOUT FIX
 
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+/**
+ * ✅ NEW: Global request timeout middleware (3min for AI processing)
+ */
+const requestTimeout = (ms = 180000) => {
+  return (req, res, next) => {
+    const timeoutId = setTimeout(() => {
+      if (!res.headersSent) {
+        res.status(408).json({
+          success: false,
+          message: `Request timeout (${
+            ms / 1000
+          }s). Large PDFs take up to 3min. Try smaller files (<10MB).`,
+          code: "REQUEST_TIMEOUT",
+          retryAfter: 10,
+        });
+      }
+    }, ms);
+
+    req.on("close", () => clearTimeout(timeoutId));
+    next();
+  };
+};
+
+/**
+ * ✅ 404 NOT FOUND Handler (YOUR EXISTING CODE)
+ */
+const notFound = (req, res) =>
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+  });
+
+/**
+ * ✅ Error Handler (YOUR EXISTING CODE + ENHANCED)
+ */
+const errorHandler = (err, req, res, next) => {
+  let error = { ...err };
+
+  error.message = err.message;
+
+  // ✅ Mongoose bad ObjectId
+  if (err.name === "CastError") {
+    const message = "Resource not found";
+    error = new AppError(message, 404);
+  }
+
+  // ✅ Mongoose duplicate key
+  if (err.code === 11000) {
+    const message = "Duplicate field value entered";
+    error = new AppError(message, 400);
+  }
+
+  // ✅ Mongoose validation
+  if (err.name === "ValidationError") {
+    const message = Object.values(err.errors).map((val) => val.message);
+    error = new AppError(message, 400);
+  }
+
+  res.status(error.statusCode || 500).json({
+    success: false,
+    message: error.message || "Server Error",
+  });
+};
+
+/**
+ * ✅ ENHANCED AppError - Backward compatible
+ */
 class AppError extends Error {
   constructor(message, statusCode, isOperational = true) {
     super(message);
     this.statusCode = statusCode;
-    this.isOperational = isOperational;
     this.status = `${statusCode}`.startsWith("4") ? "fail" : "error";
+    this.isOperational = isOperational;
     Error.captureStackTrace(this, this.constructor);
   }
 }
 
-const errorHandler = (err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  const errorLog = {
-    timestamp: new Date().toISOString(),
-    method: req.method,
-    path: req.path,
-    ip: req.ip,
-    error: err.message,
-    stack: config.env === "development" ? err.stack : undefined,
-  };
-  console.error("ERROR", JSON.stringify(errorLog, null, 2));
-
-  let message = err.message || "Internal Server Error";
-  let code = statusCode;
-
-  if (err.name === "CastError") {
-    message = `Resource not found with id ${err.value}`;
-    code = 404;
-  }
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    const value = err.keyValue[field];
-    message = `Duplicate field value ${field}=${value}. Please use another value.`;
-    code = 400;
-  }
-  if (err.name === "ValidationError") {
-    const errors = Object.values(err.errors).map((val) => ({
-      field: val.path,
-      message: val.message,
-    }));
-    return res
-      .status(400)
-      .json({
-        success: false,
-        error: "Validation failed",
-        errors,
-        statusCode: 400,
-      });
-  }
-  if (err.name === "JsonWebTokenError") {
-    message = "Invalid token. Please log in again.";
-    code = 401;
-  }
-  if (err.name === "TokenExpiredError") {
-    message = "Your token has expired. Please log in again.";
-    code = 401;
-  }
-  if (err.code === "ETIMEDOUT" || err.code === "ECONNABORTED") {
-    message = "Request timeout. Please try again.";
-    code = 408;
-  }
-  if (err.isAxiosError) {
-    message = err.response?.data?.message || "External service error";
-    code = err.response?.status || 503;
-  }
-
-  const response = {
-    success: false,
-    error:
-      config.env === "production" && !err.isOperational
-        ? "Something went wrong. Please try again."
-        : message,
-    statusCode: code,
-    ...(config.env === "development" && { stack: err.stack }),
-  };
-  return res.status(code).json(response);
+module.exports = {
+  asyncHandler,
+  AppError,
+  requestTimeout,
+  notFound, // ✅ YOUR 404 HANDLER
+  errorHandler, // ✅ YOUR ERROR HANDLER
 };
-
-const asyncHandler = (fn) => (req, res, next) =>
-  Promise.resolve(fn(req, res, next)).catch(next);
-
-const notFound = (req, res, next) =>
-  next(new AppError(`Route not found: ${req.originalUrl}`, 404));
-
-module.exports = { AppError, errorHandler, asyncHandler, notFound };

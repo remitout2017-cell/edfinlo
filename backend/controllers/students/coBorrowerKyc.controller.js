@@ -8,6 +8,8 @@ const CoBorrower = require("../../models/student/CoBorrower");
 const Student = require("../../models/student/students");
 const { asyncHandler, AppError } = require("../../middleware/errorMiddleware");
 const { encryptText, decryptText } = require("../../utils/encryption");
+const { updateStudentDocumentHash } = require("../../utils/documentHasher");
+
 const {
   uploadToCloudinary,
   deleteFromCloudinary,
@@ -322,6 +324,7 @@ exports.submitCoBorrowerKyc = asyncHandler(async (req, res) => {
   if (student) {
     await student.addCoBorrower(coBorrower._id);
     console.log(`✅ [DB] Co-borrower added to student's array`);
+    await updateStudentDocumentHash(studentId);
   }
 
   console.log(`\n${"=".repeat(80)}`);
@@ -585,6 +588,8 @@ exports.reverifyKyc = asyncHandler(async (req, res) => {
   await coBorrower.save();
   console.log(`✅ [DB] Co-borrower updated with new KYC data`);
 
+  await updateStudentDocumentHash(studentId);
+
   console.log(`\n${"=".repeat(80)}`);
   console.log(
     `✅ [KYC] Re-verification complete - Status: ${coBorrower.kycStatus}`
@@ -753,6 +758,7 @@ exports.deleteCoBorrower = asyncHandler(async (req, res) => {
   const student = await Student.findById(studentId);
   if (student) {
     await student.removeCoBorrower(coBorrowerId);
+    await updateStudentDocumentHash(studentId);
   }
 
   return res.json({

@@ -1,6 +1,6 @@
 // src/pages/LoanAnalysis.jsx
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUserData } from "../../context/UserDataContext";
 import axios from "axios";
 import {
@@ -17,6 +17,7 @@ import {
 import DashboardLayout from "../../components/layouts/DashboardLayout";
 import StepperExample from "../../components/common/stepper";
 import toast from "react-hot-toast";
+
 // ✅ FIX: Use environment variable with fallback and ensure no trailing /api
 const rawBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const API_BASE_URL = rawBaseUrl.endsWith("/api")
@@ -36,10 +37,17 @@ const LoanAnalysis = () => {
     lastRunDate: null,
   });
 
+  // ✅ CHANGE 1: Prevent duplicate calls in React StrictMode
+  const hasFetched = useRef(false);
+
   // Fetch analysis history on mount
   useEffect(() => {
-    fetchAnalysisHistory();
-    refreshUserData();
+    // ✅ CHANGE 2: Only fetch once
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      fetchAnalysisHistory();
+      refreshUserData();
+    }
   }, []);
 
   const fetchAnalysisHistory = async () => {
@@ -102,7 +110,6 @@ const LoanAnalysis = () => {
 
     setAnalysisLoading(true);
     setError(null);
-    // Removed retryCount reset
 
     try {
       console.log("🚀 Starting NBFC matching analysis...");
@@ -130,32 +137,25 @@ const LoanAnalysis = () => {
     } catch (err) {
       console.error("❌ Analysis failed:", err);
 
-      // If timeout or any error, refresh as requested
+      // ✅ CHANGE 3: Removed window.location.reload() and setTimeout
       if (err.code === "ECONNABORTED" || err.message.includes("timeout")) {
-        toast.error("Analysis timed out. Refreshing...");
+        toast.error("Analysis timed out. Please try again.");
       } else {
-        toast.error("Analysis failed. Refreshing...");
+        toast.error("Analysis failed. Please try again.");
       }
 
-      // Reload page after a short delay to let user see toast/message
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-
       setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Failed to run analysis. Page will refresh."
+        err.response?.data?.message || err.message || "Failed to run analysis"
       );
     } finally {
-      // setAnalysisLoading(false); // No need to unset if we are reloading, but good practice if reload fails/delays
+      // ✅ CHANGE 4: Always stop loading
+      setAnalysisLoading(false);
     }
   };
 
   const handleDeleteAnalysis = async (e, id) => {
     e.stopPropagation(); // Prevent selecting the analysis when clicking delete
 
-    // Removed confirm dialog as requested/for validation
     try {
       setLoading(true);
       const response = await axios.delete(
@@ -188,451 +188,473 @@ const LoanAnalysis = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case "eligible":
-        return <CheckCircle className="text-green-500" size={20} />;
+        return <CheckCircle className="w-5 h-5 text-green-500" />;
       case "borderline":
-        return <AlertCircle className="text-yellow-500" size={20} />;
+        return <AlertCircle className="w-5 h-5 text-yellow-500" />;
       case "not_eligible":
-        return <XCircle className="text-red-500" size={20} />;
+        return <XCircle className="w-5 h-5 text-red-500" />;
       default:
-        return <AlertCircle className="text-gray-400" size={20} />;
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case "eligible":
-        return "Eligible";
-      case "borderline":
-        return "Borderline";
-      case "not_eligible":
-        return "Not Eligible";
-      default:
-        return "Unknown";
+        return <AlertCircle className="w-5 h-5 text-gray-400" />;
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
       case "eligible":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-green-50 border-green-200 text-green-800";
       case "borderline":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-50 border-yellow-200 text-yellow-800";
       case "not_eligible":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-red-50 border-red-200 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-50 border-gray-200 text-gray-800";
     }
   };
 
-  // ✅ FIX: Better loading state with progress indicator
-  if (analysisLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center space-y-4">
-          <Loader className="animate-spin mx-auto text-blue-600" size={48} />
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900">
-              Analyzing Your Profile...
-            </h3>
-            <p className="text-gray-600 mt-2">Matching against active NBFCs</p>
-            <p className="text-sm text-gray-500 mt-1">
-              This usually takes 8-15 seconds
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <DashboardLayout>
-      <StepperExample currentStep={8} />
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Loan Eligibility Analysis
-          </h1>
-          <p className="text-gray-600">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Loan Analysis</h1>
+            <p className="text-gray-600 mt-1">
+              AI-powered NBFC matching based on your profile
+            </p>
+          </div>
+
+          <button
+            onClick={handleRunAnalysis}
+            disabled={analysisLoading || !completeness.readyForAnalysis}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              analysisLoading || !completeness.readyForAnalysis
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:scale-105"
+            }`}
+          >
+            {analysisLoading ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <TrendingUp className="w-5 h-5" />
+                Run New Analysis
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Analysis in progress message */}
+        {analysisLoading && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-center gap-4">
+              <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900">
+                  Analyzing Your Profile
+                </h3>
+                <p className="text-blue-700 text-sm mt-1">
+                  Matching against active NBFCs
+                </p>
+                <p className="text-blue-600 text-xs mt-1">
+                  This usually takes 8-15 seconds
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stepper */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <StepperExample />
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
             Check your current loan eligibility based on updated profile data.
           </p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start">
-            <XCircle
-              className="text-red-500 mr-3 flex-shrink-0 mt-0.5"
-              size={20}
-            />
-            <div>
-              <h3 className="font-semibold text-red-900">Error</h3>
-              <p className="text-red-700 text-sm">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <XCircle className="w-5 h-5 text-red-500 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-red-800 font-medium">Error</p>
+                <p className="text-red-700 text-sm mt-1">{error}</p>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Document Completeness Card */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8 border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Document Completeness
-            </h2>
-            <span className="text-2xl font-bold text-blue-600">
-              {completeness.percentage}%
-            </span>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-            <div
-              className="bg-blue-600 h-3 rounded-full transition-all duration-500"
-              style={{ width: `${completeness.percentage}%` }}
-            ></div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="text-sm">
-              <span className="text-gray-600">Completed Fields:</span>
-              <span className="font-semibold text-gray-900 ml-2">
-                {completeness.completedFields} / {completeness.totalFields}
-              </span>
+        {!completeness.readyForAnalysis && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
+              <p className="text-yellow-800 text-sm">
+                Complete all required documents to unlock analysis
+              </p>
             </div>
-            <div className="text-sm">
-              <span className="text-gray-600">Next Action:</span>
-              <span className="font-semibold text-gray-900 ml-2">
-                {completeness.nextAction}
-              </span>
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Highest Score</p>
+                <p className="text-3xl font-bold text-blue-600 mt-1">
+                  {stats.highestScore}%
+                </p>
+              </div>
+              <TrendingUp className="w-10 h-10 text-blue-500 opacity-20" />
             </div>
           </div>
 
-          {/* ✅ FIX: Better button state handling */}
-          <button
-            onClick={handleRunAnalysis}
-            disabled={!completeness.readyForAnalysis || analysisLoading}
-            className={`w-full py-3 px-4 rounded-lg font-semibold transition-all flex items-center justify-center ${
-              completeness.readyForAnalysis
-                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            <TrendingUp className="mr-2" size={20} />
-            {analysisLoading
-              ? "Analyzing..."
-              : completeness.readyForAnalysis
-              ? "Run New Analysis"
-              : "Complete Profile First"}
-          </button>
+          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Total Runs</p>
+                <p className="text-3xl font-bold text-indigo-600 mt-1">
+                  {stats.totalAnalyses}
+                </p>
+              </div>
+              <FileText className="w-10 h-10 text-indigo-500 opacity-20" />
+            </div>
+          </div>
 
-          {!completeness.readyForAnalysis && (
-            <p className="text-sm text-amber-600 mt-2 text-center">
-              Complete all required documents to unlock analysis
-            </p>
-          )}
+          <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Last Run</p>
+                <p className="text-sm font-medium text-gray-800 mt-1">
+                  {stats.lastRunDate
+                    ? new Date(stats.lastRunDate).toLocaleDateString()
+                    : "Never"}
+                </p>
+              </div>
+              <Clock className="w-10 h-10 text-gray-400 opacity-20" />
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left: Analysis History */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Analysis History
-              </h2>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* History Sidebar */}
+          <div className="lg:col-span-1 bg-white rounded-lg shadow-md p-6 max-h-[600px] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Analysis History</h2>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Highest Score</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {stats.highestScore}%
-                  </p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Total Runs</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {stats.totalAnalyses}
-                  </p>
-                </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader className="w-8 h-8 animate-spin text-blue-600" />
               </div>
-
-              {/* History List */}
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {loading ? (
-                  <div className="text-center py-8">
-                    <Loader className="animate-spin mx-auto text-gray-400" />
-                  </div>
-                ) : history.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText
-                      className="mx-auto mb-2 text-gray-400"
-                      size={40}
-                    />
-                    <p className="text-sm">No analyses yet</p>
-                    <p className="text-xs mt-1">
-                      Run your first analysis above
-                    </p>
-                  </div>
-                ) : (
-                  history.map((item) => (
-                    <div
-                      key={item._id}
-                      onClick={() => setSelectedAnalysis(item)}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedAnalysis?._id === item._id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-900">
-                          {new Date(item.createdAt).toLocaleDateString()}
-                        </span>
-                        <span className="text-xs text-gray-500 flex items-center">
-                          <Clock size={12} className="mr-1" />
-                          {new Date(item.createdAt).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">
-                          {item.overallSummary?.eligibleCount || 0} Eligible
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-blue-600">
-                            {item.overallSummary?.topMatchPercentage || 0}%
-                          </span>
-                          <button
-                            onClick={(e) => handleDeleteAnalysis(e, item._id)}
-                            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                            title="Delete Analysis"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Analysis Details */}
-          <div className="lg:col-span-2">
-            {selectedAnalysis ? (
-              <div className="space-y-6">
-                {/* Overall Summary */}
-                <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                    Analysis Results
-                  </h2>
-
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <p className="text-3xl font-bold text-green-600">
-                        {selectedAnalysis.overallSummary?.eligibleCount || 0}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">Eligible</p>
-                    </div>
-                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                      <p className="text-3xl font-bold text-yellow-600">
-                        {selectedAnalysis.overallSummary?.borderlineCount || 0}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">Borderline</p>
-                    </div>
-                    <div className="text-center p-4 bg-red-50 rounded-lg">
-                      <p className="text-3xl font-bold text-red-600">
-                        {selectedAnalysis.overallSummary?.notEligibleCount || 0}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">Not Eligible</p>
-                    </div>
-                  </div>
-
-                  {selectedAnalysis.overallSummary?.topMatchNBFC && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-gray-600 mb-1">Top Match</p>
-                      <p className="text-lg font-bold text-blue-900">
-                        {selectedAnalysis.overallSummary.topMatchNBFC}
-                      </p>
-                      <p className="text-2xl font-bold text-blue-600 mt-1">
-                        {selectedAnalysis.overallSummary.topMatchPercentage}%
-                        Match
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* ✅ FIX: Display NBFCs by category */}
-                {["eligible", "borderline", "notEligible"].map((category) => {
-                  const nbfcs =
-                    selectedAnalysis.nbfcMatches?.[category] ||
-                    selectedAnalysis[category] ||
-                    [];
-                  if (nbfcs.length === 0) return null;
-
-                  const categoryLabels = {
-                    eligible: "Eligible NBFCs",
-                    borderline: "Borderline NBFCs",
-                    notEligible: "Not Eligible NBFCs",
-                  };
-
-                  return (
-                    <div
-                      key={category}
-                      className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
-                    >
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        {categoryLabels[category]} ({nbfcs.length})
-                      </h3>
-
-                      <div className="space-y-4">
-                        {nbfcs.map((nbfc, idx) => (
-                          <div
-                            key={idx}
-                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div>
-                                <h4 className="font-semibold text-gray-900 text-lg">
-                                  {nbfc.nbfcName}
-                                </h4>
-                                {nbfc.nbfcEmail && (
-                                  <p className="text-sm text-gray-600">
-                                    {nbfc.nbfcEmail}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="text-right">
-                                <div className="text-2xl font-bold text-blue-600">
-                                  {nbfc.matchPercentage}%
-                                </div>
-                                <div
-                                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mt-2 ${getStatusColor(
-                                    nbfc.eligibilityStatus
-                                  )}`}
-                                >
-                                  {getStatusIcon(nbfc.eligibilityStatus)}
-                                  <span className="ml-1">
-                                    {getStatusLabel(nbfc.eligibilityStatus)}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Analysis Details */}
-                            {nbfc.analysis && (
-                              <div className="mt-4 space-y-3">
-                                {/* Strengths */}
-                                {nbfc.analysis.strengths?.length > 0 && (
-                                  <div>
-                                    <p className="text-sm font-semibold text-green-700 mb-1">
-                                      ✓ Strengths:
-                                    </p>
-                                    <ul className="text-sm text-gray-700 space-y-1">
-                                      {nbfc.analysis.strengths.map((s, i) => (
-                                        <li
-                                          key={i}
-                                          className="flex items-start"
-                                        >
-                                          <span className="mr-2">•</span>
-                                          <span>{s}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-
-                                {/* Gaps */}
-                                {nbfc.analysis.gaps?.length > 0 && (
-                                  <div>
-                                    <p className="text-sm font-semibold text-red-700 mb-1">
-                                      ⚠ Gaps:
-                                    </p>
-                                    <ul className="text-sm text-gray-700 space-y-1">
-                                      {nbfc.analysis.gaps.map((g, i) => (
-                                        <li
-                                          key={i}
-                                          className="flex items-start"
-                                        >
-                                          <span className="mr-2">•</span>
-                                          <span>{g}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-
-                                {/* ROI */}
-                                {nbfc.analysis.estimatedROI && (
-                                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded">
-                                    <span className="text-sm text-gray-600">
-                                      Estimated Interest Rate:
-                                    </span>
-                                    <span className="font-semibold text-gray-900">
-                                      {nbfc.analysis.estimatedROI.min}% -{" "}
-                                      {nbfc.analysis.estimatedROI.max}%
-                                    </span>
-                                  </div>
-                                )}
-
-                                {/* Send Request Button */}
-                                {category === "eligible" && (
-                                  <button
-                                    onClick={() =>
-                                      (window.location.href = `/loan-requests?nbfc=${nbfc.nbfcId}`)
-                                    }
-                                    className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center"
-                                  >
-                                    Send Loan Request
-                                    <ArrowRight className="ml-2" size={16} />
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Improvement Tips Section */}
-                {selectedAnalysis &&
-                  selectedAnalysis.overallSummary?.eligibleCount === 0 && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                      <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
-                        <TrendingUp className="mr-2" size={20} />
-                        How to Improve Your Approval Chances
-                      </h3>
-                      <div className="text-blue-800 space-y-2 text-sm">
-                        <p>
-                          • <strong>Add a Co-borrower:</strong> Adding a
-                          financially stable co-borrower (parent/guardian)
-                          significantly boosts eligibility.
-                        </p>
-                        <p>
-                          • <strong>Complete Profile:</strong> Ensure all work
-                          experience and test scores are added. Verify your
-                          academic records.
-                        </p>
-                        <p>
-                          • <strong>Test Scores:</strong> A high GRE/GMAT score
-                          can sometimes offset lower academic percentages or
-                          gaps.
-                        </p>
-                      </div>
-                    </div>
-                  )}
+            ) : history.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No analyses yet</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Run your first analysis above
+                </p>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-md p-12 border border-gray-200 text-center">
-                <FileText className="mx-auto text-gray-300 mb-4" size={64} />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <div className="space-y-3">
+                {history.map((item) => (
+                  <div
+                    key={item._id}
+                    onClick={() => setSelectedAnalysis(item)}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedAnalysis?._id === item._id
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(item.createdAt).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => handleDeleteAnalysis(e, item._id)}
+                        className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2 text-xs flex-wrap">
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded">
+                        {item.overallSummary?.eligibleCount || 0} Eligible
+                      </span>
+                      <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+                        {item.overallSummary?.borderlineCount || 0} Borderline
+                      </span>
+                      <span className="bg-red-100 text-red-700 px-2 py-1 rounded">
+                        {item.overallSummary?.notEligibleCount || 0} Not
+                        Eligible
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Results Panel */}
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+            {!selectedAnalysis ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <TrendingUp className="w-20 h-20 text-gray-300 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">
                   No Analysis Selected
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-500 max-w-md">
                   Select an analysis from your history or run a new one to see
                   detailed insights about your loan eligibility.
                 </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Summary Stats */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-green-50 rounded-lg p-4 text-center border border-green-200">
+                    <p className="text-3xl font-bold text-green-600">
+                      {selectedAnalysis.overallSummary?.eligibleCount || 0}
+                    </p>
+                    <p className="text-sm text-green-700 mt-1">Eligible</p>
+                  </div>
+
+                  <div className="bg-yellow-50 rounded-lg p-4 text-center border border-yellow-200">
+                    <p className="text-3xl font-bold text-yellow-600">
+                      {selectedAnalysis.overallSummary?.borderlineCount || 0}
+                    </p>
+                    <p className="text-sm text-yellow-700 mt-1">Borderline</p>
+                  </div>
+
+                  <div className="bg-red-50 rounded-lg p-4 text-center border border-red-200">
+                    <p className="text-3xl font-bold text-red-600">
+                      {selectedAnalysis.overallSummary?.notEligibleCount || 0}
+                    </p>
+                    <p className="text-sm text-red-700 mt-1">Not Eligible</p>
+                  </div>
+                </div>
+
+                {/* Top Match */}
+                {selectedAnalysis.overallSummary?.topMatchNBFC && (
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-blue-600 font-medium mb-1">
+                          Top Match
+                        </p>
+                        <h3 className="text-2xl font-bold text-blue-900">
+                          {selectedAnalysis.overallSummary.topMatchNBFC}
+                        </h3>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-4xl font-bold text-blue-600">
+                          {selectedAnalysis.overallSummary.topMatchPercentage}%
+                        </p>
+                        <p className="text-sm text-blue-700">Match</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* NBFC Details */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Detailed Results
+                  </h3>
+
+                  {/* Eligible NBFCs */}
+                  {selectedAnalysis.nbfcMatches?.eligible?.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-green-700 flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5" />
+                        Eligible NBFCs
+                      </h4>
+                      {selectedAnalysis.nbfcMatches.eligible.map(
+                        (nbfc, idx) => (
+                          <div
+                            key={idx}
+                            className="border-2 border-green-200 rounded-lg p-4 bg-green-50"
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <h5 className="font-bold text-gray-900">
+                                  {nbfc.nbfcName}
+                                </h5>
+                                <p className="text-sm text-gray-600">
+                                  {nbfc.nbfcEmail}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-green-600">
+                                  {nbfc.matchPercentage}%
+                                </p>
+                                <p className="text-xs text-green-700">Match</p>
+                              </div>
+                            </div>
+
+                            {nbfc.analysis?.strengths?.length > 0 && (
+                              <div className="mb-2">
+                                <p className="text-sm font-semibold text-green-800 mb-1">
+                                  ✓ Strengths:
+                                </p>
+                                <ul className="text-sm text-green-700 space-y-1">
+                                  {nbfc.analysis.strengths.map((s, i) => (
+                                    <li key={i}>• {s}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {nbfc.analysis?.gaps?.length > 0 && (
+                              <div>
+                                <p className="text-sm font-semibold text-yellow-800 mb-1">
+                                  ⚠ Gaps:
+                                </p>
+                                <ul className="text-sm text-yellow-700 space-y-1">
+                                  {nbfc.analysis.gaps.map((g, i) => (
+                                    <li key={i}>• {g}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+
+                  {/* Borderline NBFCs */}
+                  {selectedAnalysis.nbfcMatches?.borderline?.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-yellow-700 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5" />
+                        Borderline NBFCs
+                      </h4>
+                      {selectedAnalysis.nbfcMatches.borderline.map(
+                        (nbfc, idx) => (
+                          <div
+                            key={idx}
+                            className="border-2 border-yellow-200 rounded-lg p-4 bg-yellow-50"
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <h5 className="font-bold text-gray-900">
+                                  {nbfc.nbfcName}
+                                </h5>
+                                <p className="text-sm text-gray-600">
+                                  {nbfc.nbfcEmail}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-yellow-600">
+                                  {nbfc.matchPercentage}%
+                                </p>
+                                <p className="text-xs text-yellow-700">Match</p>
+                              </div>
+                            </div>
+
+                            {nbfc.analysis?.recommendations?.length > 0 && (
+                              <div>
+                                <p className="text-sm font-semibold text-yellow-800 mb-1">
+                                  💡 Recommendations:
+                                </p>
+                                <ul className="text-sm text-yellow-700 space-y-1">
+                                  {nbfc.analysis.recommendations.map((r, i) => (
+                                    <li key={i}>• {r}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+
+                  {/* Not Eligible NBFCs */}
+                  {selectedAnalysis.nbfcMatches?.notEligible?.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-red-700 flex items-center gap-2">
+                        <XCircle className="w-5 h-5" />
+                        Not Eligible NBFCs
+                      </h4>
+                      {selectedAnalysis.nbfcMatches.notEligible.map(
+                        (nbfc, idx) => (
+                          <div
+                            key={idx}
+                            className="border-2 border-red-200 rounded-lg p-4 bg-red-50"
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <h5 className="font-bold text-gray-900">
+                                  {nbfc.nbfcName}
+                                </h5>
+                                <p className="text-sm text-gray-600">
+                                  {nbfc.nbfcEmail}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-red-600">
+                                  {nbfc.matchPercentage}%
+                                </p>
+                                <p className="text-xs text-red-700">Match</p>
+                              </div>
+                            </div>
+
+                            {nbfc.analysis?.gaps?.length > 0 && (
+                              <div>
+                                <p className="text-sm font-semibold text-red-800 mb-1">
+                                  ❌ Missing Requirements:
+                                </p>
+                                <ul className="text-sm text-red-700 space-y-1">
+                                  {nbfc.analysis.gaps.map((g, i) => (
+                                    <li key={i}>• {g}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+
+                  {/* General Tips */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
+                    <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                      <ArrowRight className="w-5 h-5" />
+                      Tips to Improve Eligibility
+                    </h4>
+                    <div className="space-y-3 text-sm text-blue-800">
+                      <p>
+                        <strong>Add a Co-borrower:</strong> Adding a financially
+                        stable co-borrower (parent/guardian) significantly
+                        boosts eligibility.
+                      </p>
+                      <p>
+                        <strong>Complete Profile:</strong> Ensure all work
+                        experience and test scores are added. Verify your
+                        academic records.
+                      </p>
+                      <p>
+                        <strong>Test Scores:</strong> A high GRE/GMAT score can
+                        sometimes offset lower academic percentages or gaps.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

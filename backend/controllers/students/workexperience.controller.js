@@ -7,14 +7,14 @@ const fs = require("fs");
 const WorkExperienceRecord = require("../../models/student/Workexperience");
 const Student = require("../../models/student/students");
 const { asyncHandler, AppError } = require("../../middleware/errorMiddleware");
+const { updateStudentDocumentHash } = require("../../utils/documentHasher");
 
 const {
   uploadToCloudinary,
   deleteFromCloudinary,
 } = require("../../services/imageService");
 
-const WORK_AGENT_URL =
-  process.env.WORK_AGENT_URL || "http://localhost:7005";
+const WORK_AGENT_URL = process.env.WORK_AGENT_URL || "http://localhost:7005";
 
 // ========== HELPERS ==========
 
@@ -99,7 +99,9 @@ async function callWorkAgent(files) {
         file.originalname
       );
     });
-    console.log(`📤 Added ${files.experience_letters.length} experience letters`);
+    console.log(
+      `📤 Added ${files.experience_letters.length} experience letters`
+    );
   } else {
     throw new AppError("Experience letters are MANDATORY", 400);
   }
@@ -169,9 +171,7 @@ async function callWorkAgent(files) {
       error.response?.data || error.message
     );
     throw new AppError(
-      `Work extraction failed: ${
-        error.response?.data?.error || error.message
-      }`,
+      `Work extraction failed: ${error.response?.data?.error || error.message}`,
       500
     );
   }
@@ -250,8 +250,12 @@ exports.submitWorkExperience = asyncHandler(async (req, res) => {
 
     console.log(`✅ Session ID: ${agentResponse.session_id}`);
     console.log(`📊 Status: ${agentResponse.status}`);
-    console.log(`💼 Work Experiences: ${agentResponse.work_experiences?.length || 0}`);
-    console.log(`✅ Valid Experiences: ${agentResponse.valid_experiences || 0}`);
+    console.log(
+      `💼 Work Experiences: ${agentResponse.work_experiences?.length || 0}`
+    );
+    console.log(
+      `✅ Valid Experiences: ${agentResponse.valid_experiences || 0}`
+    );
 
     // Step 2: Upload documents to Cloudinary
     console.log("\n☁️ STEP 2: Uploading documents to Cloudinary...");
@@ -301,7 +305,9 @@ exports.submitWorkExperience = asyncHandler(async (req, res) => {
       }
     }
 
-    console.log(`\n✅ ${uploadedDocuments.length} documents uploaded successfully`);
+    console.log(
+      `\n✅ ${uploadedDocuments.length} documents uploaded successfully`
+    );
 
     // Step 3: Map work experiences with Cloudinary URLs
     console.log("\n💾 STEP 3: Mapping work experiences with document URLs...");
@@ -310,9 +316,10 @@ exports.submitWorkExperience = asyncHandler(async (req, res) => {
       (exp, index) => {
         // Find the corresponding Cloudinary document for this experience
         // For now, we'll link the first experience letter to the first experience
-        const correspondingDoc = uploadedDocuments.find(
-          (doc) => doc.documentType === exp.source_document_type
-        ) || uploadedDocuments[0];
+        const correspondingDoc =
+          uploadedDocuments.find(
+            (doc) => doc.documentType === exp.source_document_type
+          ) || uploadedDocuments[0];
 
         return {
           companyName: exp.company_name,
@@ -366,7 +373,7 @@ exports.submitWorkExperience = asyncHandler(async (req, res) => {
     const existingRecord = await WorkExperienceRecord.findOne({ user: userId });
     if (existingRecord) {
       console.log("🗑️ Deleting old work experience record and documents...");
-      
+
       // Delete old documents from Cloudinary
       for (const exp of existingRecord.workExperiences) {
         if (exp.documentPublicId) {
@@ -395,7 +402,8 @@ exports.submitWorkExperience = asyncHandler(async (req, res) => {
       validExperiences: agentResponse.valid_experiences,
       totalYearsExperience: agentResponse.total_years_experience,
       hasAllMandatoryDocuments: agentResponse.has_all_mandatory_documents,
-      missingMandatoryDocuments: agentResponse.missing_mandatory_documents || [],
+      missingMandatoryDocuments:
+        agentResponse.missing_mandatory_documents || [],
       processingTimeSeconds: agentResponse.processing_time_seconds,
       status: agentResponse.status,
       errors: agentResponse.errors || [],
@@ -416,11 +424,15 @@ exports.submitWorkExperience = asyncHandler(async (req, res) => {
 
     console.log("✅ Work experience record saved successfully");
 
+    await updateStudentDocumentHash(userId);
+
     console.log(`\n${"=".repeat(70)}`);
     console.log(`✅ WORK EXPERIENCE PROCESSING COMPLETE`);
     console.log(`   Status: ${workRecord.status}`);
     console.log(`   Valid Experiences: ${workRecord.validExperiences}`);
-    console.log(`   Total Experience: ${workRecord.totalYearsExperience || 0} years`);
+    console.log(
+      `   Total Experience: ${workRecord.totalYearsExperience || 0} years`
+    );
     console.log(`   Processing Time: ${workRecord.processingTimeSeconds}s`);
     console.log(`${"=".repeat(70)}\n`);
 
@@ -430,7 +442,7 @@ exports.submitWorkExperience = asyncHandler(async (req, res) => {
       sessionId: workRecord.sessionId,
       status: workRecord.status,
       statusColor: workRecord.statusColor,
-      
+
       summary: {
         totalDocuments: workRecord.totalDocuments,
         mandatoryDocuments: workRecord.mandatoryDocumentsCount,
@@ -518,7 +530,8 @@ exports.getWorkExperience = asyncHandler(async (req, res) => {
   workRecord.completionPercentage =
     workRecord.workExperiences.length > 0
       ? Math.round(
-          (workRecord.validExperiences / workRecord.workExperiences.length) * 100
+          (workRecord.validExperiences / workRecord.workExperiences.length) *
+            100
         )
       : 0;
 
@@ -558,6 +571,8 @@ exports.deleteWorkExperience = asyncHandler(async (req, res) => {
     success: true,
     message: "Work experience deleted successfully",
   });
+
+  await updateStudentDocumentHash(userId);
 });
 
 exports.healthCheck = asyncHandler(async (req, res) => {

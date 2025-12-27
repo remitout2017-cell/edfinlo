@@ -7,6 +7,8 @@ const crypto = require("crypto");
 const AdmissionLetter = require("../../models/student/AdmissionLetter");
 const Student = require("../../models/student/students");
 const { asyncHandler, AppError } = require("../../middleware/errorMiddleware");
+const { updateStudentDocumentHash } = require("../../utils/documentHasher");
+
 const {
   uploadToCloudinary,
   deleteFromCloudinary,
@@ -371,6 +373,7 @@ exports.submitAdmissionLetter = asyncHandler(async (req, res) => {
     });
 
     console.log("✅ Admission letter processed successfully");
+    await updateStudentDocumentHash(userId);
 
     // Step 9: Prepare response
     const responseData = {
@@ -540,6 +543,8 @@ exports.deleteMyAdmissionLetter = asyncHandler(async (req, res) => {
   await Student.findByIdAndUpdate(userId, {
     $unset: { admissionLetters: "" },
   });
+
+  await updateStudentDocumentHash(userId);
 
   return res.status(200).json({
     success: true,

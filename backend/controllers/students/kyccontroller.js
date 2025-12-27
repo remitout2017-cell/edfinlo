@@ -12,6 +12,7 @@ const {
   uploadToCloudinary,
   deleteFromCloudinary,
 } = require("../../services/imageService");
+const { updateStudentDocumentHash } = require("../../utils/documentHasher");
 
 function aadForUser(userId) {
   return String(userId);
@@ -257,6 +258,9 @@ exports.submitKyc = asyncHandler(async (req, res) => {
   await student.save();
 
   // 4) Return decrypted only to same user [file:67]
+
+  await updateStudentDocumentHash(userId);
+
   return res.status(200).json({
     status: verified ? "verified" : "not_verified",
     verified,
@@ -308,8 +312,6 @@ exports.getMyKyc = asyncHandler(async (req, res) => {
           panCardUrl: student.kycData.panCardUrl,
           passportUrl: student.kycData.passportUrl,
 
-
-          
           // Extracted Aadhaar data
           aadhaarName: student.kycData.aadhaarName,
           aadhaarGender: student.kycData.aadhaarGender,
@@ -345,6 +347,8 @@ exports.deleteKYC = asyncHandler(async (req, res) => {
     await purgePreviousKyc(student);
     await student.save();
   }
+
+  await updateStudentDocumentHash(userId);
 
   res.status(200).json({ success: true, message: "KYC reset successfully" });
 });

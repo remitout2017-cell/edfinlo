@@ -1,5 +1,6 @@
 // controllers/studentEducationPlanController.js
 const StudentEducationPlan = require("../../models/student/StudentEducationPlan");
+const { updateStudentDocumentHash } = require("../../utils/documentHasher");
 
 exports.upsertEducationPlan = async (req, res, next) => {
   try {
@@ -33,6 +34,8 @@ exports.upsertEducationPlan = async (req, res, next) => {
       payload,
       { upsert: true, new: true, runValidators: true }
     );
+
+    await updateStudentDocumentHash(studentId);
 
     return res.status(200).json({ success: true, data: plan });
   } catch (err) {

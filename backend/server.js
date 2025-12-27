@@ -13,7 +13,7 @@ const config = require("./config/config");
 const connectDB = require("./config/database");
 const vectorStoreManager = require("./chatbot/config/vectorStore");
 
-const { errorHandler, notFound } = require("./middleware/errorMiddleware");
+const { errorHandler, notFound,requestTimeout } = require("./middleware/errorMiddleware");
 const academicRoutes = require("./routes/students/academic.routes");
 const workExperienceRoutes = require("./routes/students/workexperience.routes"); // ✅ ADD THIS
 const testScoresRoutes = require("./routes/students/testscores.routes"); // ✅ NEW
@@ -48,9 +48,10 @@ app.use(
 app.use(mongoSanitize());
 app.use(xss());
 app.use(cors(corsOptions));
+app.use(requestTimeout(180000)); // 3 minutes
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Compression middleware
 app.use(

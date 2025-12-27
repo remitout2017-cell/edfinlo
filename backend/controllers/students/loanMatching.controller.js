@@ -5,11 +5,8 @@ const { matchStudentWithAllNBFCs } = require("../../agents/nbfcMatcher");
 const NBFC = require("../../models/nbfc/NBFC");
 const LoanRequest = require("../../models/student/LoanRequest");
 const LoanAnalysisHistory = require("../../models/student/LoanAnalysisHistory");
+const { generateStudentDocumentHash } = require("../../utils/documentHasher");
 
-/**
- * GET NBFC Matches for Student
- * POST /api/student/loan-matching/analyze
- */
 const analyzeNBFCMatches = asyncHandler(async (req, res) => {
   const studentId = req.user?.id;
   if (!studentId) throw new AppError("Unauthorized", 401);
@@ -17,6 +14,45 @@ const analyzeNBFCMatches = asyncHandler(async (req, res) => {
   console.log(`\n${"=".repeat(80)}`);
   console.log(`🎯 Starting NBFC matching for student: ${studentId}`);
   console.log(`${"=".repeat(80)}\n`);
+
+  // ✅ STEP 0: Check if analysis is needed (documents changed?)
+  const currentDocHash = await generateStudentDocumentHash(studentId);
+
+  // Check last analysis
+  const lastAnalysis = await LoanAnalysisHistory.findOne({
+    student: studentId,
+  })
+    .sort({ createdAt: -1 })
+    .select("studentSnapshot.documentHash createdAt")
+    .lean();
+
+  if (lastAnalysis?.studentSnapshot?.documentHash === currentDocHash) {
+    // Documents haven't changed since last analysis
+    const timeSinceLastAnalysis =
+      Date.now() - new Date(lastAnalysis.createdAt).getTime();
+    const hoursSince = (timeSinceLastAnalysis / (1000 * 60 * 60)).toFixed(1);
+
+    // ✅ Allow re-analysis only if more than 24 hours passed OR explicitly forced
+    const { forceRerun } = req.query;
+
+    if (!forceRerun && timeSinceLastAnalysis < 24 * 60 * 60 * 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "No document changes detected since last analysis",
+        error: "DUPLICATE_ANALYSIS",
+        details: {
+          lastAnalysisDate: lastAnalysis.createdAt,
+          hoursSinceLastAnalysis: hoursSince,
+          suggestion:
+            "Update your documents or co-borrower information before running a new analysis",
+          canRetryAfter: "24 hours from last analysis",
+        },
+        lastAnalysisId: lastAnalysis._id,
+      });
+    }
+
+    console.log(`⚠️  Force re-run requested (documents unchanged)`);
+  }
 
   // 1. Aggregate student data
   console.log("📊 Step 1: Aggregating student data...");
@@ -55,8 +91,16 @@ const analyzeNBFCMatches = asyncHandler(async (req, res) => {
   console.log("🤖 Step 3: Running AI matching agent...");
   const matchingResults = await matchStudentWithAllNBFCs(studentProfile, nbfcs);
 
-  // 4. Save to history
+  // 4. Save to history with document hash
   console.log("💾 Step 4: Saving analysis to history...");
+
+  // ✅ Get fresh document hash and update student record
+  const Student = require("../../models/student/students");
+  await Student.findByIdAndUpdate(studentId, {
+    documentHash: currentDocHash,
+    lastDocumentUpdate: new Date(),
+  });
+
   const analysisHistory = await LoanAnalysisHistory.create({
     student: studentId,
     studentSnapshot: {
@@ -64,6 +108,8 @@ const analyzeNBFCMatches = asyncHandler(async (req, res) => {
       email: studentProfile.personal.email,
       kycStatus: studentProfile.personal.kycStatus,
       studyPlan: studentProfile.studyPlan,
+      documentHash: currentDocHash, // ✅ Store hash
+      lastDocumentUpdate: new Date(),
     },
     nbfcMatches: {
       eligible: matchingResults.eligible.map((m) => ({
@@ -99,7 +145,7 @@ const analyzeNBFCMatches = asyncHandler(async (req, res) => {
     analysisMetadata: {
       agentVersion: "1.0.0",
       llmModel: "llama-3.3-70b-versatile",
-      processingTimeSeconds: 0, // Calculate if needed
+      processingTimeSeconds: 0,
     },
   });
 
@@ -118,7 +164,6 @@ const analyzeNBFCMatches = asyncHandler(async (req, res) => {
     },
   });
 });
-
 /**
  * Send Loan Request to NBFC
  * POST /api/student/loan-matching/send-request/:nbfcId

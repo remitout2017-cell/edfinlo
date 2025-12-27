@@ -349,9 +349,6 @@ CoBorrowerSchema.statics.checkDuplicateName = async function (
   );
 };
 
-// ============================================================================
-// ✅ FIXED: updateFinancialSummary Method
-// ============================================================================
 CoBorrowerSchema.methods.updateFinancialSummary = function () {
   if (!this.financialAnalysis) return;
 
@@ -365,34 +362,64 @@ CoBorrowerSchema.methods.updateFinancialSummary = function () {
   const itr = extracted.itr || {};
   const bank = extracted.bankStatement || extracted.bank_statement || {};
 
-  this.financialSummary = {
-    avgMonthlySalary: salary.average_net_salary || 0,
-    avgMonthlyIncome: itr.average_monthly_income || 0,
-    estimatedAnnualIncome: itr.average_annual_income || 0,
-    totalExistingEmi: bank.average_monthly_emi || foir.totalMonthlyEmi || 0,
+  // Calculate completeness score
+  const completenessScore = this.calculateCompletenessScore();
 
-    // ✅ ADDED: 5 new bank metrics
-    avgBankBalance: bank.average_monthly_balance || 0,
-    minBankBalance: bank.minimum_balance || 0,
+  this.financialSummary = {
+    // Income data
+    avgMonthlySalary:
+      salary.average_net_salary || salary.average_monthly_salary || 0,
+    avgMonthlyIncome: itr.average_monthly_income || 0,
+    estimatedAnnualIncome:
+      itr.average_annual_income || (itr.average_monthly_income || 0) * 12,
+
+    // ✅ Bank data (correctly extracted)
+    totalExistingEmi: Math.round(
+      bank.average_monthly_emi || foir.totalMonthlyEmi || 0
+    ),
+    avgBankBalance: Math.round(bank.average_monthly_balance || 0),
+    minBankBalance: Math.round(bank.minimum_balance || 0),
+
+    // ✅ Risk indicators
     bounceCount: bank.bounce_count || 0,
     dishonorCount: bank.dishonor_count || 0,
     insufficientFundIncidents: bank.insufficient_fund_incidents || 0,
 
-    foir: foir.foirPercentage || 0,
+    // FOIR
+    foir: Math.round(foir.foirPercentage || 0),
     foirStatus: foir.foirStatus || "unknown",
+
+    // CIBIL
     cibilEstimate: cibil.estimatedScore || cibil.estimated_score || 0,
     cibilRiskLevel: cibil.riskLevel || cibil.risk_level || "unknown",
+
+    // Income stability
     incomeStability:
-      (salary.salary_consistency_months || 0) > 0 ? "stable" : "unstable",
-    overallScore: analysis.quality?.overallConfidence || 0,
+      itr.income_growth_rate !== undefined
+        ? itr.income_growth_rate < -30
+          ? "unstable"
+          : itr.income_growth_rate > 10
+          ? "growing"
+          : "stable"
+        : salary.salary_consistency_months > 0
+        ? "stable"
+        : "unstable",
+
+    // Overall score
+    overallScore: Math.round((analysis.quality?.overallConfidence || 0) * 100),
+
+    // Document completeness
     documentCompleteness: {
       hasKYC: this.kycStatus === "verified",
-      hasSalarySlips: analysis.documentsProcessed?.salarySlips || false,
-      hasBankStatement: analysis.documentsProcessed?.bankStatement || false,
-      hasITR: analysis.documentsProcessed?.itr1 || false,
-      hasForm16: analysis.documentsProcessed?.form16 || false,
-      completenessScore: this.calculateCompletenessScore(),
+      hasSalarySlips: !!(salary && Object.keys(salary).length > 0),
+      hasBankStatement: !!(bank && Object.keys(bank).length > 0),
+      hasITR: !!(itr && Object.keys(itr).length > 0),
+      hasForm16: !!(
+        extracted.form16 && Object.keys(extracted.form16).length > 0
+      ),
+      completenessScore: completenessScore,
     },
+
     verificationStatus: this.financialVerificationStatus,
     lastUpdated: new Date(),
     nextAction: this.determineNextAction(),

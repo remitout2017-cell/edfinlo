@@ -170,6 +170,14 @@ const StudentSchema = new mongoose.Schema(
           "December",
         ],
       },
+      documentHash: {
+        type: String,
+        select: false, // Don't send in normal queries
+      },
+      lastDocumentUpdate: {
+        type: Date,
+        default: null,
+      },
       intakeYear: { type: Number, min: 2024, max: 2030 },
       universityName: String,
       programLevel: {

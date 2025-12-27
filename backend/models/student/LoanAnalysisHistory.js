@@ -61,6 +61,8 @@ const loanAnalysisHistorySchema = new mongoose.Schema(
         intakeMonth: String,
         intakeYear: Number,
       },
+      documentHash: String,
+      lastDocumentUpdate: Date,
     },
 
     // NBFC matching results

@@ -7,31 +7,27 @@ const WorkExperience = require("../models/student/Workexperience");
 const AdmissionLetter = require("../models/student/AdmissionLetter");
 const CoBorrower = require("../models/student/CoBorrower");
 
-/**
- * Aggregates all student data for AI analysis
- */
 const aggregateStudentData = async (studentId) => {
   try {
-    // Fetch student with populated refs
+    // ✅ FIXED: Populate coBorrowers directly instead of separate query
     const student = await Student.findById(studentId)
       .populate("academicRecords")
       .populate("testScores")
       .populate("workExperience")
       .populate("admissionLetters")
+      .populate({
+        path: "coBorrowers",
+        match: { isDeleted: false, kycStatus: "verified" },
+        select: "+financialDocuments +financialAnalysis +financialSummary",
+      })
       .lean();
 
     if (!student) throw new Error("Student not found");
 
-    // Fetch co-borrowers with financial analysis
-    const coBorrowers = await CoBorrower.find({
-      student: studentId,
-      isDeleted: false,
-      kycStatus: "verified",
-    })
-      .select("+financialDocuments +financialAnalysis +financialSummary")
-      .lean();
+    // ✅ No need for separate CoBorrower query now
+    const coBorrowers = student.coBorrowers || [];
 
-    // Format for AI
+    // Format for AI (keep existing formatters)
     const profile = {
       personal: {
         name: `${student.firstName || ""} ${student.lastName || ""}`.trim(),

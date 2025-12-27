@@ -1,4 +1,5 @@
-// controllers/students/academic.controller.js - CLOUDINARY DEBUG VERSION
+// controllers/students/academic.controller.js - COMPLETE WITH FIX
+
 const axios = require("axios");
 const FormData = require("form-data");
 const fs = require("fs");
@@ -14,47 +15,45 @@ const AGENT_SERVER_URL =
   process.env.AGENT_SERVER_URL || "http://localhost:8000";
 
 // ========== HELPERS ==========
+
 async function uploadAcademicDocument(filePath, userId, docType) {
   console.log(`\n📤 [UPLOAD START] ${docType}`);
-  console.log(`  File path: ${filePath}`);
-  console.log(`  File exists: ${fs.existsSync(filePath)}`);
+  console.log(` File path: ${filePath}`);
+  console.log(` File exists: ${fs.existsSync(filePath)}`);
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found: ${filePath}`);
   }
 
-  // ✅ FIX: Don't duplicate the folder path in public_id
   const publicId = `${docType}_${Date.now()}`;
-  console.log(`  Cloudinary public_id: ${publicId}`);
-  console.log(`  Calling uploadToCloudinary...`);
+  console.log(` Cloudinary public_id: ${publicId}`);
+  console.log(` Calling uploadToCloudinary...`);
 
   try {
     const result = await uploadToCloudinary(filePath, {
       folder: `students/${userId}/academic`,
       resource_type: "raw",
-      type: "upload", // ✅ Changed from "authenticated" to "upload" for public access
+      type: "upload",
       public_id: publicId,
     });
 
-    console.log(`  Raw Cloudinary result:`, JSON.stringify(result, null, 2));
+    console.log(` Raw Cloudinary result:`, JSON.stringify(result, null, 2));
 
-    // ✅ CRITICAL FIX: Check what uploadToCloudinary actually returns
     if (!result) {
       throw new Error("uploadToCloudinary returned null/undefined");
     }
 
-    // Handle different possible return formats
     const uploadResult = {
       url: result.secure_url || result.url,
       publicId: result.public_id || publicId,
       resourceType: result.resource_type || "raw",
-      type: "upload", // ✅ Changed to upload
+      type: "upload",
     };
 
-    console.log(`  Mapped result:`, JSON.stringify(uploadResult, null, 2));
+    console.log(` Mapped result:`, JSON.stringify(uploadResult, null, 2));
 
     if (!uploadResult.url) {
-      console.error(`  ❌ ERROR: No URL in result!`);
+      console.error(` ❌ ERROR: No URL in result!`);
       throw new Error(
         `Cloudinary upload failed for ${docType} - no URL returned`
       );
@@ -76,7 +75,7 @@ async function deleteAcademicDocument(publicId, resourceType = "raw") {
     await deleteFromCloudinary({
       publicId,
       resourceType,
-      type: "upload", // ✅ FIXED: Changed from "authenticated" to "upload"
+      type: "upload",
     });
     console.log(`🗑️ Deleted from Cloudinary: ${publicId}`);
   } catch (error) {
@@ -159,7 +158,6 @@ function mapClass10FromAgent(d, uploadResult) {
   }
 
   console.log(`✅ Mapping Class 10 with URL: ${uploadResult.url}`);
-
   return {
     boardName: d.board_name,
     boardType: d.board_type,
@@ -201,7 +199,6 @@ function mapClass12FromAgent(d, uploadResult) {
   }
 
   console.log(`✅ Mapping Class 12 with URL: ${uploadResult.url}`);
-
   return {
     boardName: d.board_name,
     yearOfPassing: d.year_of_passing,
@@ -233,7 +230,6 @@ function mapGraduationFromAgent(d, uploadResult) {
   }
 
   console.log(`✅ Mapping Graduation with URL: ${uploadResult.url}`);
-
   return {
     institutionName: d.institution_name,
     degree: d.degree,
@@ -263,7 +259,6 @@ function mapGraduationFromAgent(d, uploadResult) {
 
 function mapGapAnalysisFromAgent(d) {
   if (!d) return null;
-
   return {
     hasGaps: d.has_gaps,
     totalGaps: d.total_gaps,
@@ -291,6 +286,7 @@ function mapProcessingStatus(pythonStatus) {
 }
 
 // ========== CONTROLLERS ==========
+
 exports.extractClass10 = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   console.log(`\n📋 Starting Class 10 extraction for user: ${userId}`);
@@ -313,7 +309,6 @@ exports.extractClass10 = asyncHandler(async (req, res) => {
     );
 
     let academicRecord = await AcademicRecords.findOne({ user: userId });
-
     if (!academicRecord) {
       console.log("📝 Creating new academic record");
       academicRecord = new AcademicRecords({ user: userId });
@@ -331,7 +326,6 @@ exports.extractClass10 = asyncHandler(async (req, res) => {
       agentResponse.data,
       uploadResult
     );
-
     academicRecord.processingStatus = "completed";
     academicRecord.aiProcessingMetadata = {
       sessionId: agentResponse.session_id,
@@ -387,7 +381,6 @@ exports.extractClass12 = asyncHandler(async (req, res) => {
     );
 
     let academicRecord = await AcademicRecords.findOne({ user: userId });
-
     if (!academicRecord) {
       console.log("📝 Creating new academic record");
       academicRecord = new AcademicRecords({ user: userId });
@@ -405,7 +398,6 @@ exports.extractClass12 = asyncHandler(async (req, res) => {
       agentResponse.data,
       uploadResult
     );
-
     academicRecord.processingStatus = "completed";
     academicRecord.aiProcessingMetadata = {
       sessionId: agentResponse.session_id,
@@ -521,7 +513,6 @@ exports.extractComplete = asyncHandler(async (req, res) => {
 
     // Delete old documents
     const deletePromises = [];
-
     if (uploads.class10 && academicRecord.class10?.documentPublicId) {
       deletePromises.push(
         deleteAcademicDocument(
@@ -609,7 +600,7 @@ exports.extractComplete = asyncHandler(async (req, res) => {
 
     console.log(`\n${"=".repeat(70)}`);
     console.log(`✅ COMPLETE EXTRACTION SUCCESSFUL`);
-    console.log(`  Processing time: ${agentResponse.processing_time_seconds}s`);
+    console.log(` Processing time: ${agentResponse.processing_time_seconds}s`);
     console.log(`${"=".repeat(70)}\n`);
 
     return res.status(200).json({
@@ -705,4 +696,92 @@ exports.healthCheck = asyncHandler(async (req, res) => {
       error: error.message,
     });
   }
+});
+
+// ========== ✅ NEW FUNCTION - ISSUE 1 FIX ==========
+
+/**
+ * Check academic completeness - FIXED VERSION
+ * GET /api/students/:studentId/academic/completeness
+ */
+exports.checkAcademicCompleteness = asyncHandler(async (req, res) => {
+  const { studentId } = req.params;
+
+  console.log(`\n📊 [Completeness Check] Student ID: ${studentId}`);
+
+  const academicRecord = await AcademicRecords.findOne({
+    user: studentId,
+  }).lean();
+
+  // No record found - all documents missing
+  if (!academicRecord) {
+    console.log("❌ No academic record found - 0% complete");
+    return res.status(200).json({
+      success: true,
+      completeness: 0,
+      missingDocuments: [
+        "Class 10 Marksheet",
+        "Class 12 Marksheet",
+        "Graduation Marksheet",
+      ],
+      uploadedDocuments: [],
+      status: "incomplete",
+    });
+  }
+
+  // ✅ FIX: Check ACTUAL document URL presence (not just status)
+  const documentChecks = {
+    class10: {
+      name: "Class 10 Marksheet",
+      uploaded: !!(
+        academicRecord.class10?.documentUrl &&
+        academicRecord.class10.documentUrl.length > 0
+      ),
+    },
+    class12: {
+      name: "Class 12 Marksheet",
+      uploaded: !!(
+        academicRecord.class12?.documentUrl &&
+        academicRecord.class12.documentUrl.length > 0
+      ),
+    },
+    graduation: {
+      name: "Graduation Marksheet",
+      uploaded: !!(
+        academicRecord.graduation?.documentUrl &&
+        academicRecord.graduation.documentUrl.length > 0
+      ),
+    },
+  };
+
+  const uploadedDocuments = [];
+  const missingDocuments = [];
+
+  Object.entries(documentChecks).forEach(([key, doc]) => {
+    if (doc.uploaded) {
+      uploadedDocuments.push(doc.name);
+    } else {
+      missingDocuments.push(doc.name);
+    }
+  });
+
+  const completeness = Math.round((uploadedDocuments.length / 3) * 100);
+  const status = completeness === 100 ? "complete" : "incomplete";
+
+  console.log(`✅ Completeness: ${completeness}%`);
+  console.log(`   Uploaded: ${uploadedDocuments.join(", ") || "None"}`);
+  console.log(`   Missing: ${missingDocuments.join(", ") || "None"}`);
+
+  return res.status(200).json({
+    success: true,
+    completeness,
+    uploadedDocuments,
+    missingDocuments,
+    status,
+    details: {
+      class10: documentChecks.class10.uploaded,
+      class12: documentChecks.class12.uploaded,
+      graduation: documentChecks.graduation.uploaded,
+    },
+  });
 });

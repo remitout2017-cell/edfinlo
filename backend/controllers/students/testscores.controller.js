@@ -7,6 +7,7 @@ const fs = require("fs");
 const TestScores = require("../../models/student/TestScores");
 const Student = require("../../models/student/students");
 const { asyncHandler, AppError } = require("../../middleware/errorMiddleware");
+const { updateStudentDocumentHash } = require("../../utils/documentHasher");
 
 const {
   uploadToCloudinary,
@@ -383,6 +384,8 @@ exports.smartExtract = asyncHandler(async (req, res) => {
       await Student.findByIdAndUpdate(userId, {
         testScores: testScores._id,
       });
+
+      await updateStudentDocumentHash(userId);
     }
 
     console.log(`\n${"=".repeat(70)}`);
@@ -507,6 +510,8 @@ exports.deleteTestScore = asyncHandler(async (req, res) => {
   await testScores.save();
 
   console.log(`✅ ${testType.toUpperCase()} score deleted`);
+
+  await updateStudentDocumentHash(userId);
 
   return res.status(200).json({
     success: true,

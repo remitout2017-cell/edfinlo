@@ -1,4 +1,4 @@
-// controllers/students/coBorrowerFinancial.controller.js (ENHANCED VERSION)
+// controllers/students/coBorrowerFinancial.controller.js
 
 const axios = require("axios");
 const FormData = require("form-data");
@@ -45,7 +45,7 @@ function pickCloudinaryDeleteJobs(publicIds = []) {
   );
 }
 
-// ✅ NEW: Retry helper with exponential backoff
+// ✅ Retry helper with exponential backoff
 async function retryWithBackoff(fn, options = {}) {
   const {
     maxRetries = 2,
@@ -61,7 +61,6 @@ async function retryWithBackoff(fn, options = {}) {
     } catch (error) {
       lastError = error;
 
-      // Don't retry on client errors (4xx) except 408, 429
       const status = error.response?.status;
       if (
         status &&
@@ -87,7 +86,7 @@ async function retryWithBackoff(fn, options = {}) {
   throw lastError;
 }
 
-// ✅ NEW: Check AI agent health
+// ✅ AI health check
 async function checkAIHealth(url) {
   try {
     const response = await axios.get(`${url}/health`, { timeout: 5000 });
@@ -98,23 +97,22 @@ async function checkAIHealth(url) {
   }
 }
 
-// ✅ NEW: Call Python AI with enhanced error handling
+// ✅ Call Python AI with robust error handling
 async function callPythonFinancialAgent(files, pythonUrl, metadata = {}) {
   const { coBorrowerId, sessionId } = metadata;
 
   console.log(`\n${"=".repeat(80)}`);
   console.log(`🤖 [AI Agent] Starting financial document processing`);
-  console.log(`   URL: ${pythonUrl}`);
-  console.log(`   Co-Borrower: ${coBorrowerId}`);
-  console.log(`   Session: ${sessionId}`);
+  console.log(` URL: ${pythonUrl}`);
+  console.log(` Co-Borrower: ${coBorrowerId}`);
+  console.log(` Session: ${sessionId}`);
   console.log(
-    `   Files: ${Object.keys(files)
+    ` Files: ${Object.keys(files)
       .map((k) => files[k]?.[0]?.originalname || k)
       .join(", ")}`
   );
   console.log(`${"=".repeat(80)}\n`);
 
-  // Build FormData
   const form = new FormData();
 
   // Required files
@@ -136,7 +134,6 @@ async function callPythonFinancialAgent(files, pythonUrl, metadata = {}) {
   if (files.cibil_pdf?.[0]?.path)
     form.append("cibil_pdf", fs.createReadStream(files.cibil_pdf[0].path));
 
-  // Call with retry logic
   return await retryWithBackoff(
     async () => {
       const response = await axios.post(pythonUrl, form, {
@@ -145,10 +142,11 @@ async function callPythonFinancialAgent(files, pythonUrl, metadata = {}) {
           "X-Session-Id": sessionId,
           "X-Co-Borrower-Id": coBorrowerId,
         },
-        timeout: 300000, // 5 minutes
+        timeout: 300000,
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
         onUploadProgress: (progressEvent) => {
+          if (!progressEvent || !progressEvent.total) return;
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
@@ -159,16 +157,19 @@ async function callPythonFinancialAgent(files, pythonUrl, metadata = {}) {
       });
 
       console.log(`✅ [AI Agent] Processing complete`);
-      console.log(`   Status: ${response.data.status}`);
+      console.log(` Status: ${response.data.status}`);
       console.log(
-        `   Processing time: ${response.data.processing_time_seconds}s`
+        ` Processing time: ${response.data.processing_time_seconds}s`
       );
-      console.log(
-        `   Confidence: ${(
-          response.data.quality?.overall_confidence * 100
-        ).toFixed(1)}%`
-      );
-
+      if (response.data.quality?.overall_confidence !== undefined) {
+        console.log(
+          ` Confidence: ${
+            response.data.quality.overall_confidence > 1
+              ? response.data.quality.overall_confidence.toFixed(1)
+              : (response.data.quality.overall_confidence * 100).toFixed(1)
+          }%`
+        );
+      }
       return response.data;
     },
     {
@@ -185,7 +186,7 @@ async function callPythonFinancialAgent(files, pythonUrl, metadata = {}) {
 // ============================ Controllers ============================
 
 /**
- * ✅ ENHANCED: Upload + Auto-process (Python first, Cloudinary after success)
+ * Upload + Auto-process
  * POST /api/coborrower/:coBorrowerId/financial/upload
  */
 const uploadFinancialDocuments = asyncHandler(async (req, res) => {
@@ -197,14 +198,12 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
 
   console.log(`\n${"=".repeat(80)}`);
   console.log(`📊 [Financial] New upload request`);
-  console.log(`   Student ID: ${studentId}`);
-  console.log(`   Co-Borrower ID: ${coBorrowerId}`);
-  console.log(`   Timestamp: ${new Date().toISOString()}`);
+  console.log(` Student ID: ${studentId}`);
+  console.log(` Co-Borrower ID: ${coBorrowerId}`);
+  console.log(` Timestamp: ${new Date().toISOString()}`);
   console.log(`${"=".repeat(80)}\n`);
 
-  // ====================================================================
   // STEP 1: Validate Co-Borrower
-  // ====================================================================
   const coBorrower = await CoBorrower.findOne({
     _id: coBorrowerId,
     student: studentId,
@@ -222,11 +221,9 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
   }
 
   console.log(`✅ [Validation] Co-borrower validated: ${coBorrower.fullName}`);
-  console.log(`   KYC Status: ${coBorrower.kycStatus}`);
+  console.log(` KYC Status: ${coBorrower.kycStatus}`);
 
-  // ====================================================================
   // STEP 2: Validate Required Files
-  // ====================================================================
   const requiredFiles = ["salary_slips_pdf", "bank_statement_pdf", "itr_pdf_1"];
   for (const key of requiredFiles) {
     if (!files[key]?.[0]?.path) {
@@ -236,18 +233,14 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
   }
 
   console.log(`✅ [Validation] All required files present`);
-
-  // Log file sizes
   Object.entries(files).forEach(([key, fileArray]) => {
     if (fileArray[0]) {
       const sizeMB = (fileArray[0].size / (1024 * 1024)).toFixed(2);
-      console.log(`   ${key}: ${fileArray[0].originalname} (${sizeMB} MB)`);
+      console.log(` ${key}: ${fileArray[0].originalname} (${sizeMB} MB)`);
     }
   });
 
-  // ====================================================================
   // STEP 3: Check AI Agent Health
-  // ====================================================================
   const pythonUrl =
     config.pythonFinancialServerUrl || "http://localhost:8000/api/analyze";
   const baseUrl = pythonUrl.replace("/api/analyze", "");
@@ -262,27 +255,22 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
   }
 
   console.log(`✅ [Health] AI agent is healthy and ready`);
-  console.log(`   Environment: ${healthCheck.data?.environment || "unknown"}`);
+  console.log(` Environment: ${healthCheck.data?.environment || "unknown"}`);
   console.log(
-    `   Models: Gemini ${healthCheck.data?.models?.gemini}, Groq ${healthCheck.data?.models?.groq}`
+    ` Models: Gemini ${healthCheck.data?.models?.gemini}, Groq ${healthCheck.data?.models?.groq}`
   );
 
-  // ====================================================================
   // STEP 4: Mark as Processing
-  // ====================================================================
   coBorrower.financialVerificationStatus = "processing";
   coBorrower.financialVerificationErrors = [];
   await coBorrower.save();
-
   console.log(`🔄 [Status] Co-borrower marked as processing`);
 
   let apiResponse;
   const uploaded = {};
 
   try {
-    // ==================================================================
-    // STEP 5: Call Python AI Agent (with retry logic)
-    // ==================================================================
+    // STEP 5: Call Python AI Agent
     try {
       const sessionId = `fin_${Date.now()}_${crypto
         .randomBytes(4)
@@ -293,7 +281,6 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
         sessionId,
       });
 
-      // Validate response
       if (!apiResponse || apiResponse.status !== "success") {
         throw new Error(
           `Python returned non-success status: ${
@@ -308,14 +295,12 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
     } catch (err) {
       cleanupMulterFiles(files);
 
-      // Update status
       coBorrower.financialVerificationStatus = "failed";
       coBorrower.financialVerificationErrors = [
         err.response?.data?.error || err.message,
       ];
       await coBorrower.save();
 
-      // Format error message
       let errorMessage = "AI document processing failed";
       if (err.code === "ECONNREFUSED") {
         errorMessage = "AI service is not running. Please contact support.";
@@ -333,11 +318,8 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
       throw new AppError(errorMessage, err.response?.status || 503);
     }
 
-    // ==================================================================
-    // STEP 6: Upload to Cloudinary (ONLY after Python success)
-    // ==================================================================
+    // STEP 6: Upload to Cloudinary (after Python success)
     console.log(`\n🔵 [Cloudinary] Starting uploads...`);
-
     try {
       uploaded.salary_slips = await uploadToCloudinary(
         files.salary_slips_pdf[0].path,
@@ -348,7 +330,7 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
           type: "upload",
         }
       );
-      console.log(`   ✅ Salary slips uploaded`);
+      console.log(` ✅ Salary slips uploaded`);
 
       uploaded.bank_statement = await uploadToCloudinary(
         files.bank_statement_pdf[0].path,
@@ -359,7 +341,7 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
           type: "upload",
         }
       );
-      console.log(`   ✅ Bank statement uploaded`);
+      console.log(` ✅ Bank statement uploaded`);
 
       uploaded.itr_1 = await uploadToCloudinary(files.itr_pdf_1[0].path, {
         filename: safePublicId(coBorrowerId, "itr_1"),
@@ -367,9 +349,8 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
         resource_type: "raw",
         type: "upload",
       });
-      console.log(`   ✅ ITR 1 uploaded`);
+      console.log(` ✅ ITR 1 uploaded`);
 
-      // Optional files
       if (files.itr_pdf_2?.[0]?.path) {
         uploaded.itr_2 = await uploadToCloudinary(files.itr_pdf_2[0].path, {
           filename: safePublicId(coBorrowerId, "itr_2"),
@@ -377,7 +358,7 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
           resource_type: "raw",
           type: "upload",
         });
-        console.log(`   ✅ ITR 2 uploaded`);
+        console.log(` ✅ ITR 2 uploaded`);
       }
 
       if (files.form16_pdf?.[0]?.path) {
@@ -387,7 +368,7 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
           resource_type: "raw",
           type: "upload",
         });
-        console.log(`   ✅ Form 16 uploaded`);
+        console.log(` ✅ Form 16 uploaded`);
       }
 
       if (files.cibil_pdf?.[0]?.path) {
@@ -397,7 +378,7 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
           resource_type: "raw",
           type: "upload",
         });
-        console.log(`   ✅ CIBIL report uploaded`);
+        console.log(` ✅ CIBIL report uploaded`);
       }
 
       console.log(
@@ -409,7 +390,6 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
       console.error(`❌ [Cloudinary] Upload failed:`, err.message);
       cleanupMulterFiles(files);
 
-      // Rollback: delete any successfully uploaded files
       await Promise.allSettled(
         Object.values(uploaded)
           .filter((u) => u?.public_id)
@@ -433,9 +413,7 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
       cleanupMulterFiles(files);
     }
 
-    // ==================================================================
     // STEP 7: Save to Database
-    // ==================================================================
     console.log(`\n💾 [Database] Saving analysis results...`);
 
     coBorrower.financialDocuments = {
@@ -475,28 +453,77 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
         : undefined,
     };
 
+    // ✅ Map Python response into financialAnalysis
+    const extracted = apiResponse.extracted_data || {};
+    const itr = extracted.itr || {};
+    const bank = extracted.bank_statement || {};
+    const salary = extracted.salary_slips || {};
+
     coBorrower.financialAnalysis = {
       sessionId: apiResponse.session_id || `proc_${Date.now()}`,
       processingTimeSeconds: apiResponse.processing_time_seconds || 0,
       timestamp: new Date(),
-      extractedData: apiResponse.extracted_data || {},
-      foir: apiResponse.foir || {},
-      cibil: apiResponse.cibil || {},
-      quality: apiResponse.quality || {},
+      extractedData: {
+        itr,
+        bankStatement: bank,
+        salarySlips: salary,
+      },
+      foir: {
+        foirPercentage:
+          apiResponse.foir?.foir_percentage ??
+          apiResponse.foir?.foirPercentage ??
+          0,
+        foirStatus:
+          apiResponse.foir?.foir_status ??
+          apiResponse.foir?.foirStatus ??
+          "unknown",
+        monthlyNetIncome:
+          apiResponse.foir?.monthly_net_income ??
+          apiResponse.foir?.monthlyNetIncome ??
+          0,
+        totalMonthlyEmi:
+          apiResponse.foir?.total_monthly_emi ??
+          apiResponse.foir?.totalMonthlyEmi ??
+          0,
+        availableMonthlyIncome:
+          apiResponse.foir?.available_monthly_income ??
+          apiResponse.foir?.availableMonthlyIncome ??
+          0,
+      },
+      cibil: {
+        estimatedScore:
+          apiResponse.cibil?.estimated_score ??
+          apiResponse.cibil?.estimatedScore ??
+          0,
+        riskLevel:
+          apiResponse.cibil?.risk_level ??
+          apiResponse.cibil?.riskLevel ??
+          "unknown",
+        confidence: apiResponse.cibil?.confidence ?? 0,
+        positiveFactors: apiResponse.cibil?.positive_factors || [],
+        negativeFactors: apiResponse.cibil?.negative_factors || [],
+      },
+      quality: {
+        overallConfidence:
+          apiResponse.quality?.overall_confidence ??
+          apiResponse.quality?.overallConfidence ??
+          0,
+        dataSourcesUsed: apiResponse.quality?.data_sources_used || [],
+        missingData: apiResponse.quality?.missing_data || [],
+      },
       documentsProcessed: apiResponse.documents_processed || {},
       errors: apiResponse.errors || [],
       rawResponse: apiResponse,
     };
 
     // Determine verification status based on confidence
-    let confidence = apiResponse.quality?.overall_confidence || 0;
-
-    // ✅ FIX: Convert percentage to decimal if needed (Python returns 0-100, DB expects 0-1)
+    let confidence =
+      coBorrower.financialAnalysis.quality.overallConfidence || 0;
     if (confidence > 1) {
       confidence = confidence / 100;
     }
 
-    const missingData = apiResponse.quality?.missing_data || [];
+    const missingData = coBorrower.financialAnalysis.quality.missingData || [];
 
     if (confidence >= 0.8 && missingData.length === 0) {
       coBorrower.financialVerificationStatus = "verified";
@@ -510,47 +537,126 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
     coBorrower.financialVerificationConfidence = confidence;
     coBorrower.financialVerificationErrors = apiResponse.errors || [];
 
-    // Update financial summary
-    if (typeof coBorrower.updateFinancialSummary === "function") {
-      coBorrower.updateFinancialSummary();
-    }
+    // ✅ Build financialSummary from extracted data
+    const hasSalary = salary && Object.keys(salary).length > 0;
+    const hasBank = bank && Object.keys(bank).length > 0;
+    const hasItr = itr && Object.keys(itr).length > 0;
+    const hasForm16 =
+      extracted.form16 && Object.keys(extracted.form16).length > 0;
+
+    let completenessScore = 0;
+    if (coBorrower.kycStatus === "verified") completenessScore += 20;
+    if (hasSalary) completenessScore += 20;
+    if (hasBank) completenessScore += 20;
+    if (hasItr) completenessScore += 30;
+    if (hasForm16) completenessScore += 10;
+
+    const foirData = coBorrower.financialAnalysis.foir;
+    const cibilData = coBorrower.financialAnalysis.cibil;
+
+    const overallScorePercent =
+      coBorrower.financialAnalysis.quality.overallConfidence > 1
+        ? coBorrower.financialAnalysis.quality.overallConfidence
+        : (coBorrower.financialAnalysis.quality.overallConfidence || 0) * 100;
+
+    coBorrower.financialSummary = {
+      avgMonthlySalary:
+        salary.average_net_salary ||
+        salary.average_monthly_salary ||
+        foirData.monthlyNetIncome ||
+        0,
+      avgMonthlyIncome: itr.average_monthly_income || 0,
+      estimatedAnnualIncome:
+        itr.average_annual_income || (itr.average_monthly_income || 0) * 12,
+
+      totalExistingEmi: Math.round(bank.average_monthly_emi || 0),
+      avgBankBalance: Math.round(bank.average_monthly_balance || 0),
+      minBankBalance: Math.round(bank.minimum_balance || 0),
+
+      bounceCount: bank.bounce_count || 0,
+      dishonorCount: bank.dishonor_count || 0,
+      insufficientFundIncidents: bank.insufficient_fund_incidents || 0,
+
+      foir: Math.round(foirData.foirPercentage || 0),
+      foirStatus: foirData.foirStatus || "unknown",
+
+      cibilEstimate: cibilData.estimatedScore || 0,
+      cibilRiskLevel: cibilData.riskLevel || "unknown",
+
+      incomeStability:
+        itr.income_growth_rate !== undefined
+          ? itr.income_growth_rate < -30
+            ? "unstable"
+            : itr.income_growth_rate > 10
+            ? "growing"
+            : "stable"
+          : salary.salary_consistency_months > 0
+          ? "stable"
+          : "unstable",
+
+      overallScore: Math.round(overallScorePercent),
+
+      documentCompleteness: {
+        hasKYC: coBorrower.kycStatus === "verified",
+        hasSalarySlips: hasSalary,
+        hasBankStatement: hasBank,
+        hasITR: hasItr,
+        hasForm16: hasForm16,
+        completenessScore,
+      },
+
+      verificationStatus: coBorrower.financialVerificationStatus,
+      lastUpdated: new Date(),
+      nextAction:
+        coBorrower.financialVerificationStatus === "verified"
+          ? "application_complete"
+          : "complete_documents",
+    };
 
     await coBorrower.save();
 
     console.log(`✅ [Database] All data saved successfully`);
-    console.log(`   Status: ${coBorrower.financialVerificationStatus}`);
-    console.log(`   Confidence: ${(confidence * 100).toFixed(1)}%`);
+    console.log(` Status: ${coBorrower.financialVerificationStatus}`);
+    console.log(` Confidence: ${(confidence * 100).toFixed(1)}%`);
+    console.log(
+      ` Monthly Income (FOIR): ₹${foirData.monthlyNetIncome?.toLocaleString(
+        "en-IN"
+      )}`
+    );
+    console.log(
+      ` Monthly EMI: ₹${foirData.totalMonthlyEmi?.toLocaleString("en-IN")}`
+    );
+    console.log(
+      ` Avg Bank Balance: ₹${coBorrower.financialSummary.avgBankBalance.toLocaleString(
+        "en-IN"
+      )}`
+    );
+    console.log(
+      ` Min Bank Balance: ₹${coBorrower.financialSummary.minBankBalance.toLocaleString(
+        "en-IN"
+      )}`
+    );
+    console.log(` FOIR: ${foirData.foirPercentage}%`);
+    console.log(` CIBIL Estimate: ${cibilData.estimatedScore || "N/A"}`);
+    console.log(` Overall Score: ${coBorrower.financialSummary.overallScore}%`);
+    console.log(
+      ` Completeness Score: ${coBorrower.financialSummary.documentCompleteness.completenessScore}`
+    );
 
-    // ==================================================================
     // STEP 8: Return Success Response
-    // ==================================================================
     console.log(`\n${"=".repeat(80)}`);
     console.log(`✅ [Success] Financial document processing complete`);
-    console.log(`   Session ID: ${apiResponse.session_id}`);
-    console.log(`   Processing Time: ${apiResponse.processing_time_seconds}s`);
-    console.log(`   FOIR: ${apiResponse.foir?.foir_percentage}%`);
-    console.log(`   FOIR Status: ${apiResponse.foir?.foir_status}`);
+    console.log(` Session ID: ${apiResponse.session_id}`);
+    console.log(` Processing Time: ${apiResponse.processing_time_seconds}s`);
+    console.log(` FOIR: ${foirData.foirPercentage}%`);
+    console.log(` FOIR Status: ${foirData.foirStatus}`);
     console.log(
-      `   Monthly Income: ₹${apiResponse.foir?.monthly_net_income?.toLocaleString(
-        "en-IN"
-      )}`
+      ` Monthly Income: ₹${foirData.monthlyNetIncome?.toLocaleString("en-IN")}`
     );
     console.log(
-      `   Monthly EMI: ₹${apiResponse.foir?.total_monthly_emi?.toLocaleString(
-        "en-IN"
-      )}`
+      ` Monthly EMI: ₹${foirData.totalMonthlyEmi?.toLocaleString("en-IN")}`
     );
-    console.log(
-      `   CIBIL Estimate: ${apiResponse.cibil?.estimated_score || "N/A"}`
-    );
-    console.log(
-      `   Data Sources: ${
-        apiResponse.quality?.data_sources_used?.join(", ") || "N/A"
-      }`
-    );
-    if (missingData.length > 0) {
-      console.log(`   ⚠️  Missing Data: ${missingData.join(", ")}`);
-    }
+    console.log(` CIBIL Estimate: ${cibilData.estimatedScore || "N/A"}`);
     console.log(`${"=".repeat(80)}\n`);
 
     return res.status(200).json({
@@ -563,29 +669,9 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
       processingTime: apiResponse.processing_time_seconds,
       summary: coBorrower.financialSummary,
       analysis: {
-        foir: {
-          percentage: apiResponse.foir?.foir_percentage,
-          status: apiResponse.foir?.foir_status,
-          monthlyIncome: apiResponse.foir?.monthly_net_income,
-          monthlyEMI: apiResponse.foir?.total_monthly_emi,
-          availableIncome: apiResponse.foir?.available_monthly_income,
-        },
-        cibil: {
-          estimatedScore: apiResponse.cibil?.estimated_score,
-          estimatedBand: apiResponse.cibil?.estimated_band,
-          riskLevel: apiResponse.cibil?.risk_level,
-          paymentHistoryScore: apiResponse.cibil?.payment_history_score,
-          creditUtilizationScore: apiResponse.cibil?.credit_utilization_score,
-          incomeStabilityScore: apiResponse.cibil?.income_stability_score,
-          creditMixScore: apiResponse.cibil?.credit_mix_score,
-          positiveFactors: apiResponse.cibil?.positive_factors || [],
-          negativeFactors: apiResponse.cibil?.negative_factors || [],
-        },
-        quality: {
-          overallConfidence: apiResponse.quality?.overall_confidence,
-          dataSourcesUsed: apiResponse.quality?.data_sources_used,
-          missingData: apiResponse.quality?.missing_data,
-        },
+        foir: foirData,
+        cibil: cibilData,
+        quality: coBorrower.financialAnalysis.quality,
       },
       nextSteps:
         coBorrower.financialVerificationStatus === "verified"
@@ -599,11 +685,9 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
             ],
     });
   } catch (error) {
-    // This catch handles any unexpected errors not caught above
     console.error(`\n❌ [Error] Unexpected error:`, error);
     cleanupMulterFiles(files);
 
-    // Cleanup any uploaded Cloudinary files
     if (Object.keys(uploaded).length > 0) {
       console.log(
         `🧹 [Cleanup] Rolling back ${
@@ -628,7 +712,7 @@ const uploadFinancialDocuments = asyncHandler(async (req, res) => {
 });
 
 /**
- * Reset financial docs: delete from Cloudinary + clear DB fields
+ * Reset financial docs
  * DELETE/POST /api/coborrower/:coBorrowerId/financial/reset
  */
 const resetFinancialDocuments = asyncHandler(async (req, res) => {
@@ -652,7 +736,7 @@ const resetFinancialDocuments = asyncHandler(async (req, res) => {
   if (!coBorrower) throw new AppError("Co-borrower not found", 404);
 
   console.log(
-    `\n🗑️  [Reset] Clearing financial documents for: ${coBorrower.fullName}`
+    `\n🗑️ [Reset] Clearing financial documents for: ${coBorrower.fullName}`
   );
 
   const docs = coBorrower.financialDocuments || {};
@@ -665,9 +749,9 @@ const resetFinancialDocuments = asyncHandler(async (req, res) => {
   ];
 
   if (deleteJobs.length > 0) {
-    console.log(`   Deleting ${deleteJobs.length} files from Cloudinary...`);
+    console.log(` Deleting ${deleteJobs.length} files from Cloudinary...`);
     await Promise.allSettled(deleteJobs);
-    console.log(`   ✅ Cloudinary cleanup complete`);
+    console.log(` ✅ Cloudinary cleanup complete`);
   }
 
   coBorrower.financialDocuments = undefined;
@@ -677,7 +761,6 @@ const resetFinancialDocuments = asyncHandler(async (req, res) => {
   coBorrower.financialVerifiedAt = null;
   coBorrower.financialVerificationConfidence = null;
   coBorrower.financialVerificationErrors = [];
-
   await coBorrower.save();
 
   console.log(`✅ [Reset] Complete - Co-borrower ready for new upload\n`);
@@ -766,7 +849,7 @@ const getCompleteAnalysis = asyncHandler(async (req, res) => {
 const processFinancialDocuments = asyncHandler(async () => {
   throw new AppError(
     "This endpoint is deprecated. Use POST /api/coborrower/:id/financial/upload which automatically processes documents.",
-    410 // Gone
+    410
   );
 });
 
